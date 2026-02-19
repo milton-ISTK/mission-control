@@ -11,15 +11,15 @@ interface LoadingSpinnerProps {
 export default function LoadingSpinner({ size = "md", className, label }: LoadingSpinnerProps) {
   const sizes = {
     sm: "w-5 h-5 border-2",
-    md: "w-8 h-8 border-3",
-    lg: "w-12 h-12 border-4",
+    md: "w-8 h-8 border-[2.5px]",
+    lg: "w-12 h-12 border-[3px]",
   };
 
   return (
     <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
       <div
         className={cn(
-          "rounded-full border-istk-accent border-t-transparent animate-spin",
+          "rounded-full border-istk-accent/40 border-t-istk-accent animate-spin",
           sizes[size]
         )}
       />

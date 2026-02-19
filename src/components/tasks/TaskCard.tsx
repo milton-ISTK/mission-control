@@ -62,8 +62,8 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "neu-card p-4 cursor-grab active:cursor-grabbing group",
-        isDragging && "opacity-50 scale-105 shadow-neu-lg"
+        "glass-card p-4 cursor-grab active:cursor-grabbing group",
+        isDragging && "opacity-50 scale-105"
       )}
     >
       {/* Top Row: Grip + Actions */}
@@ -83,13 +83,13 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg hover:bg-istk-surfaceLight text-istk-textDim hover:text-istk-text transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.06)] text-istk-textDim hover:text-istk-text transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleDelete}
-            className="p-1.5 rounded-lg hover:bg-istk-danger/10 text-istk-textDim hover:text-istk-danger transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[rgba(248,113,113,0.1)] text-istk-textDim hover:text-istk-danger transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -109,7 +109,7 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           {task.tags.map((tag) => (
             <span
               key={tag}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-istk-surfaceLight text-istk-textDim"
+              className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-istk-textDim border border-[rgba(255,255,255,0.06)]"
             >
               {tag}
             </span>
@@ -124,10 +124,10 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           <button
             onClick={handleToggleAssignee}
             className={cn(
-              "text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors",
+              "text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors border",
               task.assignee === "Gregory"
-                ? "bg-istk-purple/20 text-istk-purple hover:bg-istk-purple/30"
-                : "bg-istk-accent/20 text-istk-accent hover:bg-istk-accent/30"
+                ? "bg-[rgba(167,139,250,0.1)] text-istk-purple border-[rgba(167,139,250,0.2)] hover:bg-[rgba(167,139,250,0.15)]"
+                : "bg-[rgba(255,107,0,0.1)] text-istk-accent border-[rgba(255,107,0,0.2)] hover:bg-[rgba(255,107,0,0.15)]"
             )}
           >
             {task.assignee}

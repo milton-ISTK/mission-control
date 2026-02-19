@@ -15,7 +15,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label className="text-sm font-medium text-istk-textMuted">{label}</label>
         )}
-        <input ref={ref} className={cn("neu-input", error && "border-istk-danger/50", className)} {...props} />
+        <input ref={ref} className={cn("glass-input", error && "border-istk-danger/50", className)} {...props} />
         {error && <span className="text-xs text-istk-danger">{error}</span>}
       </div>
     );
@@ -38,7 +38,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
         <textarea
           ref={ref}
-          className={cn("neu-input min-h-[100px] resize-y", error && "border-istk-danger/50", className)}
+          className={cn("glass-input min-h-[100px] resize-y", error && "border-istk-danger/50", className)}
           {...props}
         />
         {error && <span className="text-xs text-istk-danger">{error}</span>}
@@ -62,7 +62,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label className="text-sm font-medium text-istk-textMuted">{label}</label>
         )}
-        <select ref={ref} className={cn("neu-select", error && "border-istk-danger/50", className)} {...(props as any)}>
+        <select ref={ref} className={cn("glass-select", error && "border-istk-danger/50", className)} {...(props as any)}>
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}

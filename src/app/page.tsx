@@ -44,9 +44,9 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Tasks */}
-        <Link href="/tasks" className="neu-card p-5 group">
+        <Link href="/tasks" className="glass-card p-5 group">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-istk-accent/10 flex items-center justify-center shadow-neu-sm">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(255,107,0,0.08)] flex items-center justify-center border border-[rgba(255,107,0,0.12)]">
               <KanbanSquare className="w-5 h-5 text-istk-accent" />
             </div>
             <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-accent transition-colors" />
@@ -61,9 +61,9 @@ export default function DashboardPage() {
         </Link>
 
         {/* Memories */}
-        <Link href="/memories" className="neu-card p-5 group">
+        <Link href="/memories" className="glass-card p-5 group">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-istk-success/10 flex items-center justify-center shadow-neu-sm">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(52,211,153,0.08)] flex items-center justify-center border border-[rgba(52,211,153,0.12)]">
               <Brain className="w-5 h-5 text-istk-success" />
             </div>
             <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-success transition-colors" />
@@ -76,9 +76,9 @@ export default function DashboardPage() {
         </Link>
 
         {/* Events & Crons */}
-        <Link href="/calendar" className="neu-card p-5 group">
+        <Link href="/calendar" className="glass-card p-5 group">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-istk-info/10 flex items-center justify-center shadow-neu-sm">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(96,165,250,0.08)] flex items-center justify-center border border-[rgba(96,165,250,0.12)]">
               <Calendar className="w-5 h-5 text-istk-info" />
             </div>
             <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-info transition-colors" />
@@ -92,9 +92,9 @@ export default function DashboardPage() {
         </Link>
 
         {/* Team */}
-        <Link href="/team" className="neu-card p-5 group">
+        <Link href="/team" className="glass-card p-5 group">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-istk-purple/10 flex items-center justify-center shadow-neu-sm">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(167,139,250,0.08)] flex items-center justify-center border border-[rgba(167,139,250,0.12)]">
               <Users className="w-5 h-5 text-istk-purple" />
             </div>
             <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-purple transition-colors" />
@@ -113,34 +113,34 @@ export default function DashboardPage() {
       {/* Two Column: Critical + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Critical Tasks */}
-        <div className="neu-panel">
+        <div className="glass-panel">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-istk-text flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-istk-danger" />
               Attention Needed
             </h3>
             <Link href="/tasks">
-              <Badge variant="default" className="hover:bg-istk-surfaceLight cursor-pointer">
+              <Badge variant="default" className="hover:bg-[rgba(255,255,255,0.08)] cursor-pointer transition-colors">
                 View All
               </Badge>
             </Link>
           </div>
           <div className="flex flex-col gap-2">
             {(stats?.tasks.critical ?? 0) > 0 ? (
-              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-istk-danger/5 border border-istk-danger/10">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(248,113,113,0.05)] border border-[rgba(248,113,113,0.1)]">
                 <div className="w-2 h-2 rounded-full bg-istk-danger animate-pulse" />
                 <span className="text-sm text-istk-text">
                   {stats?.tasks.critical} critical task{(stats?.tasks.critical ?? 0) > 1 ? "s" : ""} pending
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-istk-success/5 border border-istk-success/10">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(52,211,153,0.05)] border border-[rgba(52,211,153,0.1)]">
                 <CheckCircle2 className="w-4 h-4 text-istk-success" />
                 <span className="text-sm text-istk-textMuted">No critical tasks — all clear!</span>
               </div>
             )}
             {(stats?.tasks.todo ?? 0) > 0 && (
-              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-istk-info/5 border border-istk-info/10">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(96,165,250,0.05)] border border-[rgba(96,165,250,0.1)]">
                 <Clock className="w-4 h-4 text-istk-info" />
                 <span className="text-sm text-istk-textMuted">
                   {stats?.tasks.todo} task{(stats?.tasks.todo ?? 0) > 1 ? "s" : ""} in backlog
@@ -151,7 +151,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Activity */}
-        <div className="neu-panel">
+        <div className="glass-panel">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-istk-text flex items-center gap-2">
               <Activity className="w-5 h-5 text-istk-accent" />
@@ -167,12 +167,12 @@ export default function DashboardPage() {
               {recentActivity.slice(0, 8).map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-istk-bg/50 border border-istk-border/10"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]"
                 >
                   <div
                     className={cn(
                       "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
-                      item.type === "task" ? "bg-istk-accent/10" : "bg-istk-success/10"
+                      item.type === "task" ? "bg-[rgba(255,107,0,0.08)]" : "bg-[rgba(52,211,153,0.08)]"
                     )}
                   >
                     {item.type === "task" ? (
@@ -196,7 +196,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="neu-panel">
+      <div className="glass-panel">
         <h3 className="font-semibold text-istk-text mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-istk-accent" />
           Quick Links
@@ -213,7 +213,7 @@ export default function DashboardPage() {
             <Link
               key={link.href}
               href={link.href}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-istk-bg/50 border border-istk-border/10 hover:border-istk-accent/20 hover:bg-istk-surfaceLight transition-all group"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,107,0,0.15)] hover:bg-[rgba(255,255,255,0.04)] transition-all group"
             >
               <link.icon className={cn("w-5 h-5 group-hover:scale-110 transition-transform", link.color)} />
               <span className="text-xs text-istk-textMuted group-hover:text-istk-text transition-colors">
@@ -225,7 +225,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Getting Started */}
-      <div className="neu-panel">
+      <div className="glass-panel">
         <div className="flex items-start gap-4">
           <LayoutDashboard className="w-6 h-6 text-istk-accent shrink-0 mt-1" />
           <div>

@@ -11,13 +11,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", isLoading, children, disabled, ...props }, ref) => {
     const variants: Record<string, string> = {
-      default: "neu-button",
-      accent: "neu-button-accent",
+      default: "glass-button",
+      accent: "glass-button-accent",
       ghost:
-        "px-5 py-2.5 rounded-xl text-istk-textMuted hover:text-istk-text hover:bg-istk-surfaceLight transition-all duration-200",
+        "px-5 py-2.5 rounded-xl text-istk-textMuted hover:text-istk-text hover:bg-[rgba(255,255,255,0.06)] transition-all duration-200",
       danger:
-        "px-5 py-2.5 rounded-xl shadow-neu bg-istk-danger/20 text-istk-danger font-medium transition-all duration-200 hover:bg-istk-danger/30 active:shadow-neu-inset border border-istk-danger/30",
-      sm: "neu-button-sm",
+        "px-5 py-2.5 rounded-xl font-medium transition-all duration-200 text-istk-danger hover:text-white border border-istk-danger/20 bg-[rgba(248,113,113,0.08)] hover:bg-[rgba(248,113,113,0.15)] backdrop-blur-sm",
+      sm: "glass-button-sm",
     };
 
     return (

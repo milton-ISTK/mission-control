@@ -26,10 +26,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 h-screen sticky top-0 flex flex-col neu-sidebar p-4 gap-2 shrink-0">
+    <aside className="w-64 h-screen sticky top-0 flex flex-col glass-sidebar p-4 gap-2 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-3 px-3 py-4 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-istk-accent/20 flex items-center justify-center shadow-neu-sm">
+        <div className="w-10 h-10 rounded-xl bg-[rgba(255,107,0,0.1)] flex items-center justify-center border border-[rgba(255,107,0,0.15)]">
           <Zap className="w-6 h-6 text-istk-accent" />
         </div>
         <div>
@@ -54,8 +54,8 @@ export default function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-istk-accent/10 text-istk-accent shadow-neu-sm border border-istk-accent/20"
-                  : "text-istk-textMuted hover:text-istk-text hover:bg-istk-surfaceLight"
+                  ? "bg-[rgba(255,107,0,0.08)] text-istk-accent border border-[rgba(255,107,0,0.15)]"
+                  : "text-istk-textMuted hover:text-istk-text hover:bg-[rgba(255,255,255,0.04)] border border-transparent"
               )}
             >
               <item.icon className="w-5 h-5" />
@@ -66,7 +66,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 text-xs text-istk-textDim border-t border-istk-border/20 mt-2">
+      <div className="px-3 py-4 text-xs text-istk-textDim border-t border-[rgba(255,255,255,0.06)] mt-2">
         <p>IntelliStake · Phase 1 MVP</p>
         <p className="mt-1 flex items-center gap-1.5">
           <span className="status-dot status-active" />

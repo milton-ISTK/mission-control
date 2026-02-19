@@ -40,10 +40,10 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay animate-fade-in" onClick={onClose}>
       <div
         className={cn(
-          "w-full mx-4 neu-panel animate-in fade-in zoom-in-95",
+          "w-full mx-4 glass-panel animate-scale-in",
           sizes[size]
         )}
         onClick={(e) => e.stopPropagation()}
@@ -53,7 +53,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
             <h2 className="text-xl font-bold text-istk-text">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-istk-surfaceLight transition-colors text-istk-textMuted hover:text-istk-text"
+              className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors text-istk-textMuted hover:text-istk-text"
             >
               <X className="w-5 h-5" />
             </button>

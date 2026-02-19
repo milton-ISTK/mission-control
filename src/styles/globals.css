@@ -6,7 +6,8 @@
 
 /* ========================================
    ISTK: Agentic Mission Control
-   Global Styles + Neumorphic Design System
+   Global Styles — Glassmorphism Design System
+   iOS-inspired frosted glass on dark
    ======================================== */
 
 @layer base {
@@ -18,97 +19,216 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-istk-bg text-istk-text font-sans antialiased;
     min-height: 100vh;
+    /* Subtle mesh gradient for depth */
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(255,107,0,0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(96,165,250,0.02) 0%, transparent 50%);
+    background-attachment: fixed;
   }
 
-  /* Custom scrollbar */
+  /* iOS-style scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-istk-bg;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-istk-border rounded-full;
+    background: rgba(255,255,255,0.1);
+    border-radius: 100px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-istk-textDim;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(255,107,0,0.3);
+    color: #fff;
   }
 }
 
 @layer components {
-  /* ---- Neumorphic Base Components ---- */
+  /* ======== Glass Base Components ======== */
 
-  .neu-card {
-    @apply bg-istk-surface rounded-2xl shadow-neu border border-istk-border/30;
-    transition: all 0.3s ease;
+  .glass-card {
+    @apply rounded-2xl border border-istk-border backdrop-blur-xl;
+    background: rgba(255,255,255,0.04);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 1px 2px rgba(0,0,0,0.3),
+      0 4px 16px rgba(0,0,0,0.15);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .neu-card:hover {
-    @apply shadow-neu-lg;
+  .glass-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      0 2px 4px rgba(0,0,0,0.3),
+      0 8px 24px rgba(0,0,0,0.2);
     transform: translateY(-1px);
   }
 
-  .neu-card-flat {
-    @apply bg-istk-surface rounded-2xl shadow-neu border border-istk-border/20;
+  .glass-card-flat {
+    @apply rounded-2xl border border-istk-border backdrop-blur-xl;
+    background: rgba(255,255,255,0.04);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
   }
 
-  .neu-button {
-    @apply px-5 py-2.5 rounded-xl shadow-neu bg-istk-surface 
-           text-istk-text font-medium transition-all duration-200
-           hover:shadow-neu-sm active:shadow-neu-inset
-           border border-istk-border/20;
+  /* ---- Glass Buttons ---- */
+
+  .glass-button {
+    @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-200;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(240,240,245,0.9);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 1px 2px rgba(0,0,0,0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  .neu-button-accent {
-    @apply px-5 py-2.5 rounded-xl bg-istk-accent text-white font-semibold
-           shadow-neu-glow transition-all duration-200
-           hover:bg-istk-accentHover active:shadow-neu-inset
-           border border-istk-accent/30;
+  .glass-button:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.15);
+    color: #fff;
   }
 
-  .neu-button-sm {
-    @apply px-3 py-1.5 rounded-lg shadow-neu-sm bg-istk-surface 
-           text-sm text-istk-text font-medium transition-all duration-200
-           hover:shadow-neu active:shadow-neu-inset-sm
-           border border-istk-border/20;
+  .glass-button:active {
+    background: rgba(255,255,255,0.04);
+    transform: scale(0.98);
   }
 
-  .neu-input {
-    @apply w-full px-4 py-3 rounded-xl shadow-neu-inset bg-istk-bg
-           text-istk-text placeholder-istk-textDim
-           border border-istk-border/30 outline-none
-           focus:border-istk-accent/50 focus:shadow-neu-glow
-           transition-all duration-200;
+  .glass-button-accent {
+    @apply px-5 py-2.5 rounded-xl font-semibold text-white transition-all duration-200;
+    background: linear-gradient(135deg, #FF6B00 0%, #FF8534 100%);
+    border: 1px solid rgba(255,107,0,0.3);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      0 1px 2px rgba(0,0,0,0.2),
+      0 0 20px rgba(255,107,0,0.15);
   }
 
-  .neu-select {
-    @apply w-full px-4 py-3 rounded-xl shadow-neu-inset bg-istk-bg
-           text-istk-text border border-istk-border/30 outline-none
-           focus:border-istk-accent/50 focus:shadow-neu-glow
-           transition-all duration-200 appearance-none cursor-pointer;
+  .glass-button-accent:hover {
+    background: linear-gradient(135deg, #FF7A1A 0%, #FF9548 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.2),
+      0 2px 4px rgba(0,0,0,0.2),
+      0 0 30px rgba(255,107,0,0.25);
+    transform: translateY(-1px);
   }
 
-  .neu-badge {
-    @apply px-2.5 py-0.5 rounded-full text-xs font-semibold
-           shadow-neu-sm border border-istk-border/20;
+  .glass-button-accent:active {
+    transform: scale(0.98) translateY(0);
   }
 
-  .neu-panel {
-    @apply bg-istk-surface/80 backdrop-blur-sm rounded-2xl shadow-neu
-           border border-istk-border/20 p-6;
+  .glass-button-sm {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(240,240,245,0.85);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  .neu-sidebar {
-    @apply bg-istk-surface rounded-2xl shadow-neu border border-istk-border/20;
+  .glass-button-sm:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .glass-button-sm:active {
+    background: rgba(255,255,255,0.04);
+    transform: scale(0.97);
+  }
+
+  /* ---- Glass Inputs ---- */
+
+  .glass-input {
+    @apply w-full px-4 py-3 rounded-xl outline-none transition-all duration-200;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #F0F0F5;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-input::placeholder {
+    color: rgba(85,85,106,0.8);
+  }
+
+  .glass-input:focus {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,107,0,0.4);
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,0.2),
+      0 0 0 3px rgba(255,107,0,0.08);
+  }
+
+  .glass-select {
+    @apply w-full px-4 py-3 rounded-xl outline-none cursor-pointer transition-all duration-200 appearance-none;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #F0F0F5;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-select:focus {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,107,0,0.4);
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,0.2),
+      0 0 0 3px rgba(255,107,0,0.08);
+  }
+
+  /* ---- Glass Badge ---- */
+
+  .glass-badge {
+    @apply px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* ---- Glass Panel ---- */
+
+  .glass-panel {
+    @apply rounded-2xl p-6 backdrop-blur-xl;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 1px 2px rgba(0,0,0,0.3),
+      0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  /* ---- Glass Sidebar ---- */
+
+  .glass-sidebar {
+    @apply rounded-2xl backdrop-blur-xl;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      4px 0 16px rgba(0,0,0,0.15);
   }
 
   /* ---- Status Indicators ---- */
@@ -118,12 +238,12 @@
 
   .status-active {
     @apply bg-istk-success animate-pulse-slow;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
   }
 
   .status-idle {
     @apply bg-istk-warning;
-    box-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
   }
 
   .status-offline {
@@ -131,45 +251,50 @@
   }
 
   /* ---- Priority Colors ---- */
-  .priority-critical { @apply bg-istk-danger text-white; }
-  .priority-high { @apply bg-istk-accent text-white; }
-  .priority-medium { @apply bg-istk-warning text-istk-bg; }
-  .priority-low { @apply bg-istk-info text-white; }
+  .priority-critical { @apply text-white; background: rgba(248,113,113,0.2); }
+  .priority-high { @apply text-white; background: rgba(255,107,0,0.2); }
+  .priority-medium { background: rgba(251,191,36,0.2); color: #FBBF24; }
+  .priority-low { @apply text-white; background: rgba(96,165,250,0.2); }
 
-  /* ---- Kanban Column ---- */
+  /* ---- Kanban Column — Glass ---- */
   .kanban-column {
-    @apply bg-istk-bg/50 rounded-2xl shadow-neu-inset p-4 min-h-[500px]
-           border border-istk-border/10;
+    @apply rounded-2xl p-4 min-h-[500px];
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   }
 
   /* ---- Calendar ---- */
-  .cal-event-cron { @apply bg-istk-info/20 border-l-2 border-istk-info text-istk-info; }
-  .cal-event-deadline { @apply bg-istk-danger/20 border-l-2 border-istk-danger text-istk-danger; }
-  .cal-event-oneshot { @apply bg-istk-success/20 border-l-2 border-istk-success text-istk-success; }
+  .cal-event-cron { background: rgba(96,165,250,0.1); @apply border-l-2 border-istk-info text-istk-info; }
+  .cal-event-deadline { background: rgba(248,113,113,0.1); @apply border-l-2 border-istk-danger text-istk-danger; }
+  .cal-event-oneshot { background: rgba(52,211,153,0.1); @apply border-l-2 border-istk-success text-istk-success; }
 
   /* ---- Glow effects ---- */
   .accent-glow {
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+    box-shadow: 0 0 20px rgba(255,107,0,0.1);
   }
 
   .accent-border-glow {
-    border-color: rgba(249, 115, 22, 0.3);
-    box-shadow: 0 0 15px rgba(249, 115, 22, 0.1);
+    border-color: rgba(255,107,0,0.25);
+    box-shadow: 0 0 15px rgba(255,107,0,0.08);
   }
 
-  /* ---- Modal overlay ---- */
+  /* ---- Modal overlay — glass backdrop ---- */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50
-           flex items-center justify-center;
+    @apply fixed inset-0 z-50 flex items-center justify-center;
+    background: rgba(5,5,7,0.7);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
   }
 
   /* ---- Drag states ---- */
   .dragging {
-    @apply opacity-50 scale-105 rotate-1;
+    @apply opacity-50 scale-105;
   }
 
   .drag-over {
-    @apply border-istk-accent border-2 border-dashed;
+    border: 2px dashed rgba(255,107,0,0.4) !important;
+    background: rgba(255,107,0,0.03) !important;
   }
 }
 
@@ -179,6 +304,11 @@
   }
 
   .bg-gradient-dark {
-    @apply bg-gradient-to-br from-istk-bg via-istk-surface to-istk-bg;
+    background: linear-gradient(135deg, #050507 0%, #0A0A10 50%, #050507 100%);
+  }
+
+  /* Utility for glass-like inner highlight at top */
+  .glass-highlight {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
   }
 }

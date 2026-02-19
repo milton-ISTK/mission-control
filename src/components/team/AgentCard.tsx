@@ -47,14 +47,14 @@ export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps
     <button
       onClick={onClick}
       className={cn(
-        "neu-card p-5 text-left w-full group transition-all",
-        isSelected && "ring-1 ring-istk-accent/40 accent-border-glow"
+        "glass-card p-5 text-left w-full group transition-all",
+        isSelected && "ring-1 ring-istk-accent/30 accent-border-glow"
       )}
     >
       {/* Top Row */}
       <div className="flex items-start gap-3 mb-3">
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-xl bg-istk-surfaceLight flex items-center justify-center text-2xl shadow-neu-sm shrink-0">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)]">
           {avatarEmoji}
         </div>
         <div className="flex-1 min-w-0">

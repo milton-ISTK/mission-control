@@ -39,12 +39,12 @@ export default function MemoryCard({ memory, onClick }: MemoryCardProps) {
   return (
     <button
       onClick={onClick}
-      className="neu-card p-5 text-left w-full group"
+      className="glass-card p-5 text-left w-full group"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-istk-accent/10 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[rgba(255,107,0,0.08)] flex items-center justify-center shrink-0 border border-[rgba(255,107,0,0.12)]">
             <FileText className="w-4 h-4 text-istk-accent" />
           </div>
           <h4 className="text-sm font-semibold text-istk-text truncate group-hover:text-istk-accent transition-colors">
@@ -84,7 +84,7 @@ export default function MemoryCard({ memory, onClick }: MemoryCardProps) {
             {memory.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="text-[9px] px-1.5 py-0.5 rounded bg-istk-surfaceLight text-istk-textDim"
+                className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-istk-textDim border border-[rgba(255,255,255,0.06)]"
               >
                 {tag}
               </span>

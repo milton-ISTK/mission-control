@@ -20,7 +20,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="w-16 h-16 rounded-2xl bg-istk-surfaceLight flex items-center justify-center mb-4 shadow-neu-sm">
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] backdrop-blur-sm">
         <Icon className="w-8 h-8 text-istk-textDim" />
       </div>
       <h3 className="text-lg font-semibold text-istk-text mb-1">{title}</h3>

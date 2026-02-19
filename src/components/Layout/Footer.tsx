@@ -2,7 +2,7 @@
 
 export default function Footer() {
   return (
-    <footer className="py-4 px-6 text-center border-t border-istk-border/10">
+    <footer className="py-4 px-6 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
       <p className="text-xs text-istk-textDim">
         ISTK: Agentic Mission Control · Phase 1 MVP ·{" "}
         <span className="text-istk-textMuted">

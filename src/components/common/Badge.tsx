@@ -9,22 +9,22 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<string, string> = {
-  default: "bg-istk-surfaceLight text-istk-textMuted",
-  critical: "bg-istk-danger/20 text-istk-danger border-istk-danger/30",
-  high: "bg-istk-accent/20 text-istk-accent border-istk-accent/30",
-  medium: "bg-istk-warning/20 text-istk-warning border-istk-warning/30",
-  low: "bg-istk-info/20 text-istk-info border-istk-info/30",
-  success: "bg-istk-success/20 text-istk-success border-istk-success/30",
-  warning: "bg-istk-warning/20 text-istk-warning border-istk-warning/30",
-  info: "bg-istk-info/20 text-istk-info border-istk-info/30",
-  purple: "bg-istk-purple/20 text-istk-purple border-istk-purple/30",
+  default: "bg-[rgba(255,255,255,0.06)] text-istk-textMuted border-[rgba(255,255,255,0.08)]",
+  critical: "bg-[rgba(248,113,113,0.12)] text-istk-danger border-[rgba(248,113,113,0.2)]",
+  high: "bg-[rgba(255,107,0,0.12)] text-istk-accent border-[rgba(255,107,0,0.2)]",
+  medium: "bg-[rgba(251,191,36,0.12)] text-istk-warning border-[rgba(251,191,36,0.2)]",
+  low: "bg-[rgba(96,165,250,0.12)] text-istk-info border-[rgba(96,165,250,0.2)]",
+  success: "bg-[rgba(52,211,153,0.12)] text-istk-success border-[rgba(52,211,153,0.2)]",
+  warning: "bg-[rgba(251,191,36,0.12)] text-istk-warning border-[rgba(251,191,36,0.2)]",
+  info: "bg-[rgba(96,165,250,0.12)] text-istk-info border-[rgba(96,165,250,0.2)]",
+  purple: "bg-[rgba(167,139,250,0.12)] text-istk-purple border-[rgba(167,139,250,0.2)]",
 };
 
 export default function Badge({ children, variant = "default", className }: BadgeProps) {
   return (
     <span
       className={cn(
-        "neu-badge",
+        "glass-badge",
         variantStyles[variant],
         className
       )}

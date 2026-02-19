@@ -4,6 +4,7 @@ import Sidebar from "@/components/Layout/Sidebar";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 import FluidBackground from "@/components/Layout/FluidBackground";
+import ClickAnimationHandler from "@/components/Layout/ClickAnimationHandler";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -30,6 +31,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-istk-bg text-istk-text font-sans antialiased">
         <ConvexClientProvider>
+          {/* Click Animation Handler */}
+          <ClickAnimationHandler />
+
           {/* Interactive Fluid/Lava Background */}
           <FluidBackground />
 

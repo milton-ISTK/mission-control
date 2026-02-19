@@ -9,6 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        obsidian: "#050505",
         // ISTK Brand Colors — Dark Lava Vein Theme
         istk: {
           // Base surfaces — deep charcoal

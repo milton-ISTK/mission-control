@@ -1,0 +1,101 @@
+/**
+ * ISTK Mission Control - Agent mutations & queries
+ * Handles team member (agent) CRUD operations
+ */
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+
+// ---- Queries ----
+
+/** List all agents */
+export const listAgents = query({
+  handler: async (ctx) => {
+    return await ctx.db.query("agents").collect();
+  },
+});
+
+/** Get agent by name */
+export const getAgentByName = query({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("agents")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+  },
+});
+
+/** Get active agents */
+export const getActiveAgents = query({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("agents")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+  },
+});
+
+// ---- Mutations ----
+
+/** Create or update an agent */
+export const upsertAgent = mutation({
+  args: {
+    name: v.string(),
+    role: v.string(),
+    model: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    status: v.union(v.literal("active"), v.literal("idle"), v.literal("offline")),
+    isSubagent: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    const existing = await ctx.db
+      .query("agents")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        role: args.role,
+        model: args.model,
+        avatar: args.avatar,
+        status: args.status,
+        lastActive: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("agents", {
+      name: args.name,
+      role: args.role,
+      model: args.model,
+      avatar: args.avatar,
+      status: args.status,
+      lastActive: now,
+      isSubagent: args.isSubagent,
+      createdAt: now,
+    });
+  },
+});
+
+/** Update agent status */
+export const updateAgentStatus = mutation({
+  args: {
+    id: v.id("agents"),
+    status: v.union(v.literal("active"), v.literal("idle"), v.literal("offline")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      status: args.status,
+      lastActive: new Date().toISOString(),
+    });
+  },
+});
+
+/** Delete an agent */
+export const deleteAgent = mutation({
+  args: { id: v.id("agents") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});

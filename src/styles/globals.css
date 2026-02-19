@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   ISTK: Agentic Mission Control
+   Global Styles + Neumorphic Design System
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-istk-bg text-istk-text font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-istk-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-istk-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-istk-textDim;
+  }
+}
+
+@layer components {
+  /* ---- Neumorphic Base Components ---- */
+
+  .neu-card {
+    @apply bg-istk-surface rounded-2xl shadow-neu border border-istk-border/30;
+    transition: all 0.3s ease;
+  }
+
+  .neu-card:hover {
+    @apply shadow-neu-lg;
+    transform: translateY(-1px);
+  }
+
+  .neu-card-flat {
+    @apply bg-istk-surface rounded-2xl shadow-neu border border-istk-border/20;
+  }
+
+  .neu-button {
+    @apply px-5 py-2.5 rounded-xl shadow-neu bg-istk-surface 
+           text-istk-text font-medium transition-all duration-200
+           hover:shadow-neu-sm active:shadow-neu-inset
+           border border-istk-border/20;
+  }
+
+  .neu-button-accent {
+    @apply px-5 py-2.5 rounded-xl bg-istk-accent text-white font-semibold
+           shadow-neu-glow transition-all duration-200
+           hover:bg-istk-accentHover active:shadow-neu-inset
+           border border-istk-accent/30;
+  }
+
+  .neu-button-sm {
+    @apply px-3 py-1.5 rounded-lg shadow-neu-sm bg-istk-surface 
+           text-sm text-istk-text font-medium transition-all duration-200
+           hover:shadow-neu active:shadow-neu-inset-sm
+           border border-istk-border/20;
+  }
+
+  .neu-input {
+    @apply w-full px-4 py-3 rounded-xl shadow-neu-inset bg-istk-bg
+           text-istk-text placeholder-istk-textDim
+           border border-istk-border/30 outline-none
+           focus:border-istk-accent/50 focus:shadow-neu-glow
+           transition-all duration-200;
+  }
+
+  .neu-select {
+    @apply w-full px-4 py-3 rounded-xl shadow-neu-inset bg-istk-bg
+           text-istk-text border border-istk-border/30 outline-none
+           focus:border-istk-accent/50 focus:shadow-neu-glow
+           transition-all duration-200 appearance-none cursor-pointer;
+  }
+
+  .neu-badge {
+    @apply px-2.5 py-0.5 rounded-full text-xs font-semibold
+           shadow-neu-sm border border-istk-border/20;
+  }
+
+  .neu-panel {
+    @apply bg-istk-surface/80 backdrop-blur-sm rounded-2xl shadow-neu
+           border border-istk-border/20 p-6;
+  }
+
+  .neu-sidebar {
+    @apply bg-istk-surface rounded-2xl shadow-neu border border-istk-border/20;
+  }
+
+  /* ---- Status Indicators ---- */
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+
+  .status-active {
+    @apply bg-istk-success animate-pulse-slow;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  }
+
+  .status-idle {
+    @apply bg-istk-warning;
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
+  }
+
+  .status-offline {
+    @apply bg-istk-textDim;
+  }
+
+  /* ---- Priority Colors ---- */
+  .priority-critical { @apply bg-istk-danger text-white; }
+  .priority-high { @apply bg-istk-accent text-white; }
+  .priority-medium { @apply bg-istk-warning text-istk-bg; }
+  .priority-low { @apply bg-istk-info text-white; }
+
+  /* ---- Kanban Column ---- */
+  .kanban-column {
+    @apply bg-istk-bg/50 rounded-2xl shadow-neu-inset p-4 min-h-[500px]
+           border border-istk-border/10;
+  }
+
+  /* ---- Calendar ---- */
+  .cal-event-cron { @apply bg-istk-info/20 border-l-2 border-istk-info text-istk-info; }
+  .cal-event-deadline { @apply bg-istk-danger/20 border-l-2 border-istk-danger text-istk-danger; }
+  .cal-event-oneshot { @apply bg-istk-success/20 border-l-2 border-istk-success text-istk-success; }
+
+  /* ---- Glow effects ---- */
+  .accent-glow {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+  }
+
+  .accent-border-glow {
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.1);
+  }
+
+  /* ---- Modal overlay ---- */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50
+           flex items-center justify-center;
+  }
+
+  /* ---- Drag states ---- */
+  .dragging {
+    @apply opacity-50 scale-105 rotate-1;
+  }
+
+  .drag-over {
+    @apply border-istk-accent border-2 border-dashed;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-istk-accent to-istk-accentHover;
+  }
+
+  .bg-gradient-dark {
+    @apply bg-gradient-to-br from-istk-bg via-istk-surface to-istk-bg;
+  }
+}

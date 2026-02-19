@@ -19,11 +19,20 @@ export default function LoadingSpinner({ size = "md", className, label }: Loadin
     <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
       <div
         className={cn(
-          "rounded-full border-istk-accent/40 border-t-istk-accent animate-spin",
+          "rounded-full animate-spin",
           sizes[size]
         )}
+        style={{
+          borderColor: "rgba(255,107,0,0.15)",
+          borderTopColor: "#FF6B00",
+          filter: "drop-shadow(0 0 8px rgba(255,107,0,0.3))",
+        }}
       />
-      {label && <p className="text-sm text-istk-textMuted">{label}</p>}
+      {label && (
+        <p className="text-sm text-istk-textMuted" style={{ textShadow: "0 0 8px rgba(255,107,0,0.1)" }}>
+          {label}
+        </p>
+      )}
     </div>
   );
 }

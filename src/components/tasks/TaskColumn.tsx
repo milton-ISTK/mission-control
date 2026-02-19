@@ -28,7 +28,13 @@ export default function TaskColumn({ id, title, color, count, children }: TaskCo
           <h3 className={cn("text-sm font-bold uppercase tracking-wider", color)}>
             {title}
           </h3>
-          <span className="text-xs text-istk-textDim px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]">
+          <span
+            className="text-xs text-istk-textDim px-2 py-0.5 rounded-full"
+            style={{
+              background: "rgba(255,107,0,0.04)",
+              border: "1px solid rgba(255,107,0,0.10)",
+            }}
+          >
             {count}
           </span>
         </div>

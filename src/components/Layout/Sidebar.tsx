@@ -27,20 +27,26 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 h-screen sticky top-0 flex flex-col glass-sidebar p-4 gap-2 shrink-0">
-      {/* Logo */}
+      {/* Logo — Neon glow */}
       <div className="flex items-center gap-3 px-3 py-4 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-[rgba(255,107,0,0.1)] flex items-center justify-center border border-[rgba(255,107,0,0.15)]">
-          <Zap className="w-6 h-6 text-istk-accent" />
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-neon"
+          style={{
+            background: "rgba(255,107,0,0.12)",
+            border: "1px solid rgba(255,107,0,0.25)",
+          }}
+        >
+          <Zap className="w-6 h-6 text-istk-accent drop-shadow-[0_0_8px_rgba(255,107,0,0.5)]" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-gradient">ISTK</h1>
+          <h1 className="text-lg font-bold text-gradient text-glow">ISTK</h1>
           <p className="text-[10px] text-istk-textDim uppercase tracking-widest">
             Mission Control
           </p>
         </div>
       </div>
 
-      {/* Nav */}
+      {/* Nav — Neon active states */}
       <nav className="flex-1 flex flex-col gap-1">
         {navItems.map((item) => {
           const isActive =
@@ -52,25 +58,34 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
                 isActive
-                  ? "bg-[rgba(255,107,0,0.08)] text-istk-accent border border-[rgba(255,107,0,0.15)]"
-                  : "text-istk-textMuted hover:text-istk-text hover:bg-[rgba(255,255,255,0.04)] border border-transparent"
+                  ? "text-istk-accent border neon-border-orange"
+                  : "text-istk-textMuted hover:text-istk-text hover:bg-[rgba(255,107,0,0.04)] border border-transparent hover:border-[rgba(255,107,0,0.08)]"
               )}
+              style={isActive ? {
+                background: "rgba(255,107,0,0.06)",
+                textShadow: "0 0 10px rgba(255,107,0,0.3)",
+              } : undefined}
             >
-              <item.icon className="w-5 h-5" />
+              <item.icon
+                className={cn(
+                  "w-5 h-5 transition-all",
+                  isActive && "drop-shadow-[0_0_6px_rgba(255,107,0,0.4)]"
+                )}
+              />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-3 py-4 text-xs text-istk-textDim border-t border-[rgba(255,255,255,0.06)] mt-2">
-        <p>IntelliStake · Phase 1 MVP</p>
-        <p className="mt-1 flex items-center gap-1.5">
+      {/* Footer — Neon status */}
+      <div className="px-3 py-4 text-xs text-istk-textDim mt-2" style={{ borderTop: "1px solid rgba(255,107,0,0.08)" }}>
+        <p className="text-neon-orange text-[10px] font-semibold tracking-wider">IntelliStake · Phase 1</p>
+        <p className="mt-2 flex items-center gap-1.5">
           <span className="status-dot status-active" />
-          System Online
+          <span className="text-istk-textMuted">System Online</span>
         </p>
       </div>
     </aside>

@@ -20,35 +20,44 @@ export default function Navbar() {
     <header
       className="h-16 flex items-center justify-between px-6 sticky top-0 z-40"
       style={{
-        background: "rgba(5,5,7,0.6)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: "rgba(10,10,14,0.65)",
+        borderBottom: "1px solid rgba(255,107,0,0.08)",
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
+        boxShadow: "0 1px 20px rgba(0,0,0,0.3), 0 1px 0 rgba(255,107,0,0.04)",
       }}
     >
-      {/* Page Title */}
+      {/* Page Title — with neon glow */}
       <div className="flex items-center gap-3">
-        <h2 className="text-xl font-bold text-istk-text">{title}</h2>
+        <h2
+          className="text-xl font-bold text-istk-text"
+          style={{
+            textShadow: "0 0 15px rgba(255,107,0,0.15)",
+          }}
+        >
+          {title}
+        </h2>
       </div>
 
       {/* Right Actions */}
       <div className="flex items-center gap-4">
-        {/* Status indicator */}
+        {/* Live Status indicator — neon pulsing */}
         <div
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,107,0,0.04)",
+            border: "1px solid rgba(255,107,0,0.12)",
+            boxShadow: "0 0 8px rgba(255,107,0,0.06)",
           }}
         >
           <span className="status-dot status-active" />
           <span className="text-xs text-istk-textMuted font-medium">Live</span>
         </div>
 
-        {/* Brand */}
-        <div className="flex items-center gap-2 text-istk-textDim">
-          <Zap className="w-4 h-4 text-istk-accent" />
-          <span className="text-xs font-semibold tracking-wider uppercase">
+        {/* Brand — Neon accent */}
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-istk-accent drop-shadow-[0_0_6px_rgba(255,107,0,0.4)]" />
+          <span className="text-xs font-semibold tracking-wider uppercase text-neon-orange">
             ISTK
           </span>
         </div>

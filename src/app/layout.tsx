@@ -3,6 +3,7 @@ import { ConvexClientProvider } from "@/lib/convex";
 import Sidebar from "@/components/Layout/Sidebar";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
+import FluidBackground from "@/components/Layout/FluidBackground";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#050507",
+  themeColor: "#0A0A0A",
 };
 
 export default function RootLayout({
@@ -29,7 +30,10 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-istk-bg text-istk-text font-sans antialiased">
         <ConvexClientProvider>
-          <div className="flex min-h-screen">
+          {/* Interactive Fluid/Lava Background */}
+          <FluidBackground />
+
+          <div className="relative flex min-h-screen" style={{ zIndex: 1 }}>
             {/* Sidebar — collapses to icon bar on mobile */}
             <Sidebar />
 

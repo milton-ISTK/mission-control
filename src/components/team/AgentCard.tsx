@@ -48,13 +48,20 @@ export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps
       onClick={onClick}
       className={cn(
         "glass-card p-5 text-left w-full group transition-all",
-        isSelected && "ring-1 ring-istk-accent/30 accent-border-glow"
+        isSelected && "neon-border-orange"
       )}
     >
       {/* Top Row */}
       <div className="flex items-start gap-3 mb-3">
-        {/* Avatar */}
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)]">
+        {/* Avatar — Neon glow border */}
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+          style={{
+            background: "rgba(255,107,0,0.04)",
+            border: "1px solid rgba(255,107,0,0.10)",
+            boxShadow: isSelected ? "0 0 12px rgba(255,107,0,0.12)" : undefined,
+          }}
+        >
           {avatarEmoji}
         </div>
         <div className="flex-1 min-w-0">
@@ -63,7 +70,7 @@ export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps
               {agent.name}
             </h4>
             {!agent.isSubagent && (
-              <Badge variant="info" className="text-[9px]">
+              <Badge variant="cyan" className="text-[9px]">
                 Main
               </Badge>
             )}

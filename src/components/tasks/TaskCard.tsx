@@ -63,14 +63,14 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
       style={style}
       className={cn(
         "glass-card p-4 cursor-grab active:cursor-grabbing group",
-        isDragging && "opacity-50 scale-105"
+        isDragging && "opacity-50 scale-105 shadow-neon-orange"
       )}
     >
       {/* Top Row: Grip + Actions */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <button
-            className="text-istk-textDim hover:text-istk-textMuted shrink-0 cursor-grab"
+            className="text-istk-textDim hover:text-istk-accent shrink-0 cursor-grab transition-colors"
             {...attributes}
             {...listeners}
           >
@@ -83,13 +83,13 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.06)] text-istk-textDim hover:text-istk-text transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[rgba(255,107,0,0.06)] text-istk-textDim hover:text-istk-accent transition-all hover:shadow-[0_0_6px_rgba(255,107,0,0.08)]"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleDelete}
-            className="p-1.5 rounded-lg hover:bg-[rgba(248,113,113,0.1)] text-istk-textDim hover:text-istk-danger transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[rgba(248,113,113,0.08)] text-istk-textDim hover:text-istk-danger transition-all hover:shadow-[0_0_6px_rgba(248,113,113,0.1)]"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -103,13 +103,17 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
         </p>
       )}
 
-      {/* Tags */}
+      {/* Tags — Neon styled */}
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3 pl-6">
           {task.tags.map((tag) => (
             <span
               key={tag}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-istk-textDim border border-[rgba(255,255,255,0.06)]"
+              className="text-[10px] px-1.5 py-0.5 rounded text-istk-textDim"
+              style={{
+                background: "rgba(255,107,0,0.04)",
+                border: "1px solid rgba(255,107,0,0.08)",
+              }}
             >
               {tag}
             </span>
@@ -124,10 +128,10 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
           <button
             onClick={handleToggleAssignee}
             className={cn(
-              "text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors border",
+              "text-[10px] px-2 py-0.5 rounded-full font-medium transition-all border",
               task.assignee === "Gregory"
-                ? "bg-[rgba(167,139,250,0.1)] text-istk-purple border-[rgba(167,139,250,0.2)] hover:bg-[rgba(167,139,250,0.15)]"
-                : "bg-[rgba(255,107,0,0.1)] text-istk-accent border-[rgba(255,107,0,0.2)] hover:bg-[rgba(255,107,0,0.15)]"
+                ? "bg-[rgba(178,75,243,0.08)] text-istk-purple border-[rgba(178,75,243,0.20)] hover:bg-[rgba(178,75,243,0.12)] hover:shadow-[0_0_6px_rgba(178,75,243,0.1)]"
+                : "bg-[rgba(255,107,0,0.08)] text-istk-accent border-[rgba(255,107,0,0.20)] hover:bg-[rgba(255,107,0,0.12)] hover:shadow-[0_0_6px_rgba(255,107,0,0.1)]"
             )}
           >
             {task.assignee}

@@ -160,7 +160,7 @@ export const createWorkflow = mutation({
       throw new Error("Source research not found");
     }
 
-    // Create a task record on the Task Board for this workflow
+    // Step 1: Create task record FIRST
     const contentTypeLabel = {
       blog_post: "📝 Blog Post",
       social_image: "🖼️ Social Image",
@@ -168,32 +168,22 @@ export const createWorkflow = mutation({
       linkedin_post: "💼 LinkedIn Post",
     }[args.contentType] || args.contentType;
 
-    // Create task
-    const taskPayload = {
+    const taskId = await ctx.db.insert("tasks", {
       title: `${contentTypeLabel}: ${args.selectedAngle}`,
-      description: args.briefing,
-      status: "in_progress" as const,
-      priority: "medium" as const,
-      assignee: "Milton" as const,
+      description: args.briefing || "",
+      status: "in_progress",
+      priority: "medium",
+      assignee: "Milton",
       createdAt: now,
       updatedAt: now,
       order: 0,
-    };
-    
-    let taskId: any;
-    try {
-      taskId = await ctx.db.insert("tasks", taskPayload);
-      console.log("✅ Task created:", taskId);
-    } catch (taskErr) {
-      console.error("❌ Task creation failed:", taskErr);
-      throw new Error(`Failed to create task: ${taskErr}`);
-    }
+    });
 
-    // Create the workflow record linked to the task
+    // Step 2: Create workflow record linked to the task
     const workflowId = await ctx.db.insert("workflows", {
       templateId: template._id,
       sourceResearchId: args.sourceResearchId,
-      taskId, // Link to Task Board
+      taskId,
       selectedAngle: args.selectedAngle,
       contentType: args.contentType,
       briefing: args.briefing,

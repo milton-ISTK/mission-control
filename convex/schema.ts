@@ -100,6 +100,7 @@ export default defineSchema({
       v.literal("approved"),
       v.literal("rejected"),
       v.literal("cancelled"),
+      v.literal("declined"),
       v.literal("generating"),
       v.literal("complete")
     ),
@@ -125,6 +126,8 @@ export default defineSchema({
     selectedAngle: v.optional(v.string()),
     xPosts: v.optional(v.array(v.string())),
     linkedinPosts: v.optional(v.array(v.string())),
+    // Retry tracking
+    retryCount: v.optional(v.number()),
     // Meta
     requestedBy: v.string(),
     createdAt: v.string(),

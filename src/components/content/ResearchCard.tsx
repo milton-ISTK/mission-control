@@ -27,6 +27,8 @@ import {
   Quote,
   BarChart3,
   Lightbulb,
+  RotateCcw,
+  Ban,
 } from "lucide-react";
 import Badge from "@/components/common/Badge";
 import TypewriterEffect from "@/components/content/TypewriterEffect";
@@ -74,6 +76,7 @@ const statusConfig: Record<
   approved: { label: "Approved", variant: "success", icon: CheckCircle2 },
   rejected: { label: "Rejected", variant: "default", icon: XCircle },
   cancelled: { label: "Cancelled", variant: "default", icon: XCircle },
+  declined: { label: "Declined", variant: "default", icon: Ban },
   generating: { label: "Generating Content…", variant: "purple", icon: Sparkles },
   complete: { label: "Complete", variant: "success", icon: CheckCircle2 },
 };
@@ -89,6 +92,8 @@ export default function ResearchCard({ research }: { research: Research }) {
   const approveResearch = useMutation(api.contentPipeline.approveResearch);
   const rejectResearch = useMutation(api.contentPipeline.rejectResearch);
   const cancelResearch = useMutation(api.contentPipeline.cancelResearch);
+  const declineResearch = useMutation(api.contentPipeline.declineResearch);
+  const retryResearch = useMutation(api.contentPipeline.retryResearch);
   const deleteResearch = useMutation(api.contentPipeline.deleteResearch);
 
   const sentiment = research.sentiment
@@ -113,6 +118,14 @@ export default function ResearchCard({ research }: { research: Research }) {
 
   const handleReject = async () => {
     await rejectResearch({ id: research._id });
+  };
+
+  const handleDecline = async () => {
+    await declineResearch({ id: research._id });
+  };
+
+  const handleRetry = async () => {
+    await retryResearch({ id: research._id });
   };
 
   const handleCancel = async () => {
@@ -146,7 +159,8 @@ export default function ResearchCard({ research }: { research: Research }) {
                 research.status === "ready" && "text-istk-accent",
                 research.status === "complete" && "text-istk-success",
                 research.status === "approved" && "text-istk-success",
-                research.status === "rejected" && "text-istk-textDim"
+                research.status === "rejected" && "text-istk-textDim",
+                research.status === "declined" && "text-istk-textDim"
               )}
             />
             <Badge variant={status.variant as any}>{status.label}</Badge>
@@ -173,6 +187,16 @@ export default function ResearchCard({ research }: { research: Research }) {
                 {research.llmModel}
               </span>
             )}
+            {research.retryCount && research.retryCount > 0 ? (
+              <span className="text-xs px-2 py-1 rounded-full shrink-0 whitespace-nowrap" style={{
+                background: "rgba(0,217,255,0.10)",
+                border: "1px solid rgba(0,217,255,0.20)",
+                color: "rgb(0,217,255)",
+                fontWeight: "500",
+              }}>
+                Retry #{research.retryCount}
+              </span>
+            ) : null}
           </div>
           {research.errorMessage && research.status === "rejected" && (
             <p className="text-xs text-istk-danger mt-1">
@@ -431,7 +455,7 @@ export default function ResearchCard({ research }: { research: Research }) {
                 {/* Action Buttons — only for "ready" status */}
                 {research.status === "ready" && (
                   <div
-                    className="flex items-center gap-3 pt-3 mt-2"
+                    className="flex items-center gap-3 pt-3 mt-2 flex-wrap"
                     style={{
                       borderTop: "1px solid rgba(255,107,0,0.06)",
                     }}
@@ -444,17 +468,27 @@ export default function ResearchCard({ research }: { research: Research }) {
                       className="glass-button-accent flex items-center gap-2 text-sm"
                     >
                       <Sparkles className="w-4 h-4" />
-                      Use This Angle
+                      {selectedAngle ? "Use This Angle" : "Approve & Proceed"}
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleReject();
                       }}
+                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-warning"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Try Different Angle
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDecline();
+                      }}
                       className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger"
                     >
-                      <XCircle className="w-4 h-4" />
-                      Try Different Angle
+                      <Ban className="w-4 h-4" />
+                      Decline
                     </button>
                   </div>
                 )}
@@ -614,9 +648,23 @@ export default function ResearchCard({ research }: { research: Research }) {
               </div>
             )}
 
-          {/* Delete button (bottom-right) */}
-          {["rejected", "complete", "cancelled"].includes(research.status) && (
-            <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.03)" }}>
+          {/* Bottom actions — Retry + Delete */}
+          {["rejected", "complete", "cancelled", "declined"].includes(research.status) && (
+            <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.03)" }}>
+              <div className="flex items-center gap-2">
+                {["rejected", "cancelled", "declined"].includes(research.status) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRetry();
+                    }}
+                    className="glass-button-sm flex items-center gap-1.5 text-xs text-istk-textDim hover:text-istk-cyan"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Retry
+                  </button>
+                )}
+              </div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();

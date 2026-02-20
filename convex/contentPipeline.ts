@@ -92,6 +92,7 @@ export const getStats = query({
       complete: all.filter((r) => r.status === "complete").length,
       rejected: all.filter((r) => r.status === "rejected").length,
       cancelled: all.filter((r) => r.status === "cancelled").length,
+      declined: all.filter((r) => r.status === "declined").length,
     };
   },
 });
@@ -132,6 +133,7 @@ export const updateStatus = mutation({
       v.literal("approved"),
       v.literal("rejected"),
       v.literal("cancelled"),
+      v.literal("declined"),
       v.literal("generating"),
       v.literal("complete")
     ),
@@ -236,6 +238,49 @@ export const cancelResearch = mutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {
       status: "cancelled",
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
+/** Retry a failed/rejected/cancelled/declined research item — resets to pending with same topic & model */
+export const retryResearch = mutation({
+  args: { id: v.id("contentResearch") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Research item not found");
+    await ctx.db.patch(args.id, {
+      status: "pending",
+      // Clear previous results
+      summary: undefined,
+      sentiment: undefined,
+      narratives: undefined,
+      angles: undefined,
+      quotes: undefined,
+      sources: undefined,
+      fullReport: undefined,
+      errorMessage: undefined,
+      thinkingLine1: undefined,
+      thinkingLine2: undefined,
+      selectedAngle: undefined,
+      xPosts: undefined,
+      linkedinPosts: undefined,
+      retryCount: (existing.retryCount || 0) + 1,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
+/** Decline research results — user rejects without retrying */
+export const declineResearch = mutation({
+  args: {
+    id: v.id("contentResearch"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      status: "declined",
+      errorMessage: args.reason || "Declined by user",
       updatedAt: new Date().toISOString(),
     });
   },

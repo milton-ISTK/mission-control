@@ -18,6 +18,7 @@ import {
   ChevronUp,
   Trash2,
   Zap,
+  Ban,
 } from "lucide-react";
 import Badge from "@/components/common/Badge";
 import { PageLoader } from "@/components/common/LoadingSpinner";
@@ -34,11 +35,12 @@ export default function ContentPipelinePage() {
   }
 
   const activeItems = research.filter(
-    (r) => !["rejected", "complete", "cancelled"].includes(r.status)
+    (r) => !["rejected", "complete", "cancelled", "declined"].includes(r.status)
   );
   const completedItems = research.filter((r) => r.status === "complete");
   const rejectedItems = research.filter((r) => r.status === "rejected");
   const cancelledItems = research.filter((r) => r.status === "cancelled");
+  const declinedItems = research.filter((r) => r.status === "declined");
 
   return (
     <div className="flex flex-col gap-8">
@@ -58,7 +60,7 @@ export default function ContentPipelinePage() {
 
       {/* Stats Row */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
           {[
             { label: "Total", value: stats.total, color: "text-istk-text" },
             { label: "Pending", value: stats.pending, color: "text-istk-warning" },
@@ -67,6 +69,7 @@ export default function ContentPipelinePage() {
             { label: "Approved", value: stats.approved, color: "text-istk-success" },
             { label: "Complete", value: stats.complete, color: "text-istk-purple" },
             { label: "Rejected", value: stats.rejected, color: "text-istk-textDim" },
+            { label: "Declined", value: stats.declined, color: "text-istk-textDim" },
             { label: "Cancelled", value: stats.cancelled, color: "text-istk-textDim" },
           ].map((s) => (
             <div
@@ -124,6 +127,21 @@ export default function ContentPipelinePage() {
           </h2>
           <div className="flex flex-col gap-4 opacity-60">
             {rejectedItems.map((item) => (
+              <ResearchCard key={item._id} research={item} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Declined Items */}
+      {declinedItems.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-istk-textDim mb-4 flex items-center gap-2">
+            <Ban className="w-5 h-5 text-istk-textDim" />
+            Declined ({declinedItems.length})
+          </h2>
+          <div className="flex flex-col gap-4 opacity-60">
+            {declinedItems.map((item) => (
               <ResearchCard key={item._id} research={item} />
             ))}
           </div>

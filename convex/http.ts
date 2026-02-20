@@ -322,6 +322,33 @@ http.route({
   }),
 });
 
+// POST /api/content/clear-key — Clear API key after processing (daemon calls this)
+http.route({
+  path: "/api/content/clear-key",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.clearApiKey, {
+        id: body.id,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // POST /api/content/generated — Submit generated content (subagent calls this)
 http.route({
   path: "/api/content/generated",

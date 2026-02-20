@@ -72,6 +72,7 @@ const statusConfig: Record<
   ready: { label: "Ready for Review", variant: "high", icon: FileText },
   approved: { label: "Approved", variant: "success", icon: CheckCircle2 },
   rejected: { label: "Rejected", variant: "default", icon: XCircle },
+  cancelled: { label: "Cancelled", variant: "default", icon: XCircle },
   generating: { label: "Generating Content…", variant: "purple", icon: Sparkles },
   complete: { label: "Complete", variant: "success", icon: CheckCircle2 },
 };
@@ -86,6 +87,7 @@ export default function ResearchCard({ research }: { research: Research }) {
 
   const approveResearch = useMutation(api.contentPipeline.approveResearch);
   const rejectResearch = useMutation(api.contentPipeline.rejectResearch);
+  const cancelResearch = useMutation(api.contentPipeline.cancelResearch);
   const deleteResearch = useMutation(api.contentPipeline.deleteResearch);
 
   const sentiment = research.sentiment
@@ -110,6 +112,10 @@ export default function ResearchCard({ research }: { research: Research }) {
 
   const handleReject = async () => {
     await rejectResearch({ id: research._id });
+  };
+
+  const handleCancel = async () => {
+    await cancelResearch({ id: research._id });
   };
 
   const handleDelete = async () => {
@@ -180,30 +186,42 @@ export default function ResearchCard({ research }: { research: Research }) {
           {/* Pending / Researching States */}
           {(research.status === "pending" ||
             research.status === "researching") && (
-            <div
-              className="flex items-center gap-3 px-4 py-3 rounded-xl"
-              style={{
-                background:
-                  research.status === "researching"
-                    ? "rgba(0,217,255,0.04)"
-                    : "rgba(251,191,36,0.04)",
-                border: `1px solid ${
-                  research.status === "researching"
-                    ? "rgba(0,217,255,0.12)"
-                    : "rgba(251,191,36,0.12)"
-                }`,
-              }}
-            >
-              {research.status === "researching" ? (
-                <Loader2 className="w-4 h-4 text-istk-cyan animate-spin" />
-              ) : (
-                <Clock className="w-4 h-4 text-istk-warning" />
-              )}
-              <span className="text-sm text-istk-textMuted">
-                {research.status === "researching"
-                  ? "Opus is researching this topic — Brave Search + X.com sentiment analysis in progress…"
-                  : "Waiting for Milton's research daemon to pick up this request…"}
-              </span>
+            <div className="flex flex-col gap-3">
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                style={{
+                  background:
+                    research.status === "researching"
+                      ? "rgba(0,217,255,0.04)"
+                      : "rgba(251,191,36,0.04)",
+                  border: `1px solid ${
+                    research.status === "researching"
+                      ? "rgba(0,217,255,0.12)"
+                      : "rgba(251,191,36,0.12)"
+                  }`,
+                }}
+              >
+                {research.status === "researching" ? (
+                  <Loader2 className="w-4 h-4 text-istk-cyan animate-spin" />
+                ) : (
+                  <Clock className="w-4 h-4 text-istk-warning" />
+                )}
+                <span className="text-sm text-istk-textMuted">
+                  {research.status === "researching"
+                    ? "Opus is researching this topic — Brave Search + X.com sentiment analysis in progress…"
+                    : "Waiting for Milton's research daemon to pick up this request…"}
+                </span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancel();
+                }}
+                className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger w-fit"
+              >
+                <XCircle className="w-4 h-4" />
+                Cancel Research
+              </button>
             </div>
           )}
 
@@ -551,7 +569,7 @@ export default function ResearchCard({ research }: { research: Research }) {
             )}
 
           {/* Delete button (bottom-right) */}
-          {["rejected", "complete"].includes(research.status) && (
+          {["rejected", "complete", "cancelled"].includes(research.status) && (
             <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.03)" }}>
               <button
                 onClick={(e) => {

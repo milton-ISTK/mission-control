@@ -80,6 +80,7 @@ export const getStats = query({
       generating: all.filter((r) => r.status === "generating").length,
       complete: all.filter((r) => r.status === "complete").length,
       rejected: all.filter((r) => r.status === "rejected").length,
+      cancelled: all.filter((r) => r.status === "cancelled").length,
     };
   },
 });
@@ -91,6 +92,8 @@ export const createResearch = mutation({
   args: {
     topic: v.string(),
     requestedBy: v.optional(v.string()),
+    llmModel: v.optional(v.string()),
+    llmApiKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -98,6 +101,8 @@ export const createResearch = mutation({
       topic: args.topic,
       status: "pending",
       requestedBy: args.requestedBy ?? "Gregory",
+      llmModel: args.llmModel,
+      llmApiKey: args.llmApiKey,
       createdAt: now,
       updatedAt: now,
     });
@@ -114,6 +119,7 @@ export const updateStatus = mutation({
       v.literal("ready"),
       v.literal("approved"),
       v.literal("rejected"),
+      v.literal("cancelled"),
       v.literal("generating"),
       v.literal("complete")
     ),
@@ -188,6 +194,27 @@ export const submitContent = mutation({
       xPosts: args.xPosts,
       linkedinPosts: args.linkedinPosts,
       status: "complete",
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
+/** Clear the API key after daemon has processed it (security) */
+export const clearApiKey = mutation({
+  args: { id: v.id("contentResearch") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      llmApiKey: undefined,
+    });
+  },
+});
+
+/** Cancel a research item (stops active research, marks as cancelled) */
+export const cancelResearch = mutation({
+  args: { id: v.id("contentResearch") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      status: "cancelled",
       updatedAt: new Date().toISOString(),
     });
   },

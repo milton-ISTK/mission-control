@@ -430,38 +430,6 @@ http.route({
   }),
 });
 
-// ---- POST /api/sync/daemon-status ----
-http.route({
-  path: "/api/sync/daemon-status",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    if (!checkAuth(request)) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    try {
-      const body = await request.json();
-      const { status, details } = body as { status: string; details?: string };
-
-      await ctx.runMutation(api.systemStatus.upsertStatus, {
-        key: "daemon_health",
-        status,
-        details,
-      });
-
-      return new Response(
-        JSON.stringify({ ok: true }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return new Response(
-        JSON.stringify({ ok: false, error: message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }),
-});
-
 // ---- POST /api/keys (from Settings page) ----
 // Save API key to Convex; sync daemon will pick it up and write to local file
 http.route({

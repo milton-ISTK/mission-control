@@ -106,6 +106,7 @@ export default defineSchema({
     // LLM configuration (per-request)
     llmModel: v.optional(v.string()),             // Model ID (e.g. "claude-4-5-haiku")
     llmProvider: v.optional(v.string()),          // Provider key (e.g. "anthropic", "openai", "google")
+    llmApiKey: v.optional(v.string()),            // DEPRECATED: API keys now stored in apiKeys table, not here
     // NOTE: API keys are NOT stored in Convex. They're stored locally on Milton's disk only (~/config/mission-control/api-keys.json)
     // Research results
     summary: v.optional(v.string()),

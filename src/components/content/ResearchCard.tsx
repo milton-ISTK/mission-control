@@ -158,9 +158,26 @@ export default function ResearchCard({ research }: { research: Research }) {
               </Badge>
             )}
           </div>
-          <h3 className="text-base font-semibold text-istk-text truncate">
-            {research.topic}
-          </h3>
+          <div className="flex items-start gap-2 mb-1">
+            <h3 className="text-base font-semibold text-istk-text truncate flex-1">
+              {research.topic}
+            </h3>
+            {research.llmModel && (
+              <span className="text-xs px-2 py-1 rounded-full shrink-0 whitespace-nowrap" style={{
+                background: "rgba(255,107,0,0.12)",
+                border: "1px solid rgba(255,107,0,0.20)",
+                color: "rgb(255,107,0)",
+                fontWeight: "500",
+              }}>
+                {research.llmModel}
+              </span>
+            )}
+          </div>
+          {research.errorMessage && research.status === "rejected" && (
+            <p className="text-xs text-istk-danger mt-1">
+              ❌ {research.errorMessage}
+            </p>
+          )}
           {research.summary && (
             <p className="text-sm text-istk-textMuted mt-1 line-clamp-2">
               {research.summary}

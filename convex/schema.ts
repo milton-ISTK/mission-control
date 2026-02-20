@@ -107,6 +107,8 @@ export default defineSchema({
     quotes: v.optional(v.array(v.string())),      // Quote opportunities
     sources: v.optional(v.string()),              // JSON array of source objects
     fullReport: v.optional(v.string()),           // Full markdown report
+    // Error handling
+    errorMessage: v.optional(v.string()),        // Reason for rejection (API error, timeout, etc.)
     // Content generation
     selectedAngle: v.optional(v.string()),
     xPosts: v.optional(v.array(v.string())),

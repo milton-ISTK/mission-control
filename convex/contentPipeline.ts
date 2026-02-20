@@ -171,14 +171,16 @@ export const approveResearch = mutation({
   },
 });
 
-/** Reject research */
+/** Reject research with optional error message */
 export const rejectResearch = mutation({
   args: {
     id: v.id("contentResearch"),
+    errorMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {
       status: "rejected",
+      errorMessage: args.errorMessage,
       updatedAt: new Date().toISOString(),
     });
   },

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Key, Save, AlertCircle, ExternalLink, CheckCircle, AlertTriangle } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { PROVIDERS, type LLMProvider } from "@/lib/llm-models";
 
 type ProviderApiKeys = Record<LLMProvider, string>;
@@ -15,60 +17,33 @@ const emptyKeys: ProviderApiKeys = {
   grok: "",
 };
 
-const DAEMON_URL = "http://192.168.0.63:3141";
-
 export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState<ProviderApiKeys>({ ...emptyKeys });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [daemonStatus, setDaemonStatus] = useState<"online" | "offline" | "unknown">("unknown");
 
-  // Check daemon status on mount
+  // Read daemon status from Convex (real-time)
+  const daemonStatusData = useQuery(api.systemStatus.getDaemonStatus);
+  const daemonStatus = daemonStatusData?.status ?? "unknown";
+
+  // Load API keys on mount
   useEffect(() => {
-    const checkDaemon = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        const response = await fetch(`${DAEMON_URL}/api/health`, {
-          method: "GET",
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          setDaemonStatus("online");
-        } else {
-          setDaemonStatus("offline");
-        }
-      } catch (e) {
-        setDaemonStatus("offline");
-      }
-    };
-
-    checkDaemon();
     setLoading(false);
   }, []);
 
-  // Save to daemon
+  // Save to daemon via Convex queue
   const handleSave = async () => {
     setError("");
     setSaved(false);
 
-    if (daemonStatus === "offline") {
-      setError("⚠ Daemon is offline. Make sure the Mission Control daemon is running on Milton's Mac Mini.");
-      return;
-    }
-
     try {
       let savedCount = 0;
 
-      // POST each provider's key to daemon
+      // Queue each provider's key via Convex HTTP endpoint
       for (const [provider, key] of Object.entries(apiKeys)) {
         if (key.trim()) {
-          const response = await fetch(`${DAEMON_URL}/api/keys`, {
+          const response = await fetch("/api/queue/api-key-update", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -78,7 +53,7 @@ export default function SettingsPage() {
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to save ${provider} key: ${response.statusText}`);
+            throw new Error(`Failed to queue ${provider} key: ${response.statusText}`);
           }
 
           savedCount++;
@@ -263,8 +238,7 @@ export default function SettingsPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={handleSave}
-          disabled={daemonStatus === "offline"}
-          className="glass-button-accent flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="glass-button-accent flex items-center gap-2 text-sm"
         >
           <Save className="w-4 h-4" />
           Save to Daemon

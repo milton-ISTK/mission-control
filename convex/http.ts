@@ -398,6 +398,101 @@ http.route({
   }),
 });
 
+// ---- POST /api/sync/daemon-status ----
+http.route({
+  path: "/api/sync/daemon-status",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      const { status, details } = body as { status: string; details?: string };
+
+      await ctx.runMutation(api.systemStatus.upsertStatus, {
+        key: "daemon_health",
+        status,
+        details,
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/sync/daemon-status ----
+http.route({
+  path: "/api/sync/daemon-status",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      const { status, details } = body as { status: string; details?: string };
+
+      await ctx.runMutation(api.systemStatus.upsertStatus, {
+        key: "daemon_health",
+        status,
+        details,
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/queue/api-key-update ----
+// Frontend queues API key updates for the sync script to apply
+http.route({
+  path: "/api/queue/api-key-update",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const { provider, key } = body as { provider: string; key: string };
+
+      // Store pending key update in systemStatus for sync script to pick up
+      await ctx.runMutation(api.systemStatus.upsertStatus, {
+        key: `pending_api_key_${provider}`,
+        status: "pending",
+        details: JSON.stringify({ key, queuedAt: new Date().toISOString() }),
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true, queued: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ---- GET /api/health ----
 http.route({
   path: "/api/health",

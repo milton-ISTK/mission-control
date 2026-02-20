@@ -82,6 +82,14 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_name", ["name"]),
 
+  // ---- System Status (daemon health, sync status, etc.) ----
+  systemStatus: defineTable({
+    key: v.string(),                    // e.g. "daemon_health"
+    status: v.string(),                 // "online" | "offline"
+    details: v.optional(v.string()),    // JSON string with extra info
+    updatedAt: v.string(),
+  }).index("by_key", ["key"]),
+
   // ---- Content Pipeline: Research & Content Generation ----
   contentResearch: defineTable({
     topic: v.string(),

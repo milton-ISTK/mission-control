@@ -91,6 +91,7 @@ export default defineSchema({
       v.literal("ready"),
       v.literal("approved"),
       v.literal("rejected"),
+      v.literal("cancelled"),
       v.literal("generating"),
       v.literal("complete")
     ),

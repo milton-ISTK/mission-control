@@ -213,6 +213,22 @@ export const clearApiKey = mutation({
   },
 });
 
+/** Update live progress during research */
+export const updateProgress = mutation({
+  args: {
+    id: v.id("contentResearch"),
+    currentAction: v.optional(v.string()),
+    currentThought: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      currentAction: args.currentAction,
+      currentThought: args.currentThought,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
 /** Cancel a research item (stops active research, marks as cancelled) */
 export const cancelResearch = mutation({
   args: { id: v.id("contentResearch") },

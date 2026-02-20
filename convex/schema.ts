@@ -109,6 +109,9 @@ export default defineSchema({
     fullReport: v.optional(v.string()),           // Full markdown report
     // Error handling
     errorMessage: v.optional(v.string()),        // Reason for rejection (API error, timeout, etc.)
+    // Live progress (while researching)
+    currentAction: v.optional(v.string()),       // What it's doing (e.g. "Scraping CoinDesk...")
+    currentThought: v.optional(v.string()),      // What it's thinking (e.g. "Noticing regulatory narrative...")
     // Content generation
     selectedAngle: v.optional(v.string()),
     xPosts: v.optional(v.array(v.string())),

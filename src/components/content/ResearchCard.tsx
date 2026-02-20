@@ -29,6 +29,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import Badge from "@/components/common/Badge";
+import TypewriterEffect from "@/components/content/TypewriterEffect";
 import { cn, formatRelative } from "@/lib/utils";
 
 type Research = Doc<"contentResearch">;
@@ -229,6 +230,31 @@ export default function ResearchCard({ research }: { research: Research }) {
                     : "Waiting for the research daemon to pick up this request…"}
                 </span>
               </div>
+
+              {/* Live Progress Panel (when researching) */}
+              {research.status === "researching" && (research.currentAction || research.currentThought) && (
+                <div
+                  className="px-4 py-3 rounded-xl font-mono text-xs"
+                  style={{
+                    background: "rgba(10,10,14,0.80)",
+                    border: "1px solid rgba(255,107,0,0.15)",
+                  }}
+                >
+                  {research.currentAction && (
+                    <div className="text-istk-accent mb-2">
+                      <span className="text-istk-textDim">[DOING]</span>{" "}
+                      <TypewriterEffect text={research.currentAction} speed={20} />
+                    </div>
+                  )}
+                  {research.currentThought && (
+                    <div className="text-istk-textMuted">
+                      <span className="text-istk-textDim">[THINKING]</span>{" "}
+                      <TypewriterEffect text={research.currentThought} speed={20} />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();

@@ -168,16 +168,26 @@ export const createWorkflow = mutation({
       linkedin_post: "💼 LinkedIn Post",
     }[args.contentType] || args.contentType;
 
-    const taskId = await ctx.db.insert("tasks", {
+    // Create task
+    const taskPayload = {
       title: `${contentTypeLabel}: ${args.selectedAngle}`,
       description: args.briefing,
-      status: "in_progress",
-      priority: "medium",
-      assignee: "Milton", // Milton orchestrates the workflow
+      status: "in_progress" as const,
+      priority: "medium" as const,
+      assignee: "Milton" as const,
       createdAt: now,
       updatedAt: now,
-      order: 0, // Placeholder — UI will handle ordering
-    });
+      order: 0,
+    };
+    
+    let taskId: any;
+    try {
+      taskId = await ctx.db.insert("tasks", taskPayload);
+      console.log("✅ Task created:", taskId);
+    } catch (taskErr) {
+      console.error("❌ Task creation failed:", taskErr);
+      throw new Error(`Failed to create task: ${taskErr}`);
+    }
 
     // Create the workflow record linked to the task
     const workflowId = await ctx.db.insert("workflows", {

@@ -28,11 +28,21 @@ export default function SettingsPage() {
   useEffect(() => {
     const checkDaemon = async () => {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
         const response = await fetch(`${DAEMON_URL}/api/health`, {
           method: "GET",
-          mode: "no-cors",
+          signal: controller.signal,
         });
-        setDaemonStatus("online");
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          setDaemonStatus("online");
+        } else {
+          setDaemonStatus("offline");
+        }
       } catch (e) {
         setDaemonStatus("offline");
       }

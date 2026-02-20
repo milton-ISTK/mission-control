@@ -1,7 +1,7 @@
 /**
  * ISTK Mission Control - Convex HTTP API
- * Exposes HTTP endpoints for the Mac mini sync script.
- * Auth via Bearer token (CONVEX_ADMIN_KEY or a shared secret).
+ * Exposes HTTP endpoints for the Mac mini sync script and research daemon.
+ * Auth via Bearer token (CONVEX_ADMIN_KEY).
  */
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
@@ -13,14 +13,10 @@ const http = httpRouter();
 function checkAuth(request: Request): boolean {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return false;
-  // In production, validate against a stored secret.
-  // For now, any non-empty bearer token is accepted since
-  // the Convex deployment URL itself acts as a secret.
   return authHeader.length > 8;
 }
 
 // ---- POST /api/sync/tasks ----
-// Upserts tasks from Mac mini
 http.route({
   path: "/api/sync/tasks",
   method: "POST",
@@ -68,7 +64,6 @@ http.route({
 });
 
 // ---- GET /api/sync/tasks ----
-// Pulls all tasks for Mac mini
 http.route({
   path: "/api/sync/tasks",
   method: "GET",
@@ -93,7 +88,6 @@ http.route({
 });
 
 // ---- POST /api/sync/memories ----
-// Upserts memories from Mac mini files
 http.route({
   path: "/api/sync/memories",
   method: "POST",
@@ -140,7 +134,6 @@ http.route({
 });
 
 // ---- POST /api/sync/events ----
-// Upserts cron events from OpenClaw
 http.route({
   path: "/api/sync/events",
   method: "POST",
@@ -187,7 +180,6 @@ http.route({
 });
 
 // ---- POST /api/sync/agents ----
-// Updates agent status from Mac mini
 http.route({
   path: "/api/sync/agents",
   method: "POST",
@@ -233,9 +225,7 @@ http.route({
   }),
 });
 
-// ---- Content Pipeline Endpoints ----
-
-// GET /api/content/pending — Fetch pending research requests (daemon polls this)
+// ---- Content Pipeline: GET /api/content/pending ----
 http.route({
   path: "/api/content/pending",
   method: "GET",
@@ -260,7 +250,7 @@ http.route({
   }),
 });
 
-// POST /api/content/status — Update research status (daemon marks as researching)
+// ---- Content Pipeline: POST /api/content/status ----
 http.route({
   path: "/api/content/status",
   method: "POST",
@@ -288,7 +278,7 @@ http.route({
   }),
 });
 
-// POST /api/content/results — Submit research results (subagent calls this)
+// ---- Content Pipeline: POST /api/content/results ----
 http.route({
   path: "/api/content/results",
   method: "POST",
@@ -322,7 +312,64 @@ http.route({
   }),
 });
 
-// POST /api/content/clear-key — Clear API key after processing (daemon calls this)
+// ---- Content Pipeline: POST /api/content/progress ----
+http.route({
+  path: "/api/content/progress",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.updateProgress, {
+        id: body.id,
+        thinkingLine1: body.thinkingLine1,
+        thinkingLine2: body.thinkingLine2,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- Content Pipeline: POST /api/content/reject ----
+http.route({
+  path: "/api/content/reject",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.rejectResearch, {
+        id: body.id,
+        errorMessage: body.errorMessage,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- Content Pipeline: POST /api/content/clear-key ----
 http.route({
   path: "/api/content/clear-key",
   method: "POST",
@@ -349,7 +396,7 @@ http.route({
   }),
 });
 
-// POST /api/content/generated — Submit generated content (subagent calls this)
+// ---- Content Pipeline: POST /api/content/generated ----
 http.route({
   path: "/api/content/generated",
   method: "POST",
@@ -378,124 +425,7 @@ http.route({
   }),
 });
 
-// POST /api/content/progress — Update live thinking feed (daemon updates this while researching)
-http.route({
-  path: "/api/content/progress",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    if (!checkAuth(request)) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    try {
-      const body = await request.json();
-      await ctx.runMutation(api.contentPipeline.updateProgress, {
-        id: body.id,
-        currentAction: body.currentAction,
-        currentThought: body.currentThought,
-        thinkingLine1: body.thinkingLine1,
-        thinkingLine2: body.thinkingLine2,
-      });
-      return new Response(
-        JSON.stringify({ ok: true }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return new Response(
-        JSON.stringify({ ok: false, error: message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }),
-});
-
-// POST /api/content/reject — Reject research with error message (daemon calls on failure)
-http.route({
-  path: "/api/content/reject",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    if (!checkAuth(request)) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    try {
-      const body = await request.json();
-      await ctx.runMutation(api.contentPipeline.rejectResearch, {
-        id: body.id,
-        errorMessage: body.errorMessage,
-      });
-      return new Response(
-        JSON.stringify({ ok: true }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return new Response(
-        JSON.stringify({ ok: false, error: message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }),
-});
-
-// POST /api/content/progress — Live thinking feed updates (daemon sends these during research)
-http.route({
-  path: "/api/content/progress",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    if (!checkAuth(request)) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    try {
-      const body = await request.json();
-      await ctx.runMutation(api.contentPipeline.updateProgress, {
-        id: body.id,
-        thinkingLine1: body.thinkingLine1,
-        thinkingLine2: body.thinkingLine2,
-      });
-      return new Response(
-        JSON.stringify({ ok: true }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return new Response(
-        JSON.stringify({ ok: false, error: message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }),
-});
-
-// POST /api/content/reject — Reject research with error message (daemon calls on failure)
-http.route({
-  path: "/api/content/reject",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    if (!checkAuth(request)) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    try {
-      const body = await request.json();
-      await ctx.runMutation(api.contentPipeline.rejectResearch, {
-        id: body.id,
-        errorMessage: body.errorMessage,
-      });
-      return new Response(
-        JSON.stringify({ ok: true }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return new Response(
-        JSON.stringify({ ok: false, error: message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }),
-});
-
 // ---- GET /api/health ----
-// Simple health check
 http.route({
   path: "/api/health",
   method: "GET",

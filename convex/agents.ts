@@ -137,6 +137,11 @@ export const updateAgent = mutation({
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
+    // Always update timestamp
+    filtered.updatedAt = new Date().toISOString();
+    if (updates.status) {
+      filtered.lastActive = new Date().toISOString();
+    }
     await ctx.db.patch(id, filtered);
   },
 });

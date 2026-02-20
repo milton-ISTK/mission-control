@@ -75,6 +75,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   // Sync edit form when agent prop changes
   useEffect(() => {
@@ -111,6 +112,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
 
   const handleSaveEdit = async () => {
     setIsSaving(true);
+    setSaveError("");
     try {
       await updateAgent({
         id: agent._id,
@@ -123,7 +125,9 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
       });
       setIsEditing(false);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save agent";
       console.error("Failed to update agent:", err);
+      setSaveError(message);
     } finally {
       setIsSaving(false);
     }
@@ -377,6 +381,12 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         size="lg"
       >
         <div className="flex flex-col gap-4">
+          {/* Error message */}
+          {saveError && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">{saveError}</p>
+            </div>
+          )}
           {/* Name */}
           <Input
             label="Name"

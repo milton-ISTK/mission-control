@@ -20,6 +20,14 @@ export function useUpsertAgent() {
   return useMutation(api.agents.upsertAgent);
 }
 
+export function useCreateAgent() {
+  return useMutation(api.agents.createAgent);
+}
+
+export function useUpdateAgent() {
+  return useMutation(api.agents.updateAgent);
+}
+
 export function useUpdateAgentStatus() {
   return useMutation(api.agents.updateAgentStatus);
 }

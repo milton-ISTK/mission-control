@@ -9,6 +9,8 @@ interface Agent {
   _id: Id<"agents">;
   name: string;
   role: string;
+  description?: string;
+  notes?: string;
   model?: string;
   avatar?: string;
   status: "active" | "idle" | "offline";
@@ -34,7 +36,6 @@ const statusConfig = {
 // Map avatar strings to emoji or fallback
 function getAvatarDisplay(avatar?: string, name?: string) {
   if (avatar) return avatar;
-  // Default avatars by name
   if (name === "Milton") return "🤖";
   return "🔮";
 }
@@ -42,37 +43,59 @@ function getAvatarDisplay(avatar?: string, name?: string) {
 export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps) {
   const status = statusConfig[agent.status];
   const avatarEmoji = getAvatarDisplay(agent.avatar, agent.name);
+  const isAgent = !agent.isSubagent;
+
+  // Colour-coded borders: agents = amber/orange, subagents = cyan/blue
+  const borderColor = isAgent
+    ? "border-amber-500/25"
+    : "border-cyan-500/25";
+  const selectedBorder = isAgent
+    ? "neon-border-orange"
+    : "border-cyan-400/50 shadow-[0_0_15px_rgba(0,200,255,0.15)]";
+  const avatarStyle = isAgent
+    ? {
+        background: "rgba(255,107,0,0.04)",
+        border: "1px solid rgba(255,107,0,0.15)",
+        boxShadow: isSelected ? "0 0 12px rgba(255,107,0,0.12)" : undefined,
+      }
+    : {
+        background: "rgba(0,200,255,0.04)",
+        border: "1px solid rgba(0,200,255,0.15)",
+        boxShadow: isSelected ? "0 0 12px rgba(0,200,255,0.12)" : undefined,
+      };
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "glass-card p-5 text-left w-full group transition-all",
-        isSelected && "neon-border-orange"
+        "glass-card p-5 text-left w-full group transition-all border",
+        borderColor,
+        isSelected && selectedBorder
       )}
     >
       {/* Top Row */}
       <div className="flex items-start gap-3 mb-3">
-        {/* Avatar — Neon glow border */}
+        {/* Avatar */}
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-          style={{
-            background: "rgba(255,107,0,0.04)",
-            border: "1px solid rgba(255,107,0,0.10)",
-            boxShadow: isSelected ? "0 0 12px rgba(255,107,0,0.12)" : undefined,
-          }}
+          style={avatarStyle}
         >
           {avatarEmoji}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h4 className="text-sm font-bold text-istk-text truncate group-hover:text-istk-accent transition-colors">
               {agent.name}
             </h4>
-            {!agent.isSubagent && (
-              <Badge variant="cyan" className="text-[9px]">
-                Main
-              </Badge>
+            {/* Category Badge */}
+            {isAgent ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                Agent
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                Subagent
+              </span>
             )}
           </div>
           <p className="text-xs text-istk-textMuted truncate">{agent.role}</p>
@@ -92,6 +115,13 @@ export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps
           </div>
         )}
       </div>
+
+      {/* Description preview */}
+      {agent.description && (
+        <p className="text-[10px] text-istk-textMuted mt-2 line-clamp-2">
+          {agent.description}
+        </p>
+      )}
 
       {/* Last Active */}
       {agent.lastActive && (

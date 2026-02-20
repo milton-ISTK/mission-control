@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Bot,
   Cpu,
@@ -19,6 +19,15 @@ import { PageLoader } from "@/components/common/LoadingSpinner";
 import EmptyState from "@/components/common/EmptyState";
 import { cn, formatDate } from "@/lib/utils";
 import { Id } from "../../../convex/_generated/dataModel";
+import {
+  LLM_MODELS,
+  getModelGroups,
+} from "@/lib/llm-models";
+import type { SortOption } from "@/app/team/page";
+
+interface SubagentListProps {
+  sortOption: SortOption;
+}
 
 interface Subagent {
   _id: Id<"subagents">;
@@ -33,17 +42,6 @@ interface Subagent {
   updatedAt: string;
 }
 
-const LLM_OPTIONS = [
-  { value: "claude-opus-4", label: "Claude Opus 4" },
-  { value: "claude-haiku-4", label: "Claude Haiku 4" },
-  { value: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
-  { value: "gpt-4o", label: "GPT-4o" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-  { value: "llama-3.1-70b", label: "Meta Llama 3.1 70B" },
-  { value: "minimax-01", label: "Minimax 01" },
-  { value: "custom", label: "Custom Model" },
-];
-
 const ROLE_OPTIONS = [
   { value: "writer", label: "Writer" },
   { value: "designer", label: "Designer" },
@@ -54,7 +52,7 @@ const ROLE_OPTIONS = [
   { value: "custom", label: "Custom" },
 ];
 
-export default function SubagentList() {
+export default function SubagentList({ sortOption }: SubagentListProps) {
   const subagents = useSubagents();
   const toggleSubagent = useToggleSubagent();
   const deleteSubagent = useDeleteSubagent();
@@ -127,8 +125,31 @@ export default function SubagentList() {
     );
   }
 
-  const agents = subagents as Subagent[];
-  const activeCount = agents.filter((a) => a.isActive).length;
+  const rawAgents = subagents as Subagent[];
+  const activeCount = rawAgents.filter((a) => a.isActive).length;
+
+  // Apply sorting
+  const agents = useMemo(() => {
+    const list = [...rawAgents];
+    switch (sortOption) {
+      case "name-asc":
+        return list.sort((a, b) => a.name.localeCompare(b.name));
+      case "name-desc":
+        return list.sort((a, b) => b.name.localeCompare(a.name));
+      case "status-active":
+        return list.sort((a, b) => {
+          if (a.isActive && !b.isActive) return -1;
+          if (!a.isActive && b.isActive) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      case "date-newest":
+        return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      case "date-oldest":
+        return list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      default:
+        return list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }, [rawAgents, sortOption]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -246,12 +267,26 @@ export default function SubagentList() {
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
           />
-          <Select
-            label="Model"
-            options={LLM_OPTIONS}
-            value={editForm.llm}
-            onChange={(e: any) => setEditForm({ ...editForm, llm: e.target.value })}
-          />
+          <div>
+            <label className="block text-sm font-medium text-istk-text mb-1.5">
+              Model
+            </label>
+            <select
+              value={editForm.llm}
+              onChange={(e) => setEditForm({ ...editForm, llm: e.target.value })}
+              className="glass-input text-sm appearance-none cursor-pointer w-full pr-8"
+            >
+              {getModelGroups().map((group) => (
+                <optgroup key={group} label={group}>
+                  {LLM_MODELS.filter((m) => m.group === group).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
           <Select
             label="Role"
             options={ROLE_OPTIONS}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Cpu,
@@ -11,21 +11,31 @@ import {
   Bot,
   Activity,
   Shield,
+  Users,
+  FileText,
+  StickyNote,
 } from "lucide-react";
 import { useTasksByAssignee } from "@/hooks/useTasks";
 import { useSubagents, useDeleteSubagent } from "@/hooks/useAgents";
-import { useUpdateAgentStatus, useDeleteAgent, useUpsertAgent } from "@/hooks/useAgents";
+import { useUpdateAgentStatus, useDeleteAgent, useUpdateAgent } from "@/hooks/useAgents";
 import Button from "@/components/common/Button";
 import Badge, { StatusBadge } from "@/components/common/Badge";
 import Modal from "@/components/common/Modal";
-import { Input, Select } from "@/components/common/Input";
+import { Input, Select, Textarea } from "@/components/common/Input";
 import { cn, formatRelative, formatDate } from "@/lib/utils";
 import { Id } from "../../../convex/_generated/dataModel";
+import {
+  LLM_MODELS,
+  getModelGroups,
+  findModel,
+} from "@/lib/llm-models";
 
 interface Agent {
   _id: Id<"agents">;
   name: string;
   role: string;
+  description?: string;
+  notes?: string;
   model?: string;
   avatar?: string;
   status: "active" | "idle" | "offline";
@@ -58,22 +68,38 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   const [editForm, setEditForm] = useState({
     name: agent.name,
     role: agent.role,
+    description: agent.description || "",
+    notes: agent.notes || "",
     model: agent.model || "",
     status: agent.status,
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch tasks assigned to this agent (Gregory or Milton)
+  // Sync edit form when agent prop changes
+  useEffect(() => {
+    setEditForm({
+      name: agent.name,
+      role: agent.role,
+      description: agent.description || "",
+      notes: agent.notes || "",
+      model: agent.model || "",
+      status: agent.status,
+    });
+  }, [agent._id, agent.name, agent.role, agent.description, agent.notes, agent.model, agent.status]);
+
+  // Fetch tasks assigned to this agent
   const assignedTasks = useTasksByAssignee(agent.name as "Gregory" | "Milton");
 
   // Fetch subagents to show linked subagents
   const subagents = useSubagents();
 
   const updateStatus = useUpdateAgentStatus();
-  const upsertAgent = useUpsertAgent();
+  const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
 
   const status = statusConfig[agent.status];
+  const isAgentCategory = !agent.isSubagent;
 
   const handleStatusChange = async (newStatus: "active" | "idle" | "offline") => {
     try {
@@ -84,17 +110,22 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   };
 
   const handleSaveEdit = async () => {
+    setIsSaving(true);
     try {
-      await upsertAgent({
-        name: editForm.name,
-        role: editForm.role,
+      await updateAgent({
+        id: agent._id,
+        name: editForm.name.trim() || undefined,
+        role: editForm.role.trim() || undefined,
+        description: editForm.description.trim() || undefined,
+        notes: editForm.notes.trim() || undefined,
         model: editForm.model || undefined,
         status: editForm.status as "active" | "idle" | "offline",
-        isSubagent: agent.isSubagent,
       });
       setIsEditing(false);
     } catch (err) {
       console.error("Failed to update agent:", err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -116,12 +147,23 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
     (s) => s.name.toLowerCase().includes(agent.name.toLowerCase())
   ) || [];
 
+  // Get model display name
+  const modelInfo = agent.model ? findModel(agent.model) : null;
+  const modelDisplay = modelInfo?.displayName || agent.model;
+
   return (
     <div className="w-96 shrink-0 neu-panel flex flex-col gap-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-istk-surfaceLight flex items-center justify-center text-3xl shadow-neu-sm">
+          <div
+            className={cn(
+              "w-14 h-14 rounded-xl flex items-center justify-center text-3xl shadow-neu-sm",
+              isAgentCategory
+                ? "bg-amber-500/5 border border-amber-500/20"
+                : "bg-cyan-500/5 border border-cyan-500/20"
+            )}
+          >
             {agent.avatar || (agent.name === "Milton" ? "🤖" : "🔮")}
           </div>
           <div>
@@ -137,25 +179,51 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         </button>
       </div>
 
-      {/* Status & Model */}
+      {/* Status & Model & Category Badge */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg", status.bg)}>
           <Activity className={cn("w-4 h-4", status.color)} />
           <span className={cn("text-sm font-medium", status.color)}>{status.label}</span>
         </div>
-        {agent.model && (
+        {modelDisplay && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-istk-surfaceLight">
             <Cpu className="w-4 h-4 text-istk-textDim" />
-            <span className="text-sm text-istk-textMuted">{agent.model}</span>
+            <span className="text-sm text-istk-textMuted">{modelDisplay}</span>
           </div>
         )}
-        {!agent.isSubagent && (
-          <Badge variant="info">Main Agent</Badge>
-        )}
-        {agent.isSubagent && (
-          <Badge variant="purple">Subagent</Badge>
+        {/* Category badge */}
+        {isAgentCategory ? (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25">
+            <Users className="w-3 h-3" />
+            Agent
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+            <Bot className="w-3 h-3" />
+            Subagent
+          </span>
         )}
       </div>
+
+      {/* Description */}
+      {agent.description && (
+        <div>
+          <p className="text-xs font-medium text-istk-textDim uppercase tracking-wider mb-1 flex items-center gap-1">
+            <FileText className="w-3 h-3" /> Description
+          </p>
+          <p className="text-sm text-istk-textMuted">{agent.description}</p>
+        </div>
+      )}
+
+      {/* Notes */}
+      {agent.notes && (
+        <div>
+          <p className="text-xs font-medium text-istk-textDim uppercase tracking-wider mb-1 flex items-center gap-1">
+            <StickyNote className="w-3 h-3" /> Notes
+          </p>
+          <p className="text-sm text-istk-textMuted whitespace-pre-wrap">{agent.notes}</p>
+        </div>
+      )}
 
       {/* Quick Status Switcher */}
       <div>
@@ -301,41 +369,83 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         </Button>
       </div>
 
-      {/* Edit Modal */}
+      {/* ── Edit Modal ── */}
       <Modal
         isOpen={isEditing}
         onClose={() => setIsEditing(false)}
         title="Edit Agent"
-        size="sm"
+        size="lg"
       >
         <div className="flex flex-col gap-4">
+          {/* Name */}
           <Input
             label="Name"
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
           />
+
+          {/* Role / Title */}
           <Input
-            label="Role"
+            label="Role / Title"
             value={editForm.role}
             onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+            placeholder="e.g., Lead AI Agent, Content Writer"
           />
-          <Input
-            label="Model"
-            value={editForm.model}
-            onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
-            placeholder="e.g., claude-opus-4"
+
+          {/* Description */}
+          <Textarea
+            label="Description"
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            placeholder="Brief description of what this agent does..."
+            className="min-h-[80px]"
           />
+
+          {/* Notes */}
+          <Textarea
+            label="Notes"
+            value={editForm.notes}
+            onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+            placeholder="Internal notes, instructions, or context..."
+            className="min-h-[80px]"
+          />
+
+          {/* Model Dropdown (from llm-models.ts) */}
+          <div>
+            <label className="block text-sm font-medium text-istk-text mb-1.5">
+              Model
+            </label>
+            <select
+              value={editForm.model}
+              onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+              className="glass-input text-sm appearance-none cursor-pointer w-full pr-8"
+            >
+              <option value="">No model assigned</option>
+              {getModelGroups().map((group) => (
+                <optgroup key={group} label={group}>
+                  {LLM_MODELS.filter((m) => m.group === group).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
+          {/* Status */}
           <Select
             label="Status"
             options={STATUS_OPTIONS}
             value={editForm.status}
             onChange={(e: any) => setEditForm({ ...editForm, status: e.target.value })}
           />
+
           <div className="flex gap-3 justify-end mt-2">
             <Button variant="ghost" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
-            <Button variant="accent" onClick={handleSaveEdit}>
+            <Button variant="accent" onClick={handleSaveEdit} isLoading={isSaving}>
               Save Changes
             </Button>
           </div>

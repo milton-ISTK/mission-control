@@ -92,6 +92,55 @@ export const updateAgentStatus = mutation({
   },
 });
 
+/** Create a new agent */
+export const createAgent = mutation({
+  args: {
+    name: v.string(),
+    role: v.string(),
+    description: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    model: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    status: v.union(v.literal("active"), v.literal("idle"), v.literal("offline")),
+    isSubagent: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("agents", {
+      name: args.name,
+      role: args.role,
+      description: args.description,
+      notes: args.notes,
+      model: args.model,
+      avatar: args.avatar,
+      status: args.status,
+      lastActive: now,
+      isSubagent: args.isSubagent,
+      createdAt: now,
+    });
+  },
+});
+
+/** Update an existing agent by ID */
+export const updateAgent = mutation({
+  args: {
+    id: v.id("agents"),
+    name: v.optional(v.string()),
+    role: v.optional(v.string()),
+    description: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    model: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("active"), v.literal("idle"), v.literal("offline"))),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    const filtered = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+    await ctx.db.patch(id, filtered);
+  },
+});
+
 /** Delete an agent */
 export const deleteAgent = mutation({
   args: { id: v.id("agents") },

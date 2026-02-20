@@ -73,7 +73,7 @@ export default function SubagentsPage() {
       </div>
 
       {/* Subagent List */}
-      <SubagentList />
+      <SubagentList sortOption="name-asc" />
 
       {/* Create Modal */}
       <CreateSubagentModal

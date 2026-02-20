@@ -70,6 +70,8 @@ export default defineSchema({
   agents: defineTable({
     name: v.string(),
     role: v.string(),
+    description: v.optional(v.string()),
+    notes: v.optional(v.string()),
     model: v.optional(v.string()),
     avatar: v.optional(v.string()),  // Emoji or icon identifier
     status: v.union(v.literal("active"), v.literal("idle"), v.literal("offline")),

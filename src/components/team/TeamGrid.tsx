@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAgents } from "@/hooks/useAgents";
 import AgentCard from "./AgentCard";
 import AgentDetails from "./AgentDetails";
@@ -8,11 +8,14 @@ import { PageLoader } from "@/components/common/LoadingSpinner";
 import EmptyState from "@/components/common/EmptyState";
 import { Users } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
+import type { SortOption } from "@/app/team/page";
 
 interface Agent {
   _id: Id<"agents">;
   name: string;
   role: string;
+  description?: string;
+  notes?: string;
   model?: string;
   avatar?: string;
   status: "active" | "idle" | "offline";
@@ -23,9 +26,57 @@ interface Agent {
   createdAt: string;
 }
 
-export default function TeamGrid() {
+interface TeamGridProps {
+  sortOption: SortOption;
+}
+
+const STATUS_ORDER: Record<string, number> = { active: 0, idle: 1, offline: 2 };
+
+export default function TeamGrid({ sortOption }: TeamGridProps) {
   const agents = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+
+  const sorted = useMemo(() => {
+    if (!agents) return [];
+    const list = [...agents] as Agent[];
+
+    switch (sortOption) {
+      case "name-asc":
+        return list.sort((a, b) => a.name.localeCompare(b.name));
+      case "name-desc":
+        return list.sort((a, b) => b.name.localeCompare(a.name));
+      case "category-agents":
+        return list.sort((a, b) => {
+          if (!a.isSubagent && b.isSubagent) return -1;
+          if (a.isSubagent && !b.isSubagent) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      case "category-subagents":
+        return list.sort((a, b) => {
+          if (a.isSubagent && !b.isSubagent) return -1;
+          if (!a.isSubagent && b.isSubagent) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      case "status-active":
+        return list.sort((a, b) => {
+          const diff = (STATUS_ORDER[a.status] ?? 2) - (STATUS_ORDER[b.status] ?? 2);
+          if (diff !== 0) return diff;
+          return a.name.localeCompare(b.name);
+        });
+      case "date-newest":
+        return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      case "date-oldest":
+        return list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      default:
+        return list;
+    }
+  }, [agents, sortOption]);
+
+  // Keep selected agent synced with latest data
+  const currentSelected = useMemo(() => {
+    if (!selectedAgent || !agents) return null;
+    return (agents as Agent[]).find((a) => a._id === selectedAgent._id) ?? null;
+  }, [agents, selectedAgent]);
 
   if (agents === undefined) {
     return <PageLoader label="Loading team..." />;
@@ -41,18 +92,6 @@ export default function TeamGrid() {
     );
   }
 
-  // Sort: main agent first, then by status, then alphabetical
-  const sorted = [...agents].sort((a, b) => {
-    // Main agent first
-    if (!a.isSubagent && b.isSubagent) return -1;
-    if (a.isSubagent && !b.isSubagent) return 1;
-    // Active before idle before offline
-    const statusOrder = { active: 0, idle: 1, offline: 2 };
-    const statusDiff = statusOrder[a.status] - statusOrder[b.status];
-    if (statusDiff !== 0) return statusDiff;
-    return a.name.localeCompare(b.name);
-  }) as Agent[];
-
   return (
     <div className="flex gap-6">
       {/* Grid */}
@@ -62,10 +101,10 @@ export default function TeamGrid() {
             <AgentCard
               key={agent._id}
               agent={agent}
-              isSelected={selectedAgent?._id === agent._id}
+              isSelected={currentSelected?._id === agent._id}
               onClick={() =>
                 setSelectedAgent(
-                  selectedAgent?._id === agent._id ? null : agent
+                  currentSelected?._id === agent._id ? null : agent
                 )
               }
             />
@@ -74,9 +113,9 @@ export default function TeamGrid() {
       </div>
 
       {/* Details Panel */}
-      {selectedAgent && (
+      {currentSelected && (
         <AgentDetails
-          agent={selectedAgent}
+          agent={currentSelected}
           onClose={() => setSelectedAgent(null)}
         />
       )}

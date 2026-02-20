@@ -88,6 +88,7 @@ export default function ResearchCard({ research }: { research: Research }) {
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [showContent, setShowContent] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const approveResearch = useMutation(api.contentPipeline.approveResearch);
   const rejectResearch = useMutation(api.contentPipeline.rejectResearch);
@@ -109,31 +110,84 @@ export default function ResearchCard({ research }: { research: Research }) {
   };
 
   const handleApprove = async () => {
-    if (!selectedAngle && research.angles && research.angles.length > 0) {
-      setSelectedAngle(research.angles[0]);
+    setActionLoading("approve");
+    try {
+      if (!selectedAngle && research.angles && research.angles.length > 0) {
+        setSelectedAngle(research.angles[0]);
+      }
+      const angle = selectedAngle || research.angles?.[0] || research.topic;
+      await approveResearch({ id: research._id, selectedAngle: angle });
+    } catch (err) {
+      console.error("Failed to approve research:", err);
+    } finally {
+      setActionLoading(null);
     }
-    const angle = selectedAngle || research.angles?.[0] || research.topic;
-    await approveResearch({ id: research._id, selectedAngle: angle });
   };
 
   const handleReject = async () => {
-    await rejectResearch({ id: research._id });
+    setActionLoading("reject");
+    try {
+      await rejectResearch({ id: research._id });
+    } catch (err) {
+      console.error("Failed to reject research:", err);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleDecline = async () => {
-    await declineResearch({ id: research._id });
+    setActionLoading("decline");
+    try {
+      await declineResearch({ id: research._id });
+    } catch (err) {
+      console.error("Failed to decline research:", err);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleRetry = async () => {
-    await retryResearch({ id: research._id });
+    setActionLoading("retry");
+    try {
+      await retryResearch({ id: research._id });
+    } catch (err) {
+      console.error("Failed to retry research:", err);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleCancel = async () => {
-    await cancelResearch({ id: research._id });
+    setActionLoading("cancel");
+    try {
+      await cancelResearch({ id: research._id });
+    } catch (err) {
+      console.error("Failed to cancel research:", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleClear = async () => {
+    setActionLoading("clear");
+    try {
+      await deleteResearch({ id: research._id });
+    } catch (err) {
+      console.error("Failed to clear research:", err);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleDelete = async () => {
-    await deleteResearch({ id: research._id });
+    setActionLoading("delete");
+    try {
+      await deleteResearch({ id: research._id });
+    } catch (err) {
+      console.error("Failed to delete research:", err);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -452,7 +506,7 @@ export default function ResearchCard({ research }: { research: Research }) {
                   </details>
                 )}
 
-                {/* Action Buttons — only for "ready" status */}
+                {/* Action Buttons — for "ready" status */}
                 {research.status === "ready" && (
                   <div
                     className="flex items-center gap-3 pt-3 mt-2 flex-wrap"
@@ -465,9 +519,14 @@ export default function ResearchCard({ research }: { research: Research }) {
                         e.stopPropagation();
                         handleApprove();
                       }}
-                      className="glass-button-accent flex items-center gap-2 text-sm"
+                      disabled={actionLoading !== null}
+                      className="glass-button-accent flex items-center gap-2 text-sm disabled:opacity-50"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      {actionLoading === "approve" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
                       {selectedAngle ? "Use This Angle" : "Approve & Proceed"}
                     </button>
                     <button
@@ -475,9 +534,14 @@ export default function ResearchCard({ research }: { research: Research }) {
                         e.stopPropagation();
                         handleReject();
                       }}
-                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-warning"
+                      disabled={actionLoading !== null}
+                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-warning disabled:opacity-50"
                     >
-                      <RotateCcw className="w-4 h-4" />
+                      {actionLoading === "reject" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-4 h-4" />
+                      )}
                       Try Different Angle
                     </button>
                     <button
@@ -485,10 +549,30 @@ export default function ResearchCard({ research }: { research: Research }) {
                         e.stopPropagation();
                         handleDecline();
                       }}
-                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger"
+                      disabled={actionLoading !== null}
+                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger disabled:opacity-50"
                     >
-                      <Ban className="w-4 h-4" />
+                      {actionLoading === "decline" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Ban className="w-4 h-4" />
+                      )}
                       Decline
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClear();
+                      }}
+                      disabled={actionLoading !== null}
+                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger disabled:opacity-50"
+                    >
+                      {actionLoading === "clear" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      Clear
                     </button>
                   </div>
                 )}
@@ -516,6 +600,47 @@ export default function ResearchCard({ research }: { research: Research }) {
                       </div>
                     </div>
                   )}
+
+                {/* Action Buttons — for "approved" items */}
+                {research.status === "approved" && (
+                  <div
+                    className="flex items-center gap-3 pt-3 mt-2 flex-wrap"
+                    style={{
+                      borderTop: "1px solid rgba(255,107,0,0.06)",
+                    }}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDecline();
+                      }}
+                      disabled={actionLoading !== null}
+                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger disabled:opacity-50"
+                    >
+                      {actionLoading === "decline" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Ban className="w-4 h-4" />
+                      )}
+                      Decline
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClear();
+                      }}
+                      disabled={actionLoading !== null}
+                      className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-danger disabled:opacity-50"
+                    >
+                      {actionLoading === "clear" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      Clear
+                    </button>
+                  </div>
+                )}
 
                 {/* Generated Content */}
                 {(research.status === "complete" ||

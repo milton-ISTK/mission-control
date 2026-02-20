@@ -160,10 +160,30 @@ export const createWorkflow = mutation({
       throw new Error("Source research not found");
     }
 
-    // Create the workflow record
+    // Create a task record on the Task Board for this workflow
+    const contentTypeLabel = {
+      blog_post: "📝 Blog Post",
+      social_image: "🖼️ Social Image",
+      x_thread: "𝕏 Thread",
+      linkedin_post: "💼 LinkedIn Post",
+    }[args.contentType] || args.contentType;
+
+    const taskId = await ctx.db.insert("tasks", {
+      title: `${contentTypeLabel}: ${args.selectedAngle}`,
+      description: args.briefing,
+      status: "in_progress",
+      priority: "medium",
+      assignee: "Milton", // Milton orchestrates the workflow
+      createdAt: now,
+      updatedAt: now,
+      order: 0, // Placeholder — UI will handle ordering
+    });
+
+    // Create the workflow record linked to the task
     const workflowId = await ctx.db.insert("workflows", {
       templateId: template._id,
       sourceResearchId: args.sourceResearchId,
+      taskId, // Link to Task Board
       selectedAngle: args.selectedAngle,
       contentType: args.contentType,
       briefing: args.briefing,
@@ -285,6 +305,16 @@ export const advanceWorkflow = mutation({
         completedAt: now,
         updatedAt: now,
       });
+
+      // Update linked task to "done"
+      try {
+        await ctx.db.patch(workflow.taskId, {
+          status: "done",
+          updatedAt: now,
+        });
+      } catch {
+        // Task may not exist — non-fatal
+      }
 
       // Update source research status to "complete"
       try {

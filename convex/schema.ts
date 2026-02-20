@@ -212,6 +212,7 @@ export default defineSchema({
   workflows: defineTable({
     templateId: v.id("workflowTemplates"),
     sourceResearchId: v.id("contentResearch"),
+    taskId: v.id("tasks"), // Link to Task Board
     selectedAngle: v.string(),
     contentType: v.string(),
     briefing: v.optional(v.string()),

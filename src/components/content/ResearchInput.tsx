@@ -16,25 +16,9 @@ import {
   DEFAULT_MODEL,
   getModelGroups,
   findModel,
-  getProviderKeyName,
+  getStoredApiKey,
+  getProviderDisplayName,
 } from "@/lib/llm-models";
-
-/**
- * Check whether the selected provider has an API key configured in localStorage.
- * Returns the key string if found, or empty string if missing.
- */
-function getStoredApiKey(provider: string): string {
-  if (typeof window === "undefined") return "";
-  try {
-    const raw = localStorage.getItem("llm_api_keys");
-    if (!raw) return "";
-    const parsed = JSON.parse(raw);
-    const keyName = getProviderKeyName(provider);
-    return (parsed[keyName] ?? "").trim();
-  } catch {
-    return "";
-  }
-}
 
 export default function ResearchInput() {
   const [topic, setTopic] = useState("");
@@ -89,7 +73,9 @@ export default function ResearchInput() {
     }
   };
 
-  const providerDisplayName = selectedModel?.group ?? selectedModel?.provider ?? "this provider";
+  const providerDisplayName = selectedModel
+    ? getProviderDisplayName(selectedModel.provider)
+    : "this provider";
 
   return (
     <div className="glass-panel">
@@ -134,7 +120,7 @@ export default function ResearchInput() {
             {groups.map((group) => (
               <optgroup key={group} label={group}>
                 {LLM_MODELS.filter((m) => m.group === group).map((m) => (
-                  <option key={m.modelId} value={m.modelId}>
+                  <option key={m.id} value={m.id}>
                     {m.displayName}
                   </option>
                 ))}

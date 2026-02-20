@@ -1,28 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Key, Save, AlertCircle, ExternalLink } from "lucide-react";
+import { Key, Save, AlertCircle, ExternalLink } from "lucide-react";
+import { PROVIDERS, type LLMProvider } from "@/lib/llm-models";
 
-type ProviderApiKeys = {
-  anthropic: string;
-  openai: string;
-  xai: string;
-  google: string;
-  deepseek: string;
-  minimax: string;
-  together: string;
-  groq: string;
-};
+type ProviderApiKeys = Record<LLMProvider, string>;
 
 const emptyKeys: ProviderApiKeys = {
   anthropic: "",
   openai: "",
-  xai: "",
   google: "",
-  deepseek: "",
+  meta: "",
   minimax: "",
-  together: "",
-  groq: "",
+  grok: "",
 };
 
 export default function SettingsPage() {
@@ -51,74 +41,9 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const handleChange = (provider: keyof ProviderApiKeys, value: string) => {
+  const handleChange = (provider: LLMProvider, value: string) => {
     setApiKeys((prev) => ({ ...prev, [provider]: value }));
   };
-
-  const providers: {
-    name: string;
-    key: keyof ProviderApiKeys;
-    description: string;
-    docs: string;
-    placeholder: string;
-  }[] = [
-    {
-      name: "Anthropic",
-      key: "anthropic",
-      description: "Claude Opus 4, Sonnet 4, Haiku 4.5",
-      docs: "https://console.anthropic.com",
-      placeholder: "sk-ant-...",
-    },
-    {
-      name: "OpenAI",
-      key: "openai",
-      description: "GPT-4.1, GPT-4o, o3, o4 Mini",
-      docs: "https://platform.openai.com/api-keys",
-      placeholder: "sk-...",
-    },
-    {
-      name: "xAI (Grok)",
-      key: "xai",
-      description: "Grok 3, Grok 3 Mini",
-      docs: "https://console.x.ai",
-      placeholder: "xai-...",
-    },
-    {
-      name: "Google (Gemini)",
-      key: "google",
-      description: "Gemini 2.5 Pro, 2.5 Flash, 2.0 Flash",
-      docs: "https://aistudio.google.com/apikey",
-      placeholder: "AIza...",
-    },
-    {
-      name: "DeepSeek",
-      key: "deepseek",
-      description: "DeepSeek V3, DeepSeek R1",
-      docs: "https://platform.deepseek.com/api_keys",
-      placeholder: "sk-...",
-    },
-    {
-      name: "MiniMax",
-      key: "minimax",
-      description: "MiniMax M1, T1, 2.5, 2.1, 1.5 Fast",
-      docs: "https://www.minimaxi.com",
-      placeholder: "minimax-...",
-    },
-    {
-      name: "Together AI",
-      key: "together",
-      description: "Meta Llama 4 Maverick, Scout, Llama 3.3 70B",
-      docs: "https://api.together.xyz/settings/api-keys",
-      placeholder: "tok-...",
-    },
-    {
-      name: "Groq",
-      key: "groq",
-      description: "Meta Llama 3.3 70B, Llama 4 Scout & Maverick",
-      docs: "https://console.groq.com/keys",
-      placeholder: "gsk_...",
-    },
-  ];
 
   if (loading) {
     return (
@@ -154,7 +79,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {providers.map((provider) => {
+          {PROVIDERS.map((provider) => {
             const hasKey = apiKeys[provider.key]?.trim().length > 0;
             return (
               <div

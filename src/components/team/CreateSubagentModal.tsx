@@ -1,27 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bot, Shield, AlertTriangle } from "lucide-react";
 import { useCreateSubagent } from "@/hooks/useAgents";
 import Modal from "@/components/common/Modal";
 import Button from "@/components/common/Button";
 import { Input, Select, Textarea } from "@/components/common/Input";
+import {
+  LLM_MODELS,
+  DEFAULT_MODEL,
+  getModelGroups,
+  findModel,
+  getStoredApiKey,
+  getProviderDisplayName,
+} from "@/lib/llm-models";
 
 interface CreateSubagentModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const LLM_OPTIONS = [
-  { value: "claude-opus-4", label: "Claude Opus 4" },
-  { value: "claude-haiku-4", label: "Claude Haiku 4" },
-  { value: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
-  { value: "gpt-4o", label: "GPT-4o" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-  { value: "llama-3.1-70b", label: "Meta Llama 3.1 70B" },
-  { value: "minimax-01", label: "Minimax 01" },
-  { value: "custom", label: "Custom Model" },
-];
+/** Build grouped options for the Select component */
+function buildLlmOptions() {
+  const groups = getModelGroups();
+  const options: { value: string; label: string; group?: string }[] = [];
+  for (const group of groups) {
+    const models = LLM_MODELS.filter((m) => m.group === group);
+    for (const m of models) {
+      options.push({ value: m.id, label: `${m.displayName}`, group });
+    }
+  }
+  return options;
+}
+
+const LLM_OPTIONS = buildLlmOptions();
 
 const ROLE_OPTIONS = [
   { value: "writer", label: "Writer" },
@@ -35,7 +47,7 @@ const ROLE_OPTIONS = [
 
 const initialForm = {
   name: "",
-  llm: "claude-opus-4",
+  llm: DEFAULT_MODEL,
   role: "assistant",
   description: "",
   apiKey: "",
@@ -47,6 +59,34 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
   const [form, setForm] = useState(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiKeyAvailable, setApiKeyAvailable] = useState(true);
+
+  const selectedModel = findModel(form.llm);
+
+  // Check API key availability whenever model changes
+  const checkApiKey = useCallback(() => {
+    if (!selectedModel) {
+      setApiKeyAvailable(false);
+      return;
+    }
+    const key = getStoredApiKey(selectedModel.provider);
+    setApiKeyAvailable(key.length > 0);
+  }, [selectedModel]);
+
+  useEffect(() => {
+    checkApiKey();
+  }, [checkApiKey]);
+
+  // Re-check when window regains focus
+  useEffect(() => {
+    const onFocus = () => checkApiKey();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [checkApiKey]);
+
+  const providerDisplayName = selectedModel
+    ? getProviderDisplayName(selectedModel.provider)
+    : "this provider";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,9 +97,13 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
       return;
     }
 
+    if (!apiKeyAvailable) {
+      setError(`No API key configured for ${providerDisplayName}. Add it in Settings first.`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Build config JSON if system prompt is provided
       const config = form.systemPrompt.trim()
         ? JSON.stringify({ systemPrompt: form.systemPrompt.trim() })
         : undefined;
@@ -115,12 +159,28 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
 
         {/* Model + Role Row */}
         <div className="grid grid-cols-2 gap-4">
-          <Select
-            label="LLM Model"
-            options={LLM_OPTIONS}
-            value={form.llm}
-            onChange={(e: any) => setForm({ ...form, llm: e.target.value })}
-          />
+          <div>
+            <label className="block text-sm font-medium text-istk-text mb-1.5">
+              LLM Model
+            </label>
+            <div className="relative">
+              <select
+                value={form.llm}
+                onChange={(e) => setForm({ ...form, llm: e.target.value })}
+                className="glass-input text-sm appearance-none cursor-pointer w-full pr-8"
+              >
+                {getModelGroups().map((group) => (
+                  <optgroup key={group} label={group}>
+                    {LLM_MODELS.filter((m) => m.group === group).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.displayName}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          </div>
           <Select
             label="Role"
             options={ROLE_OPTIONS}
@@ -129,22 +189,33 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
           />
         </div>
 
-        {/* API Key */}
-        <div>
-          <Input
-            label="API Key (optional)"
-            type="password"
-            placeholder="sk-..."
-            value={form.apiKey}
-            onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
-          />
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <Shield className="w-3 h-3 text-istk-success" />
-            <span className="text-[10px] text-istk-textDim">
-              API keys are hashed before storage. Plaintext keys are never persisted.
+        {/* API Key Warning */}
+        {!apiKeyAvailable && (
+          <div
+            className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm animate-in fade-in slide-in-from-top-1 duration-200"
+            style={{
+              background: "rgba(239,68,68,0.06)",
+              border: "1px solid rgba(239,68,68,0.25)",
+            }}
+          >
+            <AlertTriangle
+              className="w-4 h-4 shrink-0"
+              style={{ color: "rgb(248,113,113)" }}
+            />
+            <span style={{ color: "rgb(252,165,165)" }}>
+              No API key configured for <strong>{providerDisplayName}</strong>.{" "}
+              <a
+                href="/settings"
+                className="underline underline-offset-2 font-medium transition-colors"
+                style={{ color: "rgb(248,113,113)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "rgb(252,165,165)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgb(248,113,113)")}
+              >
+                Add it in Settings →
+              </a>
             </span>
           </div>
-        </div>
+        )}
 
         {/* System Prompt */}
         <Textarea
@@ -177,7 +248,12 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
           <Button variant="ghost" type="button" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="accent" type="submit" isLoading={isSubmitting}>
+          <Button
+            variant="accent"
+            type="submit"
+            isLoading={isSubmitting}
+            disabled={!apiKeyAvailable}
+          >
             Create Subagent
           </Button>
         </div>

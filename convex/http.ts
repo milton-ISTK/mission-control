@@ -378,6 +378,122 @@ http.route({
   }),
 });
 
+// POST /api/content/progress — Update live thinking feed (daemon updates this while researching)
+http.route({
+  path: "/api/content/progress",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.updateProgress, {
+        id: body.id,
+        currentAction: body.currentAction,
+        currentThought: body.currentThought,
+        thinkingLine1: body.thinkingLine1,
+        thinkingLine2: body.thinkingLine2,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// POST /api/content/reject — Reject research with error message (daemon calls on failure)
+http.route({
+  path: "/api/content/reject",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.rejectResearch, {
+        id: body.id,
+        errorMessage: body.errorMessage,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// POST /api/content/progress — Live thinking feed updates (daemon sends these during research)
+http.route({
+  path: "/api/content/progress",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.updateProgress, {
+        id: body.id,
+        thinkingLine1: body.thinkingLine1,
+        thinkingLine2: body.thinkingLine2,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// POST /api/content/reject — Reject research with error message (daemon calls on failure)
+http.route({
+  path: "/api/content/reject",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.rejectResearch, {
+        id: body.id,
+        errorMessage: body.errorMessage,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ---- GET /api/health ----
 // Simple health check
 http.route({

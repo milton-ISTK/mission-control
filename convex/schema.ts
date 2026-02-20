@@ -109,9 +109,9 @@ export default defineSchema({
     fullReport: v.optional(v.string()),           // Full markdown report
     // Error handling
     errorMessage: v.optional(v.string()),        // Reason for rejection (API error, timeout, etc.)
-    // Live progress (while researching)
-    currentAction: v.optional(v.string()),       // What it's doing (e.g. "Scraping CoinDesk...")
-    currentThought: v.optional(v.string()),      // What it's thinking (e.g. "Noticing regulatory narrative...")
+    // Live thinking feed (while researching) — displayed with typewriter animation
+    thinkingLine1: v.optional(v.string()),       // Primary action line (e.g. "Scraping CoinDesk — found 3 articles on ETF flows...")
+    thinkingLine2: v.optional(v.string()),       // Secondary insight line (e.g. "Cross-referencing 847 tweets — sentiment 64% bullish...")
     // Content generation
     selectedAngle: v.optional(v.string()),
     xPosts: v.optional(v.array(v.string())),

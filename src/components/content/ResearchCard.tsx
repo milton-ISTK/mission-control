@@ -231,25 +231,28 @@ export default function ResearchCard({ research }: { research: Research }) {
                 </span>
               </div>
 
-              {/* Live Progress Panel (when researching) */}
-              {research.status === "researching" && (research.currentAction || research.currentThought) && (
+              {/* Live Thinking Feed (when researching) */}
+              {research.status === "researching" && (research.thinkingLine1 || research.thinkingLine2) && (
                 <div
-                  className="px-4 py-3 rounded-xl font-mono text-xs"
+                  className="px-4 py-3 rounded-xl font-mono text-xs overflow-hidden"
                   style={{
-                    background: "rgba(10,10,14,0.80)",
-                    border: "1px solid rgba(255,107,0,0.15)",
+                    background: "rgba(10,10,14,0.85)",
+                    border: "1px solid rgba(255,107,0,0.18)",
+                    boxShadow: "0 0 12px rgba(255,107,0,0.06), inset 0 1px 0 rgba(255,107,0,0.04)",
                   }}
                 >
-                  {research.currentAction && (
-                    <div className="text-istk-accent mb-2">
-                      <span className="text-istk-textDim">[DOING]</span>{" "}
-                      <TypewriterEffect text={research.currentAction} speed={20} />
+                  {research.thinkingLine1 && (
+                    <div className="mb-1.5 leading-relaxed" style={{ color: "rgb(255,147,50)" }}>
+                      <span className="text-istk-textDim opacity-60 mr-1.5">▸</span>
+                      <TypewriterEffect text={research.thinkingLine1} speed={30} />
+                      <span className="animate-pulse ml-0.5 opacity-60">▊</span>
                     </div>
                   )}
-                  {research.currentThought && (
-                    <div className="text-istk-textMuted">
-                      <span className="text-istk-textDim">[THINKING]</span>{" "}
-                      <TypewriterEffect text={research.currentThought} speed={20} />
+                  {research.thinkingLine2 && (
+                    <div className="leading-relaxed" style={{ color: "rgb(255,107,0)", opacity: 0.7 }}>
+                      <span className="text-istk-textDim opacity-60 mr-1.5">▸</span>
+                      <TypewriterEffect text={research.thinkingLine2} speed={30} />
+                      <span className="animate-pulse ml-0.5 opacity-40">▊</span>
                     </div>
                   )}
                 </div>

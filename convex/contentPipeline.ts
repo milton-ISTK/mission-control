@@ -213,19 +213,20 @@ export const clearApiKey = mutation({
   },
 });
 
-/** Update live progress during research */
+/** Update live thinking feed during research */
 export const updateProgress = mutation({
   args: {
     id: v.id("contentResearch"),
-    currentAction: v.optional(v.string()),
-    currentThought: v.optional(v.string()),
+    thinkingLine1: v.optional(v.string()),
+    thinkingLine2: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
-      currentAction: args.currentAction,
-      currentThought: args.currentThought,
+    const patch: Record<string, string | undefined> = {
       updatedAt: new Date().toISOString(),
-    });
+    };
+    if (args.thinkingLine1 !== undefined) patch.thinkingLine1 = args.thinkingLine1;
+    if (args.thinkingLine2 !== undefined) patch.thinkingLine2 = args.thinkingLine2;
+    await ctx.db.patch(args.id, patch);
   },
 });
 

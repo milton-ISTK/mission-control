@@ -202,16 +202,6 @@ export const submitContent = mutation({
   },
 });
 
-/** Clear the API key after daemon has processed it (security) */
-export const clearApiKey = mutation({
-  args: { id: v.id("contentResearch") },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
-      llmApiKey: undefined,
-    });
-  },
-});
-
 /** Update live thinking feed during research */
 export const updateProgress = mutation({
   args: {

@@ -59,12 +59,11 @@ export default function ResearchInput() {
 
     setIsSubmitting(true);
     try {
-      const storedKey = getStoredApiKey(selectedModel.provider);
       await createResearch({
         topic: topic.trim(),
         llmModel,
         llmProvider: selectedModel.provider,
-        llmApiKey: storedKey || undefined,
+        // API key is not passed here — it's stored locally on the daemon (~/config/mission-control/api-keys.json)
       });
       setTopic("");
     } catch (err) {

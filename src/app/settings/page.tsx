@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Key, Save, AlertCircle, ExternalLink } from "lucide-react";
+import { Key, Save, AlertCircle, ExternalLink, CheckCircle, AlertTriangle } from "lucide-react";
 import { PROVIDERS, type LLMProvider } from "@/lib/llm-models";
 
 type ProviderApiKeys = Record<LLMProvider, string>;
@@ -15,30 +15,77 @@ const emptyKeys: ProviderApiKeys = {
   grok: "",
 };
 
+const DAEMON_URL = "http://localhost:3141";
+
 export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState<ProviderApiKeys>({ ...emptyKeys });
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [daemonStatus, setDaemonStatus] = useState<"online" | "offline" | "unknown">("unknown");
 
-  // Load from localStorage on mount
+  // Check daemon status on mount
   useEffect(() => {
-    const stored = localStorage.getItem("llm_api_keys");
-    if (stored) {
+    const checkDaemon = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        setApiKeys((prev) => ({ ...prev, ...parsed }));
+        const response = await fetch(`${DAEMON_URL}/api/health`, {
+          method: "GET",
+          mode: "no-cors",
+        });
+        setDaemonStatus("online");
       } catch (e) {
-        console.error("Failed to parse stored API keys", e);
+        setDaemonStatus("offline");
       }
-    }
+    };
+
+    checkDaemon();
     setLoading(false);
   }, []);
 
-  // Save to localStorage
-  const handleSave = () => {
-    localStorage.setItem("llm_api_keys", JSON.stringify(apiKeys));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  // Save to daemon
+  const handleSave = async () => {
+    setError("");
+    setSaved(false);
+
+    if (daemonStatus === "offline") {
+      setError("⚠ Daemon is offline. Make sure the Mission Control daemon is running on Milton's Mac Mini.");
+      return;
+    }
+
+    try {
+      let savedCount = 0;
+
+      // POST each provider's key to daemon
+      for (const [provider, key] of Object.entries(apiKeys)) {
+        if (key.trim()) {
+          const response = await fetch(`${DAEMON_URL}/api/keys`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              provider,
+              key: key.trim(),
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to save ${provider} key: ${response.statusText}`);
+          }
+
+          savedCount++;
+        }
+      }
+
+      if (savedCount > 0) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setError("No API keys to save. Please enter at least one key.");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to save keys: ${message}`);
+      console.error("Save error:", err);
+    }
   };
 
   const handleChange = (provider: LLMProvider, value: string) => {
@@ -64,9 +111,39 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-istk-textMuted">
-          Configure API keys for LLM providers used in research and content
-          generation.
+          Configure API keys for LLM providers. Keys are sent directly to Milton's daemon and stored locally on disk only.
         </p>
+      </div>
+
+      {/* Daemon Status */}
+      <div
+        className="flex items-center gap-3 p-4 rounded-xl"
+        style={{
+          background:
+            daemonStatus === "online"
+              ? "rgba(52,211,153,0.04)"
+              : "rgba(239,68,68,0.04)",
+          border:
+            daemonStatus === "online"
+              ? "1px solid rgba(52,211,153,0.2)"
+              : "1px solid rgba(239,68,68,0.2)",
+        }}
+      >
+        {daemonStatus === "online" ? (
+          <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+        ) : (
+          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+        )}
+        <div className="text-sm">
+          <p className="font-semibold text-istk-text">
+            Daemon Status: {daemonStatus === "online" ? "🟢 Online" : "🔴 Offline"}
+          </p>
+          <p className="text-istk-textMuted text-xs mt-1">
+            {daemonStatus === "online"
+              ? "Connected to Mission Control daemon on Milton's Mac Mini"
+              : "Cannot reach daemon. Make sure it's running: python3 /Users/milton/scripts/content-pipeline-daemon.py"}
+          </p>
+        </div>
       </div>
 
       {/* API Keys Section */}
@@ -151,27 +228,41 @@ export default function SettingsPage() {
             Privacy &amp; Security
           </p>
           <p>
-            API keys are stored locally in your browser&apos;s localStorage.
-            They are never sent to our servers or logged. Each key is only
-            transmitted directly to the respective provider when executing
-            research.
+            API keys are transmitted directly to Milton's daemon over localhost and stored in{" "}
+            <code className="text-istk-accent">~/.config/mission-control/api-keys.json</code> with 600 permissions (read-only to user). Keys
+            are never stored in cloud databases or browsers. They are only used by the daemon to call LLM APIs during research.
           </p>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div
+          className="flex items-start gap-3 p-4 rounded-xl"
+          style={{
+            background: "rgba(239,68,68,0.04)",
+            border: "1px solid rgba(239,68,68,0.2)",
+          }}
+        >
+          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <p className="text-sm text-red-300">{error}</p>
+        </div>
+      )}
 
       {/* Save Button */}
       <div className="flex items-center gap-4">
         <button
           onClick={handleSave}
-          className="glass-button-accent flex items-center gap-2 text-sm"
+          disabled={daemonStatus === "offline"}
+          className="glass-button-accent flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save className="w-4 h-4" />
-          Save Settings
+          Save to Daemon
         </button>
 
         {saved && (
           <span className="text-sm text-istk-success flex items-center gap-1 animate-in fade-in duration-200">
-            ✓ Settings saved to local storage
+            ✓ Keys saved to daemon
           </span>
         )}
       </div>

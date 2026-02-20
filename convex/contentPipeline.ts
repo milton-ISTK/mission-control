@@ -94,7 +94,6 @@ export const createResearch = mutation({
     requestedBy: v.optional(v.string()),
     llmModel: v.optional(v.string()),
     llmProvider: v.optional(v.string()),
-    llmApiKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -104,7 +103,7 @@ export const createResearch = mutation({
       requestedBy: args.requestedBy ?? "Gregory",
       llmModel: args.llmModel,
       llmProvider: args.llmProvider,
-      llmApiKey: args.llmApiKey,
+      // API key is NOT stored here. It lives on Milton's disk only (~/config/mission-control/api-keys.json)
       createdAt: now,
       updatedAt: now,
     });

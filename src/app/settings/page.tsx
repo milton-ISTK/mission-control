@@ -15,7 +15,7 @@ const emptyKeys: ProviderApiKeys = {
   grok: "",
 };
 
-const DAEMON_URL = "http://localhost:3141";
+const DAEMON_URL = "http://192.168.0.63:3141";
 
 export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState<ProviderApiKeys>({ ...emptyKeys });

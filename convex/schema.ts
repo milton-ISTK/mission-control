@@ -82,6 +82,38 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_name", ["name"]),
 
+  // ---- Content Pipeline: Research & Content Generation ----
+  contentResearch: defineTable({
+    topic: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("researching"),
+      v.literal("ready"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("generating"),
+      v.literal("complete")
+    ),
+    // Research results
+    summary: v.optional(v.string()),
+    sentiment: v.optional(v.string()),           // bullish | neutral | bearish
+    narratives: v.optional(v.array(v.string())),  // Key themes
+    angles: v.optional(v.array(v.string())),      // Positioning angles
+    quotes: v.optional(v.array(v.string())),      // Quote opportunities
+    sources: v.optional(v.string()),              // JSON array of source objects
+    fullReport: v.optional(v.string()),           // Full markdown report
+    // Content generation
+    selectedAngle: v.optional(v.string()),
+    xPosts: v.optional(v.array(v.string())),
+    linkedinPosts: v.optional(v.array(v.string())),
+    // Meta
+    requestedBy: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("by_status", ["status"])
+    .index("by_date", ["createdAt"]),
+
   // ---- Subagent Configurations ----
   subagents: defineTable({
     name: v.string(),

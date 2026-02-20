@@ -233,6 +233,124 @@ http.route({
   }),
 });
 
+// ---- Content Pipeline Endpoints ----
+
+// GET /api/content/pending — Fetch pending research requests (daemon polls this)
+http.route({
+  path: "/api/content/pending",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const pending = await ctx.runQuery(api.contentPipeline.getPendingResearch, {});
+      const approved = await ctx.runQuery(api.contentPipeline.getApprovedResearch, {});
+      return new Response(
+        JSON.stringify({ ok: true, pending, approved }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// POST /api/content/status — Update research status (daemon marks as researching)
+http.route({
+  path: "/api/content/status",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.updateStatus, {
+        id: body.id,
+        status: body.status,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// POST /api/content/results — Submit research results (subagent calls this)
+http.route({
+  path: "/api/content/results",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.submitResults, {
+        id: body.id,
+        summary: body.summary,
+        sentiment: body.sentiment,
+        narratives: body.narratives,
+        angles: body.angles,
+        quotes: body.quotes,
+        sources: body.sources,
+        fullReport: body.fullReport,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// POST /api/content/generated — Submit generated content (subagent calls this)
+http.route({
+  path: "/api/content/generated",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.contentPipeline.submitContent, {
+        id: body.id,
+        xPosts: body.xPosts,
+        linkedinPosts: body.linkedinPosts,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ---- GET /api/health ----
 // Simple health check
 http.route({

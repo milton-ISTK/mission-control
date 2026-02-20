@@ -17,6 +17,7 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
@@ -278,12 +279,12 @@ export default function DashboardPage() {
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { href: "/tasks", icon: KanbanSquare, label: "Tasks", color: "text-istk-accent", glowColor: "rgba(255,107,0,", borderColor: "rgba(255,107,0,0.08)" },
-            { href: "/calendar", icon: Calendar, label: "Calendar", color: "text-istk-cyan", glowColor: "rgba(0,217,255,", borderColor: "rgba(0,217,255,0.08)" },
-            { href: "/memories", icon: Brain, label: "Memories", color: "text-istk-success", glowColor: "rgba(52,211,153,", borderColor: "rgba(52,211,153,0.08)" },
-            { href: "/team", icon: Users, label: "Team", color: "text-istk-purple", glowColor: "rgba(178,75,243,", borderColor: "rgba(178,75,243,0.08)" },
-            { href: "/subagents", icon: Bot, label: "Subagents", color: "text-istk-warning", glowColor: "rgba(251,191,36,", borderColor: "rgba(251,191,36,0.08)" },
-            { href: "/", icon: LayoutDashboard, label: "Dashboard", color: "text-istk-textMuted", glowColor: "rgba(255,107,0,", borderColor: "rgba(255,255,255,0.05)" },
+            { href: "/content", icon: Sparkles, label: "Content Pipeline", color: "text-istk-accent", glowColor: "rgba(255,107,0,", borderColor: "rgba(255,107,0,0.08)" },
+            { href: "/tasks", icon: KanbanSquare, label: "Tasks", color: "text-istk-cyan", glowColor: "rgba(0,217,255,", borderColor: "rgba(0,217,255,0.08)" },
+            { href: "/calendar", icon: Calendar, label: "Calendar", color: "text-istk-success", glowColor: "rgba(52,211,153,", borderColor: "rgba(52,211,153,0.08)" },
+            { href: "/memories", icon: Brain, label: "Memories", color: "text-istk-purple", glowColor: "rgba(178,75,243,", borderColor: "rgba(178,75,243,0.08)" },
+            { href: "/team", icon: Users, label: "Team", color: "text-istk-warning", glowColor: "rgba(251,191,36,", borderColor: "rgba(251,191,36,0.08)" },
+            { href: "/subagents", icon: Bot, label: "Subagents", color: "text-istk-textMuted", glowColor: "rgba(255,107,0,", borderColor: "rgba(255,255,255,0.05)" },
           ].map((link) => (
             <Link
               key={link.href}

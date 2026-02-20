@@ -10,11 +10,13 @@ import {
   Users,
   Bot,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/content", label: "Content Pipeline", icon: Sparkles },
   { href: "/tasks", label: "Tasks", icon: KanbanSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/memories", label: "Memories", icon: Brain },
@@ -82,7 +84,7 @@ export default function Sidebar() {
 
       {/* Footer — Neon status */}
       <div className="px-3 py-4 text-xs text-istk-textDim mt-2" style={{ borderTop: "1px solid rgba(255,107,0,0.08)" }}>
-        <p className="text-neon-orange text-[10px] font-semibold tracking-wider">IntelliStake · Phase 1</p>
+        <p className="text-neon-orange text-[10px] font-semibold tracking-wider">IntelliStake · Phase 2</p>
         <p className="mt-2 flex items-center gap-1.5">
           <span className="status-dot status-active" />
           <span className="text-istk-textMuted">System Online</span>

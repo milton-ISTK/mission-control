@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Badge from "@/components/common/Badge";
 import TypewriterEffect from "@/components/content/TypewriterEffect";
+import CreateTaskModal from "@/components/content/CreateTaskModal";
 import { cn, formatRelative } from "@/lib/utils";
 
 type Research = Doc<"contentResearch">;
@@ -90,6 +91,13 @@ export default function ResearchCard({ research }: { research: Research }) {
     research.status === "declined"
   );
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
+  const [selectedSuggestedAngle, setSelectedSuggestedAngle] = useState<{
+    title: string;
+    description: string;
+    targetAudience: string;
+    tone: string;
+    hookLine: string;
+  } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [showContent, setShowContent] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -464,6 +472,47 @@ export default function ResearchCard({ research }: { research: Research }) {
                   </div>
                 )}
 
+                {/* Suggested Content Angles (from Research Enhancer) */}
+                {research.suggestedAngles && research.suggestedAngles.length > 0 && (
+                  <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,107,0,0.08)" }}>
+                    <h4 className="text-sm font-semibold text-istk-accent mb-3 flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      📐 Suggested Content Angles
+                    </h4>
+                    <div className="space-y-2">
+                      {research.suggestedAngles.map((angle, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-lg transition-colors cursor-pointer"
+                          style={{
+                            background: "rgba(255,107,0,0.03)",
+                            border: "1px solid rgba(255,107,0,0.08)",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "rgba(255,107,0,0.25)";
+                            e.currentTarget.style.boxShadow = "0 0 8px rgba(255,107,0,0.08)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "rgba(255,107,0,0.08)";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedSuggestedAngle(angle);
+                          }}
+                        >
+                          <p className="font-medium text-istk-text text-sm">{angle.title}</p>
+                          <p className="text-xs text-istk-textMuted mt-1">{angle.description}</p>
+                          <div className="flex items-center justify-between mt-2 text-xs text-istk-textDim">
+                            <span>🎯 {angle.targetAudience}</span>
+                            <span className="italic">{angle.tone}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Quote Opportunities */}
                 {research.quotes && research.quotes.length > 0 && (
                   <div>
@@ -818,6 +867,14 @@ export default function ResearchCard({ research }: { research: Research }) {
           )}
         </div>
       )}
+
+      {/* Create Task Modal — triggered when a suggested angle is clicked */}
+      <CreateTaskModal
+        isOpen={!!selectedSuggestedAngle}
+        onClose={() => setSelectedSuggestedAngle(null)}
+        selectedAngle={selectedSuggestedAngle}
+        researchId={research._id}
+      />
     </div>
   );
 }

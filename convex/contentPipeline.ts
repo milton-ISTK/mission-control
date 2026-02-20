@@ -369,6 +369,26 @@ export const getApiKey = query({
   },
 });
 
+/** Update suggested angles on a research item (called by daemon after angle generation) */
+export const updateAngles = mutation({
+  args: {
+    id: v.id("contentResearch"),
+    angles: v.array(v.object({
+      title: v.string(),
+      description: v.string(),
+      targetAudience: v.string(),
+      tone: v.string(),
+      hookLine: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      suggestedAngles: args.angles,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
 /** Update lastSynced timestamp (called by daemon after picking up key) */
 export const markApiKeySynced = mutation({
   args: { provider: v.string() },

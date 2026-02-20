@@ -599,6 +599,93 @@ http.route({
   }),
 });
 
+// ---- GET /api/agents/by-role (daemon fetches agent config by agentRole) ----
+http.route({
+  path: "/api/agents/by-role",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const url = new URL(request.url);
+      const role = url.searchParams.get("role");
+      if (!role) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing role query parameter" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const agent = await ctx.runQuery(api.agents.getAgentByRole, { agentRole: role });
+      if (!agent) {
+        return new Response(
+          JSON.stringify({ ok: false, error: `No agent found with agentRole: ${role}` }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          agent: {
+            name: agent.name,
+            agentRole: agent.agentRole,
+            provider: agent.provider,
+            modelId: agent.modelId,
+            systemPrompt: agent.systemPrompt,
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/content/angles (daemon saves suggested angles) ----
+http.route({
+  path: "/api/content/angles",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      const { id, angles } = body as { id: string; angles: Array<any> };
+
+      if (!id || !angles) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing id or angles" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      await ctx.runMutation(api.contentPipeline.updateAngles, {
+        id: id as any,
+        angles,
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ==============================================================
 // Workflow Orchestration Engine — HTTP Endpoints (Phase 1)
 // ==============================================================

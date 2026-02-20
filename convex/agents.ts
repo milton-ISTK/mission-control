@@ -25,6 +25,17 @@ export const getAgentByName = query({
   },
 });
 
+/** Get agent by agentRole (for workflow orchestration — daemon uses this) */
+export const getAgentByRole = query({
+  args: { agentRole: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("agents")
+      .withIndex("by_agentRole", (q) => q.eq("agentRole", args.agentRole))
+      .first();
+  },
+});
+
 /** Get active agents */
 export const getActiveAgents = query({
   handler: async (ctx) => {

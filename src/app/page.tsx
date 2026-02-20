@@ -40,10 +40,10 @@ export default function DashboardPage() {
           className="text-3xl font-bold text-gradient mb-2"
           style={{ filter: "drop-shadow(0 0 20px rgba(255,107,0,0.2))" }}
         >
-          Welcome to Mission Control
+          Hello Gregory
         </h1>
         <p className="text-istk-textMuted">
-          Your ISTK Agentic Dashboard — real-time overview of all operations.
+          Welcome back to Mission Control — real-time overview of all operations.
         </p>
       </div>
 

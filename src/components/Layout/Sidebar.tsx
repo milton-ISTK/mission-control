@@ -11,8 +11,10 @@ import {
   Bot,
   Zap,
   Sparkles,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthContext } from "@/components/auth/AuthGuard";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -26,6 +28,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuthContext();
 
   return (
     <aside className="w-64 h-screen sticky top-0 flex flex-col glass-sidebar p-4 gap-2 shrink-0">
@@ -82,13 +85,26 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer — Neon status */}
+      {/* Footer — Neon status + Logout */}
       <div className="px-3 py-4 text-xs text-istk-textDim mt-2" style={{ borderTop: "1px solid rgba(255,107,0,0.08)" }}>
         <p className="text-neon-orange text-[10px] font-semibold tracking-wider">IntelliStake · Phase 2</p>
         <p className="mt-2 flex items-center gap-1.5">
           <span className="status-dot status-active" />
           <span className="text-istk-textMuted">System Online</span>
         </p>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg w-full transition-all duration-300 group"
+          style={{
+            background: "rgba(248,113,113,0.03)",
+            border: "1px solid rgba(248,113,113,0.08)",
+          }}
+        >
+          <LogOut className="w-3.5 h-3.5 text-istk-textDim group-hover:text-istk-danger transition-colors" />
+          <span className="text-[11px] text-istk-textDim group-hover:text-istk-danger font-medium transition-colors">
+            Sign Out
+          </span>
+        </button>
       </div>
     </aside>
   );

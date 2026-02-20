@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ConvexClientProvider } from "@/lib/convex";
+import AuthGuard from "@/components/auth/AuthGuard";
 import Sidebar from "@/components/Layout/Sidebar";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
@@ -31,30 +32,32 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-istk-bg text-istk-text font-sans antialiased">
         <ConvexClientProvider>
-          {/* Click Animation Handler */}
-          <ClickAnimationHandler />
+          <AuthGuard>
+            {/* Click Animation Handler */}
+            <ClickAnimationHandler />
 
-          {/* Interactive Fluid/Lava Background */}
-          <FluidBackground />
+            {/* Interactive Fluid/Lava Background */}
+            <FluidBackground />
 
-          <div className="relative flex min-h-screen" style={{ zIndex: 1 }}>
-            {/* Sidebar — collapses to icon bar on mobile */}
-            <Sidebar />
+            <div className="relative flex min-h-screen" style={{ zIndex: 1 }}>
+              {/* Sidebar — collapses to icon bar on mobile */}
+              <Sidebar />
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0">
-              {/* Top Navbar */}
-              <Navbar />
+              {/* Main Content Area */}
+              <div className="flex-1 flex flex-col min-w-0">
+                {/* Top Navbar */}
+                <Navbar />
 
-              {/* Page Content */}
-              <main className="flex-1 overflow-auto p-6 lg:p-8">
-                {children}
-              </main>
+                {/* Page Content */}
+                <main className="flex-1 overflow-auto p-6 lg:p-8">
+                  {children}
+                </main>
 
-              {/* Footer */}
-              <Footer />
+                {/* Footer */}
+                <Footer />
+              </div>
             </div>
-          </div>
+          </AuthGuard>
         </ConvexClientProvider>
       </body>
     </html>

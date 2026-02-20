@@ -154,7 +154,7 @@ export default function ContentPipelinePage() {
           </h3>
           <p className="text-sm text-istk-textMuted max-w-md mx-auto">
             Enter a topic above and click &quot;Research This Idea&quot; to get
-            started. Milton&apos;s Opus subagent will search the web, analyse
+            started. ISTK subagent will search the web, analyse
             sentiment, and deliver a structured report.
           </p>
         </div>

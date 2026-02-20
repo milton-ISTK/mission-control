@@ -208,8 +208,8 @@ export default function ResearchCard({ research }: { research: Research }) {
                 )}
                 <span className="text-sm text-istk-textMuted">
                   {research.status === "researching"
-                    ? "Opus is researching this topic — Brave Search + X.com sentiment analysis in progress…"
-                    : "Waiting for Milton's research daemon to pick up this request…"}
+                    ? `${research.llmModel ? research.llmModel : "LLM"} is researching this topic — Brave Search + sentiment analysis in progress…`
+                    : "Waiting for the research daemon to pick up this request…"}
                 </span>
               </div>
               <button

@@ -96,8 +96,9 @@ export default defineSchema({
       v.literal("complete")
     ),
     // LLM configuration (per-request)
-    llmModel: v.optional(v.string()),             // Model ID (e.g. "claude-haiku-4-5-20250315")
-    llmApiKey: v.optional(v.string()),            // API key (cleared after processing)
+    llmModel: v.optional(v.string()),             // Model ID (e.g. "claude-4-5-haiku")
+    llmProvider: v.optional(v.string()),          // Provider key (e.g. "anthropic", "openai", "google")
+    llmApiKey: v.optional(v.string()),            // API key (cleared after processing — NEVER stored long-term)
     // Research results
     summary: v.optional(v.string()),
     sentiment: v.optional(v.string()),           // bullish | neutral | bearish

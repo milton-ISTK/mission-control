@@ -63,6 +63,7 @@ export default function ResearchInput() {
       await createResearch({
         topic: topic.trim(),
         llmModel,
+        llmProvider: selectedModel.provider,
         llmApiKey: storedKey || undefined,
       });
       setTopic("");

@@ -93,6 +93,7 @@ export const createResearch = mutation({
     topic: v.string(),
     requestedBy: v.optional(v.string()),
     llmModel: v.optional(v.string()),
+    llmProvider: v.optional(v.string()),
     llmApiKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -102,6 +103,7 @@ export const createResearch = mutation({
       status: "pending",
       requestedBy: args.requestedBy ?? "Gregory",
       llmModel: args.llmModel,
+      llmProvider: args.llmProvider,
       llmApiKey: args.llmApiKey,
       createdAt: now,
       updatedAt: now,

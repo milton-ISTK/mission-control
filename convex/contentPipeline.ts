@@ -227,4 +227,3 @@ export const deleteResearch = mutation({
     await ctx.db.delete(args.id);
   },
 });
-// Rebuild trigger

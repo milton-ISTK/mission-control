@@ -80,6 +80,7 @@ export default defineSchema({
     recentTasks: v.optional(v.array(v.string())), // Last 5 task titles
     isSubagent: v.boolean(),
     createdAt: v.string(),
+    updatedAt: v.optional(v.string()),
   })
     .index("by_status", ["status"])
     .index("by_name", ["name"]),

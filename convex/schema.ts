@@ -146,9 +146,11 @@ export default defineSchema({
     updatedAt: v.string(),
     // ---- Workflow Orchestration additions (Phase 1) ----
     suggestedAngles: v.optional(v.array(v.object({
-      angle: v.string(),
-      contentType: v.string(),
-      rationale: v.optional(v.string()),
+      title: v.string(),
+      description: v.string(),
+      targetAudience: v.string(),
+      tone: v.string(),
+      hookLine: v.string(),
     }))),
   })
     .index("by_status", ["status"])

@@ -42,10 +42,37 @@ interface CalEvent {
   createdAt: string;
 }
 
+// --- Dark Obsidian Theme Styles ---
+const cellStyles = {
+  base: {
+    background: "rgba(20, 15, 10, 0.6)",
+    backdropFilter: "blur(8px)",
+    border: "1px solid rgba(217, 119, 6, 0.18)",
+    boxShadow: "0 0 6px rgba(217, 119, 6, 0.06), inset 0 1px 0 rgba(217, 119, 6, 0.04)",
+    transition: "box-shadow 0.2s, border-color 0.2s",
+  },
+  today: {
+    background: "rgba(30, 22, 12, 0.75)",
+    backdropFilter: "blur(8px)",
+    border: "1px solid rgba(245, 158, 11, 0.45)",
+    boxShadow: "0 0 14px rgba(245, 158, 11, 0.18), 0 0 4px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(245, 158, 11, 0.08)",
+  },
+  outsideMonth: {
+    background: "rgba(12, 10, 8, 0.35)",
+    backdropFilter: "blur(4px)",
+    border: "1px solid rgba(217, 119, 6, 0.06)",
+    boxShadow: "none",
+    opacity: 0.4,
+  },
+} as const;
+
+const gridBorderColor = "rgba(217, 119, 6, 0.10)";
+
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null);
+  const [selectedCronGroup, setSelectedCronGroup] = useState<CalEvent[] | null>(null);
 
   // Calculate date range for the current view
   const dateRange = useMemo(() => {
@@ -84,25 +111,32 @@ export default function CalendarView() {
     }
   };
 
-  const getEventsForDay = (day: Date): CalEvent[] => {
-    if (!events) return [];
-    return events.filter((e) => {
+  /** Split a day's events into consolidated cron group + individual events */
+  const getProcessedEventsForDay = (day: Date): { cronEvents: CalEvent[]; otherEvents: CalEvent[] } => {
+    if (!events) return { cronEvents: [], otherEvents: [] };
+    const dayEvents = events.filter((e) => {
       const eventDate = new Date(e.startDate);
       return isSameDay(eventDate, day);
     }) as CalEvent[];
+
+    const cronEvents = dayEvents.filter((e) => e.type === "cron");
+    const otherEvents = dayEvents.filter((e) => e.type !== "cron");
+    return { cronEvents, otherEvents };
   };
 
-  const eventClass = (type: string) => {
-    switch (type) {
-      case "cron":
-        return "cal-event-cron";
-      case "deadline":
-        return "cal-event-deadline";
-      case "oneshot":
-        return "cal-event-oneshot";
-      default:
-        return "cal-event-cron";
-    }
+  const handleCronChipClick = (cronEvents: CalEvent[]) => {
+    setSelectedEvent(null);
+    setSelectedCronGroup(cronEvents);
+  };
+
+  const handleEventClick = (evt: CalEvent) => {
+    setSelectedCronGroup(null);
+    setSelectedEvent(evt);
+  };
+
+  const handleClosePanel = () => {
+    setSelectedEvent(null);
+    setSelectedCronGroup(null);
   };
 
   if (events === undefined) {
@@ -163,66 +197,110 @@ export default function CalendarView() {
         </div>
 
         {/* Calendar Grid */}
-        <div className="neu-card-flat p-4">
+        <div
+          className="neu-card-flat p-4 rounded-2xl"
+          style={{ background: "rgba(12, 10, 8, 0.45)", border: `1px solid ${gridBorderColor}` }}
+        >
           {/* Weekday Headers */}
-          <div className="grid grid-cols-7 gap-px mb-2">
+          <div
+            className="grid grid-cols-7 mb-2"
+            style={{ gap: "1px", background: gridBorderColor }}
+          >
             {weekDays.map((day) => (
               <div
                 key={day}
-                className="text-center text-xs font-semibold text-istk-textDim uppercase tracking-wider py-2"
+                className="text-center text-xs font-semibold uppercase tracking-wider py-2"
+                style={{ color: "rgba(245, 158, 11, 0.55)", background: "rgba(12, 10, 8, 0.7)" }}
               >
                 {day}
               </div>
             ))}
           </div>
 
-          {/* Day Cells */}
+          {/* Month View */}
           {viewMode === "month" && (
-            <div className="grid grid-cols-7 gap-px">
+            <div
+              className="grid grid-cols-7"
+              style={{ gap: "1px", background: gridBorderColor }}
+            >
               {days.map((day) => {
-                const dayEvents = getEventsForDay(day);
+                const { cronEvents, otherEvents } = getProcessedEventsForDay(day);
                 const inMonth = isSameMonth(day, currentDate);
                 const today = isToday(day);
+                const style = today
+                  ? cellStyles.today
+                  : inMonth
+                  ? cellStyles.base
+                  : cellStyles.outsideMonth;
+
+                // How many non-cron chips to show before "+N more"
+                const maxChips = cronEvents.length > 0 ? 2 : 3;
 
                 return (
                   <div
                     key={day.toISOString()}
-                    className={cn(
-                      "min-h-[100px] p-2 rounded-lg border border-istk-border/10 transition-colors",
-                      inMonth
-                        ? "bg-istk-surface/50"
-                        : "bg-istk-bg/30 opacity-40",
-                      today && "ring-1 ring-istk-accent/40"
-                    )}
+                    className="min-h-[100px] p-2 rounded-lg"
+                    style={style}
                   >
                     <span
                       className={cn(
                         "text-xs font-medium",
                         today
-                          ? "text-istk-accent font-bold"
-                          : inMonth
-                          ? "text-istk-textMuted"
-                          : "text-istk-textDim"
+                          ? "font-bold"
+                          : ""
                       )}
+                      style={{
+                        color: today
+                          ? "rgb(245, 158, 11)"
+                          : inMonth
+                          ? "rgba(255, 255, 255, 0.55)"
+                          : "rgba(255, 255, 255, 0.3)",
+                      }}
                     >
                       {format(day, "d")}
                     </span>
                     <div className="mt-1 flex flex-col gap-0.5">
-                      {dayEvents.slice(0, 3).map((evt) => (
+                      {/* Consolidated cron chip */}
+                      {cronEvents.length > 0 && (
+                        <button
+                          onClick={() => handleCronChipClick(cronEvents)}
+                          className="text-[10px] px-1.5 py-0.5 rounded truncate text-left w-full font-medium"
+                          style={{
+                            background: "rgba(59, 130, 246, 0.15)",
+                            color: "rgba(147, 197, 253, 0.95)",
+                            border: "1px solid rgba(59, 130, 246, 0.2)",
+                          }}
+                        >
+                          🔄 {cronEvents.length} cron job{cronEvents.length !== 1 ? "s" : ""}
+                        </button>
+                      )}
+                      {/* Individual non-cron events */}
+                      {otherEvents.slice(0, maxChips).map((evt) => (
                         <button
                           key={evt._id}
-                          onClick={() => setSelectedEvent(evt)}
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded truncate text-left w-full",
-                            eventClass(evt.type)
-                          )}
+                          onClick={() => handleEventClick(evt)}
+                          className="text-[10px] px-1.5 py-0.5 rounded truncate text-left w-full"
+                          style={{
+                            background:
+                              evt.type === "deadline"
+                                ? "rgba(239, 68, 68, 0.15)"
+                                : "rgba(34, 197, 94, 0.15)",
+                            color:
+                              evt.type === "deadline"
+                                ? "rgba(252, 165, 165, 0.95)"
+                                : "rgba(134, 239, 172, 0.95)",
+                            border:
+                              evt.type === "deadline"
+                                ? "1px solid rgba(239, 68, 68, 0.2)"
+                                : "1px solid rgba(34, 197, 94, 0.2)",
+                          }}
                         >
                           {evt.title}
                         </button>
                       ))}
-                      {dayEvents.length > 3 && (
-                        <span className="text-[10px] text-istk-textDim pl-1">
-                          +{dayEvents.length - 3} more
+                      {otherEvents.length > maxChips && (
+                        <span className="text-[10px] pl-1" style={{ color: "rgba(255, 255, 255, 0.3)" }}>
+                          +{otherEvents.length - maxChips} more
                         </span>
                       )}
                     </div>
@@ -234,39 +312,67 @@ export default function CalendarView() {
 
           {/* Week View */}
           {viewMode === "week" && (
-            <div className="grid grid-cols-7 gap-2">
+            <div
+              className="grid grid-cols-7"
+              style={{ gap: "2px" }}
+            >
               {days.map((day) => {
-                const dayEvents = getEventsForDay(day);
+                const { cronEvents, otherEvents } = getProcessedEventsForDay(day);
                 const today = isToday(day);
+                const style = today ? cellStyles.today : cellStyles.base;
 
                 return (
                   <div
                     key={day.toISOString()}
-                    className={cn(
-                      "min-h-[300px] p-3 rounded-xl border border-istk-border/10 bg-istk-surface/50",
-                      today && "ring-1 ring-istk-accent/40"
-                    )}
+                    className="min-h-[300px] p-3 rounded-xl"
+                    style={style}
                   >
                     <div className="text-center mb-2">
-                      <span className="text-xs text-istk-textDim">{format(day, "EEE")}</span>
+                      <span className="text-xs" style={{ color: "rgba(245, 158, 11, 0.5)" }}>
+                        {format(day, "EEE")}
+                      </span>
                       <div
-                        className={cn(
-                          "text-lg font-bold",
-                          today ? "text-istk-accent" : "text-istk-text"
-                        )}
+                        className="text-lg font-bold"
+                        style={{ color: today ? "rgb(245, 158, 11)" : "rgba(255, 255, 255, 0.85)" }}
                       >
                         {format(day, "d")}
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
-                      {dayEvents.map((evt) => (
+                      {/* Consolidated cron chip */}
+                      {cronEvents.length > 0 && (
+                        <button
+                          onClick={() => handleCronChipClick(cronEvents)}
+                          className="text-[11px] px-2 py-1 rounded truncate text-left w-full font-medium"
+                          style={{
+                            background: "rgba(59, 130, 246, 0.15)",
+                            color: "rgba(147, 197, 253, 0.95)",
+                            border: "1px solid rgba(59, 130, 246, 0.2)",
+                          }}
+                        >
+                          🔄 {cronEvents.length} cron job{cronEvents.length !== 1 ? "s" : ""}
+                        </button>
+                      )}
+                      {/* Individual non-cron events */}
+                      {otherEvents.map((evt) => (
                         <button
                           key={evt._id}
-                          onClick={() => setSelectedEvent(evt)}
-                          className={cn(
-                            "text-[11px] px-2 py-1 rounded truncate text-left w-full",
-                            eventClass(evt.type)
-                          )}
+                          onClick={() => handleEventClick(evt)}
+                          className="text-[11px] px-2 py-1 rounded truncate text-left w-full"
+                          style={{
+                            background:
+                              evt.type === "deadline"
+                                ? "rgba(239, 68, 68, 0.15)"
+                                : "rgba(34, 197, 94, 0.15)",
+                            color:
+                              evt.type === "deadline"
+                                ? "rgba(252, 165, 165, 0.95)"
+                                : "rgba(134, 239, 172, 0.95)",
+                            border:
+                              evt.type === "deadline"
+                                ? "1px solid rgba(239, 68, 68, 0.2)"
+                                : "1px solid rgba(34, 197, 94, 0.2)",
+                          }}
                         >
                           {evt.title}
                         </button>
@@ -282,8 +388,10 @@ export default function CalendarView() {
           {viewMode === "day" && (
             <div className="min-h-[400px] p-4">
               {(() => {
-                const dayEvents = getEventsForDay(currentDate);
-                if (dayEvents.length === 0) {
+                const { cronEvents, otherEvents } = getProcessedEventsForDay(currentDate);
+                const hasAnything = cronEvents.length > 0 || otherEvents.length > 0;
+
+                if (!hasAnything) {
                   return (
                     <EmptyState
                       title="No events today"
@@ -293,18 +401,48 @@ export default function CalendarView() {
                 }
                 return (
                   <div className="flex flex-col gap-3">
-                    {dayEvents.map((evt) => (
+                    {/* Consolidated cron summary card */}
+                    {cronEvents.length > 0 && (
+                      <button
+                        onClick={() => handleCronChipClick(cronEvents)}
+                        className="p-4 rounded-xl text-left w-full border-l-4"
+                        style={{
+                          background: "rgba(20, 15, 10, 0.6)",
+                          borderLeftColor: "rgb(59, 130, 246)",
+                          border: "1px solid rgba(59, 130, 246, 0.2)",
+                          borderLeft: "4px solid rgb(59, 130, 246)",
+                          boxShadow: "0 0 8px rgba(59, 130, 246, 0.08)",
+                        }}
+                      >
+                        <h4 className="font-semibold" style={{ color: "rgba(147, 197, 253, 0.95)" }}>
+                          🔄 {cronEvents.length} Cron Job{cronEvents.length !== 1 ? "s" : ""}
+                        </h4>
+                        <p className="text-sm mt-1" style={{ color: "rgba(255, 255, 255, 0.45)" }}>
+                          {cronEvents.map((c) => c.title).join(", ")}
+                        </p>
+                      </button>
+                    )}
+                    {/* Individual non-cron events */}
+                    {otherEvents.map((evt) => (
                       <button
                         key={evt._id}
-                        onClick={() => setSelectedEvent(evt)}
-                        className={cn(
-                          "p-4 rounded-xl text-left w-full border-l-4 bg-istk-surface/80",
-                          evt.type === "cron"
-                            ? "border-istk-info"
-                            : evt.type === "deadline"
-                            ? "border-istk-danger"
-                            : "border-istk-success"
-                        )}
+                        onClick={() => handleEventClick(evt)}
+                        className="p-4 rounded-xl text-left w-full"
+                        style={{
+                          background: "rgba(20, 15, 10, 0.6)",
+                          borderLeft:
+                            evt.type === "deadline"
+                              ? "4px solid rgb(239, 68, 68)"
+                              : "4px solid rgb(34, 197, 94)",
+                          border:
+                            evt.type === "deadline"
+                              ? "1px solid rgba(239, 68, 68, 0.2)"
+                              : "1px solid rgba(34, 197, 94, 0.2)",
+                          boxShadow:
+                            evt.type === "deadline"
+                              ? "0 0 8px rgba(239, 68, 68, 0.08)"
+                              : "0 0 8px rgba(34, 197, 94, 0.08)",
+                        }}
                       >
                         <h4 className="font-semibold text-istk-text">{evt.title}</h4>
                         {evt.description && (
@@ -328,8 +466,8 @@ export default function CalendarView() {
         {/* Legend */}
         <div className="flex items-center gap-6 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-istk-info" />
-            <span className="text-istk-textMuted">Cron Job</span>
+            <span className="w-3 h-3 rounded" style={{ background: "rgba(59, 130, 246, 0.7)" }} />
+            <span className="text-istk-textMuted">Cron Jobs</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded bg-istk-danger" />
@@ -346,7 +484,19 @@ export default function CalendarView() {
       {selectedEvent && (
         <EventDetails
           event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
+          onClose={handleClosePanel}
+        />
+      )}
+
+      {/* Cron Group Side Panel */}
+      {selectedCronGroup && selectedCronGroup.length > 0 && (
+        <EventDetails
+          cronGroup={selectedCronGroup}
+          onClose={handleClosePanel}
+          onSelectEvent={(evt) => {
+            setSelectedCronGroup(null);
+            setSelectedEvent(evt);
+          }}
         />
       )}
     </div>

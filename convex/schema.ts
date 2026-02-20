@@ -147,4 +147,15 @@ export default defineSchema({
   })
     .index("by_active", ["isActive"])
     .index("by_name", ["name"]),
+
+  // ---- API Keys Storage (for Content Pipeline) ----
+  // Keys are stored in Convex as source of truth, but sync script reads and writes to local file
+  apiKeys: defineTable({
+    provider: v.string(),          // anthropic, openai, google, meta, minimax, grok
+    keyPlaintext: v.string(),      // API key (stored here, sync script moves to local file)
+    isActive: v.boolean(),
+    lastSynced: v.optional(v.string()), // ISO timestamp when sync daemon last picked up this key
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  }).index("by_provider", ["provider"]),
 });

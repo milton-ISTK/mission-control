@@ -462,25 +462,151 @@ http.route({
   }),
 });
 
-// ---- POST /api/queue/api-key-update ----
-// Frontend queues API key updates for the sync script to apply
+// ---- POST /api/keys (from Settings page) ----
+// Save API key to Convex; sync daemon will pick it up and write to local file
 http.route({
-  path: "/api/queue/api-key-update",
+  path: "/api/keys",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
       const { provider, key } = body as { provider: string; key: string };
 
-      // Store pending key update in systemStatus for sync script to pick up
-      await ctx.runMutation(api.systemStatus.upsertStatus, {
-        key: `pending_api_key_${provider}`,
-        status: "pending",
-        details: JSON.stringify({ key, queuedAt: new Date().toISOString() }),
+      if (!provider || !key) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing provider or key" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Save to Convex (sync daemon will poll this and write to ~/.config/mission-control/api-keys.json)
+      await ctx.runMutation(api.contentPipeline.saveApiKey, {
+        provider,
+        key,
       });
 
       return new Response(
-        JSON.stringify({ ok: true, queued: true }),
+        JSON.stringify({ ok: true, saved: true, provider }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- GET /api/keys (from Settings page) ----
+// Returns list of stored providers (metadata only, not actual keys)
+http.route({
+  path: "/api/keys",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const keys = await ctx.runQuery(api.contentPipeline.getAllApiKeys, {});
+      // Return metadata only (provider, isActive, lastSynced) — never the actual key
+      const metadata = keys.map((k) => ({
+        provider: k.provider,
+        isActive: k.isActive,
+        lastSynced: k.lastSynced,
+      }));
+      return new Response(
+        JSON.stringify({ ok: true, keys: metadata }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- DELETE /api/keys/{provider} (from Settings page) ----
+// Delete API key for a provider
+http.route({
+  path: "/api/keys/:provider",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const provider = new URL(request.url).pathname.split("/").pop();
+      if (!provider) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing provider" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      await ctx.runMutation(api.contentPipeline.deleteApiKey, { provider });
+
+      return new Response(
+        JSON.stringify({ ok: true, deleted: true, provider }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/sync/keys (for daemon to fetch API keys) ----
+http.route({
+  path: "/api/sync/keys",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const keys = await ctx.runQuery(api.contentPipeline.getAllApiKeys, {});
+      return new Response(
+        JSON.stringify({ ok: true, keys }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/content/mark-synced (daemon confirms key was synced) ----
+http.route({
+  path: "/api/content/mark-synced",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      const { provider } = body as { provider: string };
+
+      if (!provider) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing provider" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      await ctx.runMutation(api.contentPipeline.markApiKeySynced, {
+        provider,
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true, marked: true, provider }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (err: unknown) {

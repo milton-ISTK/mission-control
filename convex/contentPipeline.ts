@@ -57,6 +57,17 @@ export const getPendingResearch = query({
   },
 });
 
+/** Get daemon health status from systemStatus */
+export const getDaemonStatus = query({
+  handler: async (ctx) => {
+    const status = await ctx.db
+      .query("systemStatus")
+      .withIndex("by_key", (q) => q.eq("key", "daemon_health"))
+      .unique();
+    return status ?? { key: "daemon_health", status: "unknown", details: "" };
+  },
+});
+
 /** Get approved research items awaiting content generation */
 export const getApprovedResearch = query({
   handler: async (ctx) => {
@@ -235,5 +246,97 @@ export const deleteResearch = mutation({
   args: { id: v.id("contentResearch") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+  },
+});
+
+// ---- API Key Management ----
+
+/** Save or update API key for a provider */
+export const saveApiKey = mutation({
+  args: {
+    provider: v.string(),
+    key: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    const existing = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_provider", (q) => q.eq("provider", args.provider))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        keyPlaintext: args.key,
+        isActive: true,
+        updatedAt: now,
+      });
+      return existing._id;
+    } else {
+      return await ctx.db.insert("apiKeys", {
+        provider: args.provider,
+        keyPlaintext: args.key,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  },
+});
+
+/** Delete API key for a provider */
+export const deleteApiKey = mutation({
+  args: { provider: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_provider", (q) => q.eq("provider", args.provider))
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+  },
+});
+
+/** Get all API keys (for sync daemon) — returns keys unencrypted so daemon can save locally */
+export const getAllApiKeys = query({
+  handler: async (ctx) => {
+    const keys = await ctx.db.query("apiKeys").collect();
+    return keys.map((k) => ({
+      _id: k._id,
+      provider: k.provider,
+      keyPlaintext: k.keyPlaintext,
+      isActive: k.isActive,
+      lastSynced: k.lastSynced,
+    }));
+  },
+});
+
+/** Get API key for a specific provider */
+export const getApiKey = query({
+  args: { provider: v.string() },
+  handler: async (ctx, args) => {
+    const key = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_provider", (q) => q.eq("provider", args.provider))
+      .unique();
+    return key;
+  },
+});
+
+/** Update lastSynced timestamp (called by daemon after picking up key) */
+export const markApiKeySynced = mutation({
+  args: { provider: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_provider", (q) => q.eq("provider", args.provider))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        lastSynced: new Date().toISOString(),
+      });
+    }
   },
 });

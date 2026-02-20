@@ -32,7 +32,7 @@ export default function SettingsPage() {
     setLoading(false);
   }, []);
 
-  // Save to daemon via Convex queue
+  // Save to Convex HTTP endpoint; sync daemon will poll and write to local file
   const handleSave = async () => {
     setError("");
     setSaved(false);
@@ -40,10 +40,10 @@ export default function SettingsPage() {
     try {
       let savedCount = 0;
 
-      // Queue each provider's key via Convex HTTP endpoint
+      // POST each provider's key to Convex; sync daemon will pick it up and write to disk
       for (const [provider, key] of Object.entries(apiKeys)) {
         if (key.trim()) {
-          const response = await fetch("/api/queue/api-key-update", {
+          const response = await fetch("/api/keys", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -53,7 +53,7 @@ export default function SettingsPage() {
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to queue ${provider} key: ${response.statusText}`);
+            throw new Error(`Failed to save ${provider} key: ${response.statusText}`);
           }
 
           savedCount++;
@@ -96,7 +96,7 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-istk-textMuted">
-          Configure API keys for LLM providers. Keys are sent directly to Milton's daemon and stored locally on disk only.
+          Configure API keys for LLM providers. Keys are stored in Convex, synced to Milton's daemon every 10 seconds, and written to local disk only.
         </p>
       </div>
 
@@ -213,9 +213,9 @@ export default function SettingsPage() {
             Privacy &amp; Security
           </p>
           <p>
-            API keys are transmitted directly to Milton's daemon over localhost and stored in{" "}
-            <code className="text-istk-accent">~/.config/mission-control/api-keys.json</code> with 600 permissions (read-only to user). Keys
-            are never stored in cloud databases or browsers. They are only used by the daemon to call LLM APIs during research.
+            API keys are stored in Convex as the source of truth. The sync daemon on Milton's Mac Mini polls Convex every 10 seconds and 
+            writes keys to <code className="text-istk-accent">~/.config/mission-control/api-keys.json</code> with 600 permissions 
+            (read-only to user). Keys are synced over HTTPS to Convex, then read locally from disk. They are only used by the daemon to call LLM APIs during research.
           </p>
         </div>
       </div>

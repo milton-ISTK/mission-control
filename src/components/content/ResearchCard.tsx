@@ -83,7 +83,11 @@ const statusConfig: Record<
 
 export default function ResearchCard({ research }: { research: Research }) {
   const [expanded, setExpanded] = useState(
-    research.status === "ready" || research.status === "complete"
+    research.status === "ready" ||
+    research.status === "complete" ||
+    research.status === "rejected" ||
+    research.status === "cancelled" ||
+    research.status === "declined"
   );
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -783,10 +787,15 @@ export default function ResearchCard({ research }: { research: Research }) {
                       e.stopPropagation();
                       handleRetry();
                     }}
-                    className="glass-button-sm flex items-center gap-1.5 text-xs text-istk-textDim hover:text-istk-cyan"
+                    disabled={actionLoading !== null}
+                    className="glass-button-sm flex items-center gap-1.5 text-xs text-istk-textDim hover:text-istk-cyan disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <RotateCcw className="w-3 h-3" />
-                    Retry
+                    {actionLoading === "retry" ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-3 h-3" />
+                    )}
+                    {actionLoading === "retry" ? "Retrying…" : "Retry"}
                   </button>
                 )}
               </div>
@@ -795,10 +804,15 @@ export default function ResearchCard({ research }: { research: Research }) {
                   e.stopPropagation();
                   handleDelete();
                 }}
-                className="glass-button-sm flex items-center gap-1.5 text-xs text-istk-textDim hover:text-istk-danger"
+                disabled={actionLoading !== null}
+                className="glass-button-sm flex items-center gap-1.5 text-xs text-istk-textDim hover:text-istk-danger disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Trash2 className="w-3 h-3" />
-                Delete
+                {actionLoading === "delete" ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3 h-3" />
+                )}
+                {actionLoading === "delete" ? "Deleting…" : "Delete"}
               </button>
             </div>
           )}

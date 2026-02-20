@@ -11,6 +11,7 @@ import {
   Bot,
   Zap,
   Sparkles,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/memories", label: "Memories", icon: Brain },
   { href: "/team", label: "Team", icon: Users },
   { href: "/subagents", label: "Subagents", icon: Bot },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {

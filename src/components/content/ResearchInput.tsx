@@ -1,39 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Search, Sparkles, Loader2, Brain, Key, ChevronDown } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  Loader2,
+  Brain,
+  ChevronDown,
+  AlertTriangle,
+} from "lucide-react";
 import {
   LLM_MODELS,
   DEFAULT_MODEL,
   getModelGroups,
   findModel,
+  getProviderKeyName,
 } from "@/lib/llm-models";
+
+/**
+ * Check whether the selected provider has an API key configured in localStorage.
+ * Returns the key string if found, or empty string if missing.
+ */
+function getStoredApiKey(provider: string): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const raw = localStorage.getItem("llm_api_keys");
+    if (!raw) return "";
+    const parsed = JSON.parse(raw);
+    const keyName = getProviderKeyName(provider);
+    return (parsed[keyName] ?? "").trim();
+  } catch {
+    return "";
+  }
+}
 
 export default function ResearchInput() {
   const [topic, setTopic] = useState("");
   const [llmModel, setLlmModel] = useState(DEFAULT_MODEL);
-  const [apiKey, setApiKey] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiKeyAvailable, setApiKeyAvailable] = useState(true);
   const createResearch = useMutation(api.contentPipeline.createResearch);
 
   const selectedModel = findModel(llmModel);
   const groups = getModelGroups();
 
+  // Re-check API key availability whenever the selected model changes
+  const checkApiKey = useCallback(() => {
+    if (!selectedModel) {
+      setApiKeyAvailable(false);
+      return;
+    }
+    const key = getStoredApiKey(selectedModel.provider);
+    setApiKeyAvailable(key.length > 0);
+  }, [selectedModel]);
+
+  useEffect(() => {
+    checkApiKey();
+  }, [checkApiKey]);
+
+  // Also re-check when window regains focus (user may have just saved keys in Settings)
+  useEffect(() => {
+    const onFocus = () => checkApiKey();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [checkApiKey]);
+
+  const canSubmit = topic.trim().length > 0 && apiKeyAvailable && !isSubmitting;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!topic.trim() || isSubmitting) return;
+    if (!canSubmit || !selectedModel) return;
 
     setIsSubmitting(true);
     try {
+      const storedKey = getStoredApiKey(selectedModel.provider);
       await createResearch({
         topic: topic.trim(),
         llmModel,
-        llmApiKey: apiKey.trim() || undefined,
+        llmApiKey: storedKey || undefined,
       });
       setTopic("");
-      // Don't clear API key — user likely wants to reuse it
     } catch (err) {
       console.error("Failed to create research request:", err);
     } finally {
@@ -41,8 +89,11 @@ export default function ResearchInput() {
     }
   };
 
+  const providerDisplayName = selectedModel?.group ?? selectedModel?.provider ?? "this provider";
+
   return (
     <div className="glass-panel">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -62,55 +113,36 @@ export default function ResearchInput() {
             Research a Topic
           </h3>
           <p className="text-xs text-istk-textDim">
-            Choose an LLM, enter your API key, and submit a topic — the daemon
-            will research it with Brave Search &amp; sentiment analysis
+            Choose an LLM and submit a topic — the daemon will research it with
+            Brave Search &amp; sentiment analysis
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        {/* LLM Selector + API Key Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* LLM Dropdown */}
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Brain className="w-4 h-4 text-istk-cyan opacity-60" />
-            </div>
-            <select
-              value={llmModel}
-              onChange={(e) => setLlmModel(e.target.value)}
-              className="glass-input pl-9 pr-8 text-sm appearance-none cursor-pointer w-full"
-              disabled={isSubmitting}
-            >
-              {groups.map((group) => (
-                <optgroup key={group} label={group}>
-                  {LLM_MODELS.filter((m) => m.group === group).map((m) => (
-                    <option key={m.modelId} value={m.modelId}>
-                      {m.displayName}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronDown className="w-4 h-4 text-istk-textDim" />
-            </div>
+        {/* LLM Selector — full width */}
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <Brain className="w-4 h-4 text-istk-cyan opacity-60" />
           </div>
-
-          {/* API Key Input */}
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Key className="w-4 h-4 text-istk-warning opacity-60" />
-            </div>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="API Key (or leave blank for server default)"
-              className="glass-input pl-9 text-sm w-full"
-              disabled={isSubmitting}
-              autoComplete="off"
-            />
+          <select
+            value={llmModel}
+            onChange={(e) => setLlmModel(e.target.value)}
+            className="glass-input pl-9 pr-8 text-sm appearance-none cursor-pointer w-full"
+            disabled={isSubmitting}
+          >
+            {groups.map((group) => (
+              <optgroup key={group} label={group}>
+                {LLM_MODELS.filter((m) => m.group === group).map((m) => (
+                  <option key={m.modelId} value={m.modelId}>
+                    {m.displayName}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <ChevronDown className="w-4 h-4 text-istk-textDim" />
           </div>
         </div>
 
@@ -121,14 +153,27 @@ export default function ResearchInput() {
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder='e.g. "Bitcoin ETF inflows Q1 2026" or "AI agent crypto narrative"'
-              className="glass-input pr-4 text-sm"
+              placeholder={
+                apiKeyAvailable
+                  ? 'e.g. "Bitcoin ETF inflows Q1 2026" or "AI agent crypto narrative"'
+                  : `⚠ No API key configured for ${providerDisplayName}`
+              }
+              className="glass-input pr-4 text-sm w-full transition-all duration-200"
+              style={
+                !apiKeyAvailable
+                  ? {
+                      borderColor: "rgba(239,68,68,0.7)",
+                      boxShadow: "0 0 8px rgba(239,68,68,0.15), inset 0 0 4px rgba(239,68,68,0.05)",
+                      background: "rgba(239,68,68,0.04)",
+                    }
+                  : undefined
+              }
               disabled={isSubmitting}
             />
           </div>
           <button
             type="submit"
-            disabled={!topic.trim() || isSubmitting}
+            disabled={!canSubmit}
             className="glass-button-accent flex items-center gap-2 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
           >
             {isSubmitting ? (
@@ -144,6 +189,34 @@ export default function ResearchInput() {
             )}
           </button>
         </div>
+
+        {/* API Key Warning */}
+        {!apiKeyAvailable && (
+          <div
+            className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm animate-in fade-in slide-in-from-top-1 duration-200"
+            style={{
+              background: "rgba(239,68,68,0.06)",
+              border: "1px solid rgba(239,68,68,0.25)",
+            }}
+          >
+            <AlertTriangle
+              className="w-4 h-4 shrink-0"
+              style={{ color: "rgb(248,113,113)" }}
+            />
+            <span style={{ color: "rgb(252,165,165)" }}>
+              No API key configured for <strong>{providerDisplayName}</strong>.{" "}
+              <a
+                href="/settings"
+                className="underline underline-offset-2 font-medium transition-colors"
+                style={{ color: "rgb(248,113,113)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "rgb(252,165,165)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgb(248,113,113)")}
+              >
+                Add it in Settings →
+              </a>
+            </span>
+          </div>
+        )}
       </form>
 
       {/* Status badges */}

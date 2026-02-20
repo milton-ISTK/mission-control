@@ -41,8 +41,11 @@ export const LLM_MODELS: LLMModel[] = [
   { provider: "deepseek", modelId: "deepseek-reasoner", displayName: "DeepSeek R1",  group: "DeepSeek" },
 
   // ── MiniMax ──
-  { provider: "minimax", modelId: "MiniMax-M1",  displayName: "MiniMax M1",  group: "MiniMax" },
-  { provider: "minimax", modelId: "MiniMax-T1",  displayName: "MiniMax T1",  group: "MiniMax" },
+  { provider: "minimax", modelId: "MiniMax-M1",       displayName: "MiniMax M1",       group: "MiniMax" },
+  { provider: "minimax", modelId: "MiniMax-T1",       displayName: "MiniMax T1",       group: "MiniMax" },
+  { provider: "minimax", modelId: "minimax-2.5",      displayName: "MiniMax 2.5",      group: "MiniMax" },
+  { provider: "minimax", modelId: "minimax-2.1",      displayName: "MiniMax 2.1",      group: "MiniMax" },
+  { provider: "minimax", modelId: "minimax-1.5-fast", displayName: "MiniMax 1.5 Fast", group: "MiniMax" },
 
   // ── Meta (via Together AI) ──
   { provider: "together", modelId: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", displayName: "Llama 4 Maverick",  group: "Meta (Together)" },
@@ -71,4 +74,23 @@ export function getModelGroups(): string[] {
 /** Find a model by its modelId */
 export function findModel(modelId: string): LLMModel | undefined {
   return LLM_MODELS.find((m) => m.modelId === modelId);
+}
+
+/**
+ * Get the localStorage key name for a given model provider.
+ * Maps model provider identifiers to the keys used in the
+ * "llm_api_keys" JSON object stored in localStorage.
+ */
+export function getProviderKeyName(provider: string): string {
+  return provider; // 1:1 mapping — keys match provider identifiers
+}
+
+/** All unique provider identifiers used by models */
+export function getAllProviders(): string[] {
+  const seen = new Set<string>();
+  return LLM_MODELS.filter((m) => {
+    if (seen.has(m.provider)) return false;
+    seen.add(m.provider);
+    return true;
+  }).map((m) => m.provider);
 }

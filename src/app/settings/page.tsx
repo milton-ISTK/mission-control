@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Key, Save, AlertCircle, ExternalLink, CheckCircle, AlertTriangle } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { PROVIDERS, type LLMProvider } from "@/lib/llm-models";
 
@@ -27,12 +27,15 @@ export default function SettingsPage() {
   const daemonStatusData = useQuery(api.systemStatus.getDaemonStatus);
   const daemonStatus = daemonStatusData?.status ?? "unknown";
 
+  // Convex mutations for API key management
+  const saveApiKey = useMutation(api.contentPipeline.saveApiKey);
+
   // Load API keys on mount
   useEffect(() => {
     setLoading(false);
   }, []);
 
-  // Save to Convex HTTP endpoint; sync daemon will poll and write to local file
+  // Save to Convex via mutation; sync daemon will poll and write to local file
   const handleSave = async () => {
     setError("");
     setSaved(false);
@@ -40,22 +43,13 @@ export default function SettingsPage() {
     try {
       let savedCount = 0;
 
-      // POST each provider's key to Convex; sync daemon will pick it up and write to disk
+      // Call Convex mutation for each provider's key
       for (const [provider, key] of Object.entries(apiKeys)) {
         if (key.trim()) {
-          const response = await fetch("/api/keys", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              provider,
-              key: key.trim(),
-            }),
+          await saveApiKey({
+            provider,
+            key: key.trim(),
           });
-
-          if (!response.ok) {
-            throw new Error(`Failed to save ${provider} key: ${response.statusText}`);
-          }
-
           savedCount++;
         }
       }
@@ -96,7 +90,7 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-istk-textMuted">
-          Configure API keys for LLM providers. Keys are stored in Convex, synced to Milton's daemon every 10 seconds, and written to local disk only.
+          Configure API keys for LLM providers. Keys are stored in Convex, synced to Milton's daemon every 10 seconds, and written to local disk only (600 permissions).
         </p>
       </div>
 
@@ -213,9 +207,9 @@ export default function SettingsPage() {
             Privacy &amp; Security
           </p>
           <p>
-            API keys are stored in Convex as the source of truth. The sync daemon on Milton's Mac Mini polls Convex every 10 seconds and 
+            API keys are stored in Convex as the source of truth. This page calls the Convex mutation directly to save keys. The sync daemon on Milton's Mac Mini polls Convex every 10 seconds and 
             writes keys to <code className="text-istk-accent">~/.config/mission-control/api-keys.json</code> with 600 permissions 
-            (read-only to user). Keys are synced over HTTPS to Convex, then read locally from disk. They are only used by the daemon to call LLM APIs during research.
+            (read-only to user). Keys are never stored in browser localStorage or Vercel. They are only used by the daemon to call LLM APIs during research.
           </p>
         </div>
       </div>

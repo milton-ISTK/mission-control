@@ -307,13 +307,15 @@ export const advanceWorkflow = mutation({
       });
 
       // Update linked task to "done"
-      try {
-        await ctx.db.patch(workflow.taskId, {
-          status: "done",
-          updatedAt: now,
-        });
-      } catch {
-        // Task may not exist — non-fatal
+      if (workflow.taskId) {
+        try {
+          await ctx.db.patch(workflow.taskId, {
+            status: "done",
+            updatedAt: now,
+          });
+        } catch {
+          // Task may not exist — non-fatal
+        }
       }
 
       // Update source research status to "complete"

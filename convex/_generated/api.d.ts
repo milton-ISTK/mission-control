@@ -14,9 +14,11 @@ import type * as dashboard from "../dashboard.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
+import type * as seed from "../seed.js";
 import type * as subagents from "../subagents.js";
 import type * as systemStatus from "../systemStatus.js";
 import type * as tasks from "../tasks.js";
+import type * as workflows from "../workflows.js";
 
 import type {
   ApiFromModules,
@@ -31,9 +33,11 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   http: typeof http;
   memories: typeof memories;
+  seed: typeof seed;
   subagents: typeof subagents;
   systemStatus: typeof systemStatus;
   tasks: typeof tasks;
+  workflows: typeof workflows;
 }>;
 
 /**

@@ -599,4 +599,263 @@ http.route({
   }),
 });
 
+// ==============================================================
+// Workflow Orchestration Engine — HTTP Endpoints (Phase 1)
+// ==============================================================
+
+// ---- GET /api/workflow/pending-steps ----
+// Fetch all workflow steps with status "pending" (for daemon polling)
+http.route({
+  path: "/api/workflow/pending-steps",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const steps = await ctx.runQuery(api.workflows.getPendingSteps, {});
+      return new Response(
+        JSON.stringify({ ok: true, steps }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/workflow/step-status ----
+// Update step status (e.g. pending → agent_working)
+http.route({
+  path: "/api/workflow/step-status",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.workflows.updateStepStatus, {
+        stepId: body.stepId,
+        status: body.status,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/workflow/step-output ----
+// Submit step output + auto-trigger advanceWorkflow
+// If step requiresApproval → status becomes "awaiting_review"
+// If not → status becomes "completed" + advanceWorkflow fires
+http.route({
+  path: "/api/workflow/step-output",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+
+      // Update step output (also sets status based on requiresApproval)
+      await ctx.runMutation(api.workflows.updateStepOutput, {
+        stepId: body.stepId,
+        output: body.output,
+      });
+
+      // Get the step to check if we should advance
+      const step = await ctx.runQuery(api.workflows.getWorkflowStep, { id: body.stepId });
+      if (step && step.status === "completed") {
+        // Auto-trigger advanceWorkflow
+        await ctx.runMutation(api.workflows.advanceWorkflow, {
+          workflowId: step.workflowId,
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/workflow/step-thinking ----
+// Live thinking feed update (typewriter lines)
+http.route({
+  path: "/api/workflow/step-thinking",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.workflows.updateStepThinking, {
+        stepId: body.stepId,
+        thinkingLine1: body.thinkingLine1,
+        thinkingLine2: body.thinkingLine2,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/workflow/step-fail ----
+// Mark step as failed with error message
+http.route({
+  path: "/api/workflow/step-fail",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      await ctx.runMutation(api.workflows.failStep, {
+        stepId: body.stepId,
+        errorMessage: body.errorMessage,
+      });
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/workflow/step-complete ----
+// Mark step as completed + trigger advanceWorkflow
+http.route({
+  path: "/api/workflow/step-complete",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+
+      // Mark step as completed
+      await ctx.runMutation(api.workflows.completeStep, {
+        stepId: body.stepId,
+      });
+
+      // Get the step to find its workflow
+      const step = await ctx.runQuery(api.workflows.getWorkflowStep, { id: body.stepId });
+      if (step) {
+        // Trigger advanceWorkflow
+        await ctx.runMutation(api.workflows.advanceWorkflow, {
+          workflowId: step.workflowId,
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- GET /api/workflow/step-input ----
+// Fetch input data for a specific step (daemon reads this before executing)
+http.route({
+  path: "/api/workflow/step-input",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const url = new URL(request.url);
+      const stepId = url.searchParams.get("stepId");
+      if (!stepId) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing stepId query parameter" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const step = await ctx.runQuery(api.workflows.getWorkflowStep, {
+        id: stepId as any,
+      });
+      if (!step) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Step not found" }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Also fetch the parent workflow for context
+      const workflow = await ctx.runQuery(api.workflows.getWorkflow, {
+        id: step.workflowId,
+      });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          stepId: step._id,
+          stepNumber: step.stepNumber,
+          name: step.name,
+          agentRole: step.agentRole,
+          input: step.input,
+          workflowId: step.workflowId,
+          contentType: workflow?.contentType,
+          selectedAngle: workflow?.selectedAngle,
+          briefing: workflow?.briefing,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;

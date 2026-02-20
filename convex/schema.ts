@@ -81,9 +81,18 @@ export default defineSchema({
     isSubagent: v.boolean(),
     createdAt: v.string(),
     updatedAt: v.optional(v.string()),
+    // ---- Workflow Orchestration additions (Phase 1) ----
+    agentRole: v.optional(v.string()),              // Workflow routing key (e.g. "blog_writer", "sentiment_scraper")
+    capabilities: v.optional(v.array(v.string())),  // List of agent capabilities
+    systemPrompt: v.optional(v.string()),           // Full system prompt for LLM
+    modelId: v.optional(v.string()),                // Exact LLM model ID (from llm-models.ts)
+    provider: v.optional(v.string()),               // LLM provider ("anthropic", "openai", etc.)
+    isAutonomous: v.optional(v.boolean()),          // Can work without human intervention
+    maxConcurrentTasks: v.optional(v.number()),     // Max parallel tasks this agent can handle
   })
     .index("by_status", ["status"])
-    .index("by_name", ["name"]),
+    .index("by_name", ["name"])
+    .index("by_agentRole", ["agentRole"]),
 
   // ---- System Status (daemon health, sync status, etc.) ----
   systemStatus: defineTable({
@@ -135,6 +144,12 @@ export default defineSchema({
     requestedBy: v.string(),
     createdAt: v.string(),
     updatedAt: v.string(),
+    // ---- Workflow Orchestration additions (Phase 1) ----
+    suggestedAngles: v.optional(v.array(v.object({
+      angle: v.string(),
+      contentType: v.string(),
+      rationale: v.optional(v.string()),
+    }))),
   })
     .index("by_status", ["status"])
     .index("by_date", ["createdAt"]),
@@ -165,4 +180,113 @@ export default defineSchema({
     createdAt: v.string(),
     updatedAt: v.string(),
   }).index("by_provider", ["provider"]),
+
+  // ==== Workflow Orchestration Engine (Phase 1) ====
+
+  // ---- Workflow Templates ----
+  // Defines reusable workflow blueprints (e.g. "Blog Post", "X Thread")
+  workflowTemplates: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    contentType: v.string(), // blog_post, social_image, x_thread, linkedin_post
+    steps: v.array(v.object({
+      stepNumber: v.number(),
+      name: v.string(),
+      description: v.optional(v.string()),
+      agentRole: v.string(),
+      requiresApproval: v.boolean(),
+      timeoutMinutes: v.number(),
+      parallelWith: v.optional(v.array(v.number())),
+    })),
+    isActive: v.boolean(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("by_contentType", ["contentType"])
+    .index("by_isActive", ["isActive"]),
+
+  // ---- Workflows ----
+  // Running instances of workflow templates
+  workflows: defineTable({
+    templateId: v.id("workflowTemplates"),
+    sourceResearchId: v.id("contentResearch"),
+    selectedAngle: v.string(),
+    contentType: v.string(),
+    briefing: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("active"),
+      v.literal("paused"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    currentStepNumber: v.number(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    completedAt: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_templateId", ["templateId"])
+    .index("by_sourceResearchId", ["sourceResearchId"]),
+
+  // ---- Workflow Steps ----
+  // Individual step execution records within a workflow
+  workflowSteps: defineTable({
+    workflowId: v.id("workflows"),
+    stepNumber: v.number(),
+    name: v.string(),
+    agentRole: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("agent_working"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("awaiting_review"),
+      v.literal("rejected"),
+      v.literal("skipped")
+    ),
+    input: v.optional(v.string()),          // JSON string — input data from previous step
+    output: v.optional(v.string()),         // JSON string — output data from this step
+    thinkingLine1: v.optional(v.string()),  // Live thinking feed line 1
+    thinkingLine2: v.optional(v.string()),  // Live thinking feed line 2
+    requiresApproval: v.boolean(),
+    reviewNotes: v.optional(v.string()),
+    selectedOption: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    startedAt: v.optional(v.string()),
+    completedAt: v.optional(v.string()),
+    timeoutMinutes: v.number(),
+    retryCount: v.optional(v.number()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("by_workflowId", ["workflowId"])
+    .index("by_status", ["status"])
+    .index("by_workflowId_stepNumber", ["workflowId", "stepNumber"]),
+
+  // ---- Published Content ----
+  // Final output from completed workflows
+  publishedContent: defineTable({
+    workflowId: v.id("workflows"),
+    contentType: v.string(),
+    title: v.optional(v.string()),
+    body: v.optional(v.string()),
+    htmlContent: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    platform: v.optional(v.string()),     // x, linkedin, blog, etc.
+    publishedUrl: v.optional(v.string()),
+    publishedAt: v.optional(v.string()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("scheduled"),
+      v.literal("failed")
+    ),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("by_workflowId", ["workflowId"])
+    .index("by_status", ["status"])
+    .index("by_platform", ["platform"]),
 });

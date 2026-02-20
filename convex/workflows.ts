@@ -201,7 +201,7 @@ export const createWorkflow = mutation({
     }
 
     // Create workflow step records for the first batch
-    for (const stepNum of batchStepNumbers) {
+    for (const stepNum of Array.from(batchStepNumbers)) {
       const templateStep = template.steps.find((ts) => ts.stepNumber === stepNum);
       if (!templateStep) continue;
 
@@ -306,7 +306,7 @@ export const advanceWorkflow = mutation({
       nextStep.parallelWith.forEach((n) => batchStepNumbers.add(n));
     }
     // Also check if any of the parallel partners reference other steps
-    for (const stepNum of batchStepNumbers) {
+    for (const stepNum of Array.from(batchStepNumbers)) {
       const ts = template.steps.find((s) => s.stepNumber === stepNum);
       if (ts?.parallelWith) {
         ts.parallelWith.forEach((n) => batchStepNumbers.add(n));
@@ -340,7 +340,7 @@ export const advanceWorkflow = mutation({
     }
 
     // 8. Create workflowSteps for the next batch
-    for (const stepNum of batchStepNumbers) {
+    for (const stepNum of Array.from(batchStepNumbers)) {
       const templateStep = template.steps.find((ts) => ts.stepNumber === stepNum);
       if (!templateStep) continue;
 
@@ -360,7 +360,7 @@ export const advanceWorkflow = mutation({
 
     // Update workflow currentStepNumber to the highest in the new batch
     await ctx.db.patch(args.workflowId, {
-      currentStepNumber: Math.max(...batchStepNumbers),
+      currentStepNumber: Math.max(...Array.from(batchStepNumbers)),
       updatedAt: now,
     });
   },

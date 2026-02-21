@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import LoginModal from "./LoginModal";
 
@@ -17,11 +17,21 @@ export function useAuthContext() {
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, error, login, logout, clearError } = useAuth();
 
+  // Prevent background scrolling when not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isAuthenticated]);
+
   // Show nothing while checking auth (prevents flash)
   if (isLoading) {
     return (
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center"
+        className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto"
         style={{
           background: "#0A0A0A",
         }}

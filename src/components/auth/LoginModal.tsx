@@ -20,6 +20,10 @@ export default function LoginModal({ onLogin, error, onClearError }: LoginModalP
 
   useEffect(() => {
     setMounted(true);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   const handleSubmit = useCallback(
@@ -44,7 +48,7 @@ export default function LoginModal({ onLogin, error, onClearError }: LoginModalP
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto"
       style={{
         background: "rgba(4,4,6,0.92)",
         backdropFilter: "blur(24px) saturate(180%)",

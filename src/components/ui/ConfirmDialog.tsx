@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface ConfirmDialogProps {
@@ -21,6 +22,15 @@ export default function ConfirmDialog({
   isDangerous = false,
   isLoading = false,
 }: ConfirmDialogProps) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
@@ -33,15 +43,15 @@ export default function ConfirmDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-zinc-900/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-zinc-900/80 backdrop-blur-sm -z-10"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-sm mx-4 p-6 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 shadow-2xl">
+      <div className="relative z-10 w-full max-w-sm mx-4 p-6 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 shadow-2xl my-auto">
         {/* Title */}
         <h2 className="text-lg font-bold text-istk-text mb-2">{title}</h2>
 

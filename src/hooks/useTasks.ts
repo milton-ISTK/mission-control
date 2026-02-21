@@ -6,7 +6,7 @@ import { Id } from "../../convex/_generated/dataModel";
 
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "critical" | "high" | "medium" | "low";
-export type Assignee = "Gregory" | "Milton";
+export type Assignee = string; // Any agent or person name
 
 export function useTasks(status?: TaskStatus) {
   return useQuery(api.tasks.listTasks, status ? { status } : {});

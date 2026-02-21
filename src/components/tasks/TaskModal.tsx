@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useMemo, FormEvent } from "react";
 import Modal from "@/components/common/Modal";
 import { Input, Textarea, Select } from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { useCreateTask, useUpdateTask, useTask } from "@/hooks/useTasks";
+import { useAgents } from "@/hooks/useAgents";
 import { Id } from "../../../convex/_generated/dataModel";
 
 interface TaskModalProps {
@@ -20,7 +21,8 @@ const priorityOptions = [
   { value: "critical", label: "Critical" },
 ];
 
-const assigneeOptions = [
+// Static assignees (Gregory and Milton always available)
+const staticAssignees = [
   { value: "Gregory", label: "Gregory" },
   { value: "Milton", label: "Milton" },
 ];
@@ -29,6 +31,24 @@ export default function TaskModal({ isOpen, onClose, editTaskId }: TaskModalProp
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const existingTask = useTask(editTaskId ?? undefined);
+  const allAgents = useAgents();
+
+  // Build assignee options: static (Gregory, Milton) + all agents from database
+  const assigneeOptions = useMemo(() => {
+    const agents = (allAgents ?? []).filter((a: any) => (a.agentType ?? "agent") === "agent");
+    const agentOptions = agents.map((a: any) => ({
+      value: a.name,
+      label: a.name,
+    }));
+    // Combine: static assignees + agents (avoid duplicates if agent is named Gregory/Milton)
+    const allOptions = [...staticAssignees];
+    agentOptions.forEach((agent) => {
+      if (!allOptions.some((opt) => opt.value === agent.value)) {
+        allOptions.push(agent);
+      }
+    });
+    return allOptions;
+  }, [allAgents]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -92,7 +112,7 @@ export default function TaskModal({ isOpen, onClose, editTaskId }: TaskModalProp
           title: title.trim(),
           description: description.trim() || undefined,
           priority: priority as "critical" | "high" | "medium" | "low",
-          assignee: assignee as "Gregory" | "Milton",
+          assignee: assignee,
           dueDate: dueDate || undefined,
           tags,
         });
@@ -101,7 +121,7 @@ export default function TaskModal({ isOpen, onClose, editTaskId }: TaskModalProp
           title: title.trim(),
           description: description.trim() || undefined,
           priority: priority as "critical" | "high" | "medium" | "low",
-          assignee: assignee as "Gregory" | "Milton",
+          assignee: assignee,
           dueDate: dueDate || undefined,
           tags,
         });

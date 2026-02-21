@@ -152,13 +152,18 @@ export default function TeamPage() {
       </div>
 
       {/* Content — render both, show/hide to avoid unmount/remount cycles */}
-      <div className={activeTab !== "agents" || viewMode === "list" ? "" : "hidden"}>
-        <TeamGrid
-          sortOption={sortOption}
-          agentTypeFilter={activeTab === "agents" ? "agent" : "subagent"}
-        />
+      {/* Agents List */}
+      <div style={{ display: activeTab === "agents" && viewMode === "list" ? "block" : "none" }}>
+        <TeamGrid sortOption={sortOption} agentTypeFilter="agent" />
       </div>
-      <div className={activeTab === "agents" && viewMode === "orgchart" ? "" : "hidden"}>
+
+      {/* Subagents List */}
+      <div style={{ display: activeTab === "subagents" ? "block" : "none" }}>
+        <TeamGrid sortOption={sortOption} agentTypeFilter="subagent" />
+      </div>
+
+      {/* Org Chart */}
+      <div style={{ display: activeTab === "agents" && viewMode === "orgchart" ? "block" : "none" }}>
         <OrgChart agents={allAgents as any} />
       </div>
 

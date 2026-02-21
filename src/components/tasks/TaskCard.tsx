@@ -10,7 +10,7 @@ import { api } from "../../../convex/_generated/api";
 import { cn, formatRelative } from "@/lib/utils";
 import { PriorityBadge } from "@/components/common/Badge";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import WorkflowProgress from "@/components/workflows/WorkflowProgress";
+import CompactWorkflowProgress from "@/components/workflows/CompactWorkflowProgress";
 import { useDeleteTask, useToggleAssignee } from "@/hooks/useTasks";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -141,20 +141,13 @@ function TaskCardInner({ task, onEdit }: TaskCardProps) {
         <Link
           href={workflow.status === "paused_for_review" ? `/workflow/${workflow._id}` : "#"}
           className={cn(
-            "block mb-3 pl-6 pr-2 py-2 rounded-lg transition-all",
+            "block mb-3 pl-6 pr-2 py-1.5 rounded-lg transition-all",
             workflow.status === "paused_for_review"
               ? "bg-amber-900/10 border border-amber-700/30 hover:bg-amber-900/20 cursor-pointer"
               : "bg-zinc-900/20 border border-zinc-700/30"
           )}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-istk-textMuted">
-              {workflow.status === "paused_for_review" && "⏸️ "}
-              {workflow.status === "completed" && "✅ "}
-              Step {workflow.currentStepNumber}/{workflow.template?.steps?.length || 0}
-            </span>
-          </div>
-          <WorkflowProgress
+          <CompactWorkflowProgress
             totalSteps={workflow.template?.steps?.length || 0}
             currentStep={workflow.currentStepNumber}
             status={workflow.status}

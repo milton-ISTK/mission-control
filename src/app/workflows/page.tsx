@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { Clock } from "lucide-react";
 import WorkflowProgress from "@/components/workflows/WorkflowProgress";
 import { cn } from "@/lib/utils";

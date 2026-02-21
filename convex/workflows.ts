@@ -944,16 +944,32 @@ export const deleteWorkflow = mutation({
       .collect();
 
     for (const step of steps) {
-      await ctx.db.delete(step._id);
+      try {
+        await ctx.db.delete(step._id);
+      } catch (err) {
+        console.warn(`Failed to delete step ${step._id}:`, err);
+      }
     }
 
     // Delete linked task if it exists
     if (workflow.taskId) {
-      await ctx.db.delete(workflow.taskId);
+      try {
+        const task = await ctx.db.get(workflow.taskId);
+        if (task) {
+          await ctx.db.delete(workflow.taskId);
+        }
+      } catch (err) {
+        console.warn(`Failed to delete task ${workflow.taskId}:`, err);
+      }
     }
 
     // Delete the workflow itself
-    await ctx.db.delete(args.workflowId);
+    try {
+      await ctx.db.delete(args.workflowId);
+    } catch (err) {
+      console.error(`Failed to delete workflow ${args.workflowId}:`, err);
+      throw err;
+    }
 
     return { ok: true, message: `Workflow deleted (${steps.length} steps removed)` };
   },
@@ -978,24 +994,39 @@ export const deleteWorkflowsByStatus = mutation({
     let deletedCount = 0;
 
     for (const workflow of workflows) {
-      // Delete all steps
-      const steps = await ctx.db
-        .query("workflowSteps")
-        .withIndex("by_workflowId", (q) => q.eq("workflowId", workflow._id))
-        .collect();
+      try {
+        // Delete all steps
+        const steps = await ctx.db
+          .query("workflowSteps")
+          .withIndex("by_workflowId", (q) => q.eq("workflowId", workflow._id))
+          .collect();
 
-      for (const step of steps) {
-        await ctx.db.delete(step._id);
+        for (const step of steps) {
+          try {
+            await ctx.db.delete(step._id);
+          } catch (err) {
+            console.warn(`Failed to delete step ${step._id}:`, err);
+          }
+        }
+
+        // Delete linked task if exists
+        if (workflow.taskId) {
+          try {
+            const task = await ctx.db.get(workflow.taskId);
+            if (task) {
+              await ctx.db.delete(workflow.taskId);
+            }
+          } catch (err) {
+            console.warn(`Failed to delete task ${workflow.taskId}:`, err);
+          }
+        }
+
+        // Delete workflow
+        await ctx.db.delete(workflow._id);
+        deletedCount++;
+      } catch (err) {
+        console.error(`Failed to delete workflow ${workflow._id}:`, err);
       }
-
-      // Delete linked task if exists
-      if (workflow.taskId) {
-        await ctx.db.delete(workflow.taskId);
-      }
-
-      // Delete workflow
-      await ctx.db.delete(workflow._id);
-      deletedCount++;
     }
 
     return { ok: true, deleted: deletedCount, message: `Deleted ${deletedCount} workflow(s)` };

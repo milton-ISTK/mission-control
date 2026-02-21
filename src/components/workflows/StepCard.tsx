@@ -261,20 +261,42 @@ export default function StepCard({
     );
   };
 
-  // Extract HTML content
-  const extractHtmlContent = (): string => {
-    if (!step.output) return "";
+  // Extract HTML content from a step's output
+  const extractHtmlFromStep = (stepToExtract: WorkflowStep): string => {
+    if (!stepToExtract.output) return "";
     try {
-      const parsed = JSON.parse(step.output);
-      const html = parsed.html || parsed.result?.html || step.output;
+      const parsed = JSON.parse(stepToExtract.output);
+      const html =
+        parsed.html ||
+        parsed.htmlContent ||
+        parsed.result?.html ||
+        parsed.result?.htmlContent ||
+        parsed.output?.result?.html ||
+        parsed.output?.result?.htmlContent ||
+        stepToExtract.output;
       return typeof html === "string" ? html : JSON.stringify(html, null, 2);
     } catch {
-      return step.output;
+      return stepToExtract.output;
     }
+  };
+
+  // Extract HTML content from current step
+  const extractHtmlContent = (): string => {
+    return extractHtmlFromStep(step);
   };
 
   const handlePreviewHtml = () => {
     const html = extractHtmlContent();
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
+  const handlePreviewPreviousStepHtml = () => {
+    if (!allSteps) return;
+    const previousStep = allSteps.find((s) => s.stepNumber === step.stepNumber - 1);
+    if (!previousStep) return;
+    const html = extractHtmlFromStep(previousStep);
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
@@ -286,6 +308,10 @@ export default function StepCard({
       alert("HTML copied to clipboard!");
     });
   };
+
+  // Detect if previous step is html_builder
+  const previousStep = allSteps ? allSteps.find((s) => s.stepNumber === step.stepNumber - 1) : null;
+  const previousStepIsHtmlBuilder = previousStep?.agentRole === "html_builder";
 
   return (
     <div className={cn("rounded-xl border transition-all", config.bg, config.border)}>
@@ -348,14 +374,21 @@ export default function StepCard({
             <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-amber-300">📄 Content to Review:</p>
-                {isBlogContentStep && (
+                {previousStepIsHtmlBuilder ? (
+                  <button
+                    onClick={handlePreviewPreviousStepHtml}
+                    className="text-xs px-2 py-1 rounded bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 transition-all"
+                  >
+                    🌐 Preview HTML Page
+                  </button>
+                ) : isBlogContentStep ? (
                   <button
                     onClick={() => setShowLightbox(true)}
                     className="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-600/40 hover:bg-amber-600/30 transition-all"
                   >
                     📖 Read Content
                   </button>
-                )}
+                ) : null}
               </div>
               <div className="text-xs text-amber-100 max-h-60 overflow-y-auto">{renderContent(step.input, step.agentRole, true)}</div>
             </div>
@@ -380,13 +413,13 @@ export default function StepCard({
                       onClick={handlePreviewHtml}
                       className="text-xs px-2 py-1 rounded bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 transition-all"
                     >
-                      🌐 Preview
+                      🌐 Preview HTML Page
                     </button>
                     <button
                       onClick={handleCopyHtml}
                       className="text-xs px-2 py-1 rounded bg-blue-600/20 text-blue-300 border border-blue-600/40 hover:bg-blue-600/30 transition-all"
                     >
-                      📋 Copy
+                      📋 Copy HTML
                     </button>
                   </div>
                 )}

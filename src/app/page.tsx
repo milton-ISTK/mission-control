@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
+  Network,
+  Pause,
 } from "lucide-react";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
@@ -27,10 +29,17 @@ import { cn, formatRelative } from "@/lib/utils";
 export default function DashboardPage() {
   const stats = useQuery(api.dashboard.getStats);
   const recentActivity = useQuery(api.dashboard.getRecentActivity);
+  const activeWorkflows = useQuery(api.workflows.getActiveWorkflows);
+  const awaitingReviewSteps = useQuery(api.workflows.getStepsAwaitingReview);
 
   if (stats === undefined) {
     return <PageLoader label="Loading dashboard..." />;
   }
+
+  // Count workflows by status
+  const completedWorkflows = stats?.workflows?.completed || 0;
+  const activeWorkflowsCount = activeWorkflows?.length || 0;
+  const awaitingReviewCount = awaitingReviewSteps?.length || 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -48,7 +57,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards — Neon glow borders */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Tasks */}
         <Link href="/tasks" className="glass-card p-5 group">
           <div className="flex items-center justify-between mb-3">
@@ -72,6 +81,29 @@ export default function DashboardPage() {
             </span>
             <span className="text-istk-warning">{stats?.tasks.inProgress ?? 0} active</span>
             <span className="text-istk-success">{stats?.tasks.done ?? 0} done</span>
+          </div>
+        </Link>
+
+        {/* Workflows */}
+        <Link href="/workflows" className="glass-card p-5 group">
+          <div className="flex items-center justify-between mb-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                background: "rgba(0,217,255,0.06)",
+                border: "1px solid rgba(0,217,255,0.18)",
+                boxShadow: "0 0 10px rgba(0,217,255,0.08)",
+              }}
+            >
+              <Network className="w-5 h-5 text-istk-cyan drop-shadow-[0_0_6px_rgba(0,217,255,0.4)]" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-cyan group-hover:drop-shadow-[0_0_6px_rgba(0,217,255,0.3)] transition-all" />
+          </div>
+          <p className="text-3xl font-bold text-istk-cyan">{activeWorkflowsCount + completedWorkflows}</p>
+          <p className="text-xs text-istk-textMuted mt-1">Total Workflows</p>
+          <div className="flex items-center gap-3 mt-3 text-[10px]">
+            <span className="text-istk-cyan">{activeWorkflowsCount} active</span>
+            <span className="text-istk-success">{completedWorkflows} completed</span>
           </div>
         </Link>
 
@@ -108,24 +140,24 @@ export default function DashboardPage() {
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{
-                background: "rgba(0,217,255,0.06)",
-                border: "1px solid rgba(0,217,255,0.18)",
-                boxShadow: "0 0 10px rgba(0,217,255,0.08)",
+                background: "rgba(251,191,36,0.06)",
+                border: "1px solid rgba(251,191,36,0.18)",
+                boxShadow: "0 0 10px rgba(251,191,36,0.08)",
               }}
             >
-              <Calendar className="w-5 h-5 text-istk-cyan drop-shadow-[0_0_6px_rgba(0,217,255,0.4)]" />
+              <Calendar className="w-5 h-5 text-istk-warning drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" />
             </div>
-            <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-cyan group-hover:drop-shadow-[0_0_6px_rgba(0,217,255,0.3)] transition-all" />
+            <ArrowRight className="w-4 h-4 text-istk-textDim group-hover:text-istk-warning group-hover:drop-shadow-[0_0_6px_rgba(251,191,36,0.3)] transition-all" />
           </div>
           <p
-            className="text-3xl font-bold text-istk-cyan"
-            style={{ textShadow: "0 0 12px rgba(0,217,255,0.3)" }}
+            className="text-3xl font-bold text-istk-warning"
+            style={{ textShadow: "0 0 12px rgba(251,191,36,0.3)" }}
           >
             {stats?.events.crons ?? 0}
           </p>
           <p className="text-xs text-istk-textMuted mt-1">Cron Jobs</p>
           <div className="flex items-center gap-3 mt-3 text-[10px]">
-            <span className="text-istk-cyan">{stats?.events.active ?? 0} active</span>
+            <span className="text-istk-warning">{stats?.events.active ?? 0} active</span>
             <span className="text-istk-danger">{stats?.events.deadlines ?? 0} deadlines</span>
           </div>
         </Link>
@@ -161,22 +193,45 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Two Column: Critical + Recent Activity */}
+      {/* Two Column: Attention Needed + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Critical Tasks */}
+        {/* Attention Needed */}
         <div className="glass-panel">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-istk-text flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-istk-danger drop-shadow-[0_0_6px_rgba(248,113,113,0.4)]" />
               Attention Needed
             </h3>
-            <Link href="/tasks">
+            <Link href="/workflows">
               <Badge variant="default" className="hover:bg-[rgba(255,107,0,0.06)] hover:border-[rgba(255,107,0,0.15)] cursor-pointer transition-all">
                 View All
               </Badge>
             </Link>
           </div>
           <div className="flex flex-col gap-2">
+            {/* Awaiting Review Steps */}
+            {awaitingReviewCount > 0 ? (
+              awaitingReviewSteps?.slice(0, 5).map((step) => (
+                <Link
+                  key={step._id}
+                  href={`/workflow/${step.workflowId}`}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-amber-900/10"
+                  style={{
+                    background: "rgba(217,119,6,0.05)",
+                    border: "1px solid rgba(217,119,6,0.15)",
+                    boxShadow: "0 0 8px rgba(217,119,6,0.05)",
+                  }}
+                >
+                  <Pause className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-istk-text">Step {step.stepNumber}: {step.name}</p>
+                  </div>
+                  <ArrowRight className="w-3 h-3 text-istk-textDim" />
+                </Link>
+              ))
+            ) : null}
+
+            {/* Critical Tasks */}
             {(stats?.tasks.critical ?? 0) > 0 ? (
               <div
                 className="flex items-center gap-3 px-3 py-2 rounded-lg"
@@ -191,7 +246,7 @@ export default function DashboardPage() {
                   {stats?.tasks.critical} critical task{(stats?.tasks.critical ?? 0) > 1 ? "s" : ""} pending
                 </span>
               </div>
-            ) : (
+            ) : awaitingReviewCount === 0 ? (
               <div
                 className="flex items-center gap-3 px-3 py-2 rounded-lg"
                 style={{
@@ -201,9 +256,11 @@ export default function DashboardPage() {
                 }}
               >
                 <CheckCircle2 className="w-4 h-4 text-istk-success drop-shadow-[0_0_4px_rgba(52,211,153,0.3)]" />
-                <span className="text-sm text-istk-textMuted">No critical tasks — all clear!</span>
+                <span className="text-sm text-istk-textMuted">No attention needed — all clear!</span>
               </div>
-            )}
+            ) : null}
+
+            {/* Backlog */}
             {(stats?.tasks.todo ?? 0) > 0 && (
               <div
                 className="flex items-center gap-3 px-3 py-2 rounded-lg"
@@ -279,12 +336,12 @@ export default function DashboardPage() {
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { href: "/content", icon: Sparkles, label: "Content Pipeline", color: "text-istk-accent", glowColor: "rgba(255,107,0,", borderColor: "rgba(255,107,0,0.08)" },
-            { href: "/tasks", icon: KanbanSquare, label: "Tasks", color: "text-istk-cyan", glowColor: "rgba(0,217,255,", borderColor: "rgba(0,217,255,0.08)" },
-            { href: "/calendar", icon: Calendar, label: "Calendar", color: "text-istk-success", glowColor: "rgba(52,211,153,", borderColor: "rgba(52,211,153,0.08)" },
-            { href: "/memories", icon: Brain, label: "Memories", color: "text-istk-purple", glowColor: "rgba(178,75,243,", borderColor: "rgba(178,75,243,0.08)" },
-            { href: "/team", icon: Users, label: "Team", color: "text-istk-warning", glowColor: "rgba(251,191,36,", borderColor: "rgba(251,191,36,0.08)" },
-            { href: "/subagents", icon: Bot, label: "Subagents", color: "text-istk-textMuted", glowColor: "rgba(255,107,0,", borderColor: "rgba(255,255,255,0.05)" },
+            { href: "/content", icon: Sparkles, label: "Content Pipeline", color: "text-istk-accent", borderColor: "rgba(255,107,0,0.08)" },
+            { href: "/workflows", icon: Network, label: "Workflows", color: "text-istk-cyan", borderColor: "rgba(0,217,255,0.08)" },
+            { href: "/tasks", icon: KanbanSquare, label: "Tasks", color: "text-istk-warning", borderColor: "rgba(251,191,36,0.08)" },
+            { href: "/calendar", icon: Calendar, label: "Calendar", color: "text-istk-success", borderColor: "rgba(52,211,153,0.08)" },
+            { href: "/memories", icon: Brain, label: "Memories", color: "text-istk-purple", borderColor: "rgba(178,75,243,0.08)" },
+            { href: "/team", icon: Users, label: "Team", color: "text-istk-purple", borderColor: "rgba(178,75,243,0.08)" },
           ].map((link) => (
             <Link
               key={link.href}
@@ -318,11 +375,12 @@ export default function DashboardPage() {
               Getting Started
             </h3>
             <ul className="text-sm text-istk-textMuted space-y-2">
-              <li>• Visit <strong className="text-istk-accent">Tasks</strong> to manage your kanban board with drag-and-drop</li>
-              <li>• Check <strong className="text-istk-cyan">Calendar</strong> for scheduled cron jobs and deadlines</li>
-              <li>• Search <strong className="text-istk-success">Memories</strong> to access your knowledge base</li>
+              <li>• Visit <strong className="text-istk-accent">Content Pipeline</strong> to create research tasks and workflows</li>
+              <li>• Check <strong className="text-istk-cyan">Workflows</strong> to monitor multi-step content creation pipelines</li>
+              <li>• Manage <strong className="text-istk-warning">Tasks</strong> on your kanban board with drag-and-drop</li>
+              <li>• Schedule <strong className="text-istk-success">Calendar</strong> events and cron jobs</li>
+              <li>• Search <strong className="text-istk-purple">Memories</strong> to access your knowledge base</li>
               <li>• Manage your <strong className="text-istk-purple">Team</strong> of agents and view their activity</li>
-              <li>• Create new <strong className="text-istk-warning">Subagents</strong> with custom LLM models and system prompts</li>
             </ul>
           </div>
         </div>

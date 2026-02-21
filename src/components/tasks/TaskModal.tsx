@@ -44,7 +44,6 @@ export default function TaskModal({ isOpen, onClose, editTaskId }: TaskModalProp
   // Populate form when editing
   useEffect(() => {
     if (existingTask && isEditing) {
-      console.log('TASK EDIT DEBUG:', JSON.stringify(existingTask, null, 2));
       setTitle(existingTask.title || "");
       setDescription(existingTask.description || "");
       setPriority(existingTask.priority || "medium");

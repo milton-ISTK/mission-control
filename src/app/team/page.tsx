@@ -36,7 +36,7 @@ export default function TeamPage() {
   const allAgents = useAgents();
 
   const agentCount = (allAgents ?? []).filter((a: any) => (a.agentType ?? "agent") === "agent").length;
-  const subagentCount = (allAgents ?? []).filter((a: any) => a.agentType === "subagent").length;
+  const subagentCount = (allAgents ?? []).filter((a: any) => (a.agentType ?? "agent") === "subagent").length;
 
   const handleCreateAgent = () => {
     setCreateCategory("agent");

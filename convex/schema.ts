@@ -224,6 +224,7 @@ export default defineSchema({
       v.literal("pending"),
       v.literal("active"),
       v.literal("paused"),
+      v.literal("paused_for_review"),
       v.literal("completed"),
       v.literal("failed"),
       v.literal("cancelled")
@@ -248,6 +249,7 @@ export default defineSchema({
       v.literal("pending"),
       v.literal("agent_working"),
       v.literal("completed"),
+      v.literal("approved"),
       v.literal("failed"),
       v.literal("awaiting_review"),
       v.literal("rejected"),
@@ -260,6 +262,7 @@ export default defineSchema({
     requiresApproval: v.boolean(),
     reviewNotes: v.optional(v.string()),
     selectedOption: v.optional(v.string()),
+    reviewedAt: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
     startedAt: v.optional(v.string()),
     completedAt: v.optional(v.string()),

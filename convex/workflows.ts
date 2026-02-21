@@ -347,17 +347,17 @@ export const advanceWorkflow = mutation({
     const template = await ctx.db.get(workflow.templateId);
     if (!template) throw new Error("Workflow template not found");
 
-    // Check for any steps still in progress (pending, agent_working, awaiting_review)
+    // Check for any steps still in progress (pending, agent_working)
     const activeSteps = allSteps.filter((s) =>
-      ["pending", "agent_working", "awaiting_review"].includes(s.status)
+      ["pending", "agent_working"].includes(s.status)
     );
 
     // If there are still active steps, don't advance yet
     if (activeSteps.length > 0) return;
 
-    // Find all completed step numbers
+    // Find all completed or approved step numbers (both count as done)
     const completedStepNumbers = allSteps
-      .filter((s) => s.status === "completed")
+      .filter((s) => ["completed", "approved"].includes(s.status))
       .map((s) => s.stepNumber);
 
     if (completedStepNumbers.length === 0) return;
@@ -426,7 +426,7 @@ export const advanceWorkflow = mutation({
     }
 
     const prevBatchOutputs = allSteps
-      .filter((s) => s.status === "completed" && prevBatchNums.has(s.stepNumber));
+      .filter((s) => ["completed", "approved"].includes(s.status) && prevBatchNums.has(s.stepNumber));
 
     let combinedInput: string | undefined;
     if (prevBatchOutputs.length === 1) {
@@ -453,12 +453,24 @@ export const advanceWorkflow = mutation({
         console.warn(`[workflow-advance] Agent role "${templateStep.agentRole}" not allowed in this workflow; creating step anyway`);
       }
 
+      // Determine initial status: if this is a review gate (requiresApproval && agentRole === "none"), set to awaiting_review
+      const isReviewGate = templateStep.requiresApproval && templateStep.agentRole === "none";
+      const initialStatus = isReviewGate ? "awaiting_review" : "pending";
+
+      // Update workflow status to paused_for_review if this is a review gate
+      if (isReviewGate) {
+        await ctx.db.patch(args.workflowId, {
+          status: "paused_for_review",
+          updatedAt: now,
+        });
+      }
+
       await ctx.db.insert("workflowSteps", {
         workflowId: args.workflowId,
         stepNumber: stepNum,
         name: templateStep.name,
         agentRole: templateStep.agentRole,
-        status: "pending",
+        status: initialStatus,
         input: combinedInput,
         requiresApproval: templateStep.requiresApproval,
         timeoutMinutes: templateStep.timeoutMinutes,
@@ -477,7 +489,7 @@ export const advanceWorkflow = mutation({
 
 /**
  * Approve a workflow step (human review passed).
- * Sets step to "completed" and triggers advanceWorkflow.
+ * Sets step to "approved" and triggers advanceWorkflow.
  */
 export const approveStep = mutation({
   args: {
@@ -490,27 +502,28 @@ export const approveStep = mutation({
     const step = await ctx.db.get(args.stepId);
     if (!step) throw new Error("Step not found");
 
+    // Verify step is awaiting review
+    if (step.status !== "awaiting_review") {
+      throw new Error(`Step status is "${step.status}", expected "awaiting_review"`);
+    }
+
+    // Set step to approved with optional selectedOption and reviewNotes
     await ctx.db.patch(args.stepId, {
-      status: "completed",
+      status: "approved",
       selectedOption: args.selectedOption,
       reviewNotes: args.reviewNotes,
-      completedAt: now,
+      reviewedAt: now,
       updatedAt: now,
     });
 
-    // Trigger advance — internally checks if all parallel steps are done
-    const workflow = await ctx.db.get(step.workflowId);
-    if (workflow && workflow.status === "active") {
-      // Re-run advanceWorkflow logic inline (can't call mutations from mutations)
-      // We'll trigger it via the caller or use a scheduled function pattern.
-      // For now, the caller (HTTP endpoint or UI) should call advanceWorkflow after approve.
-    }
+    // Note: The HTTP endpoint (POST /api/workflow/step-approve) should call advanceWorkflow after this
+    // Mutations cannot call other mutations in Convex, so the caller must trigger the advance
   },
 });
 
 /**
  * Reject a workflow step (human review failed).
- * Sets step to "rejected" with review notes.
+ * Sets step to "rejected" with review notes and creates a new retry step.
  */
 export const rejectStep = mutation({
   args: {
@@ -519,10 +532,51 @@ export const rejectStep = mutation({
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
+    const step = await ctx.db.get(args.stepId);
+    if (!step) throw new Error("Step not found");
 
+    // Verify step is awaiting review
+    if (step.status !== "awaiting_review") {
+      throw new Error(`Step status is "${step.status}", expected "awaiting_review"`);
+    }
+
+    // Mark this step as rejected
     await ctx.db.patch(args.stepId, {
       status: "rejected",
       reviewNotes: args.reviewNotes,
+      reviewedAt: now,
+      updatedAt: now,
+    });
+
+    // Get the workflow and template to create retry step
+    const workflow = await ctx.db.get(step.workflowId);
+    if (!workflow) throw new Error("Workflow not found");
+
+    const template = await ctx.db.get(workflow.templateId);
+    if (!template) throw new Error("Template not found");
+
+    // Find the template step to get details for the retry
+    const templateStep = template.steps.find((ts) => ts.stepNumber === step.stepNumber);
+    if (!templateStep) throw new Error("Template step not found");
+
+    // Create a new workflowStep with same stepNumber for retry (status: pending)
+    // The daemon will pick it up again and the agent can incorporate Gregory's feedback
+    await ctx.db.insert("workflowSteps", {
+      workflowId: step.workflowId,
+      stepNumber: step.stepNumber,
+      name: templateStep.name,
+      agentRole: templateStep.agentRole,
+      status: "pending",
+      input: step.input, // Keep the same input; Gregory's feedback is in reviewNotes
+      requiresApproval: templateStep.requiresApproval,
+      timeoutMinutes: templateStep.timeoutMinutes,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Set workflow back to "active" (running) so it can pick up the retry step
+    await ctx.db.patch(step.workflowId, {
+      status: "active",
       updatedAt: now,
     });
   },

@@ -632,7 +632,7 @@ export const rejectStep = mutation({
 
 /**
  * Approve a workflow step FROM THE UI (frontend wrapper).
- * Calls approveStep, then advanceWorkflow to trigger next step creation.
+ * Marks step approved and creates the next step in the workflow.
  */
 export const approveStepFromUI = mutation({
   args: {
@@ -650,7 +650,14 @@ export const approveStepFromUI = mutation({
       throw new Error(`Step status is "${step.status}", expected "awaiting_review"`);
     }
 
-    // 1. Mark step as approved
+    // 1. Get workflow and template to understand next step
+    const workflow = await ctx.db.get(step.workflowId);
+    if (!workflow) throw new Error("Workflow not found");
+
+    const template = await ctx.db.get(workflow.templateId);
+    if (!template) throw new Error("Template not found");
+
+    // 2. Mark step as approved
     await ctx.db.patch(args.stepId, {
       status: "approved",
       reviewNotes: args.reviewNotes,
@@ -659,12 +666,34 @@ export const approveStepFromUI = mutation({
       updatedAt: now,
     });
 
-    // 2. Set workflow back to "active" (running)
-    // The daemon will pick this up and call advanceWorkflow via HTTP endpoint
+    // 3. Set workflow back to "active" (running)
     await ctx.db.patch(step.workflowId, {
       status: "active",
       updatedAt: now,
     });
+
+    // 4. Create the next step
+    const nextTemplateStep = template.steps.find((ts) => ts.stepNumber === step.stepNumber + 1);
+    if (nextTemplateStep) {
+      await ctx.db.insert("workflowSteps", {
+        workflowId: step.workflowId,
+        stepNumber: nextTemplateStep.stepNumber,
+        name: nextTemplateStep.name,
+        agentRole: nextTemplateStep.agentRole,
+        status: "pending",
+        input: step.output, // Pass approved output as input to next step
+        requiresApproval: nextTemplateStep.requiresApproval,
+        timeoutMinutes: nextTemplateStep.timeoutMinutes,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Update workflow currentStepNumber
+      await ctx.db.patch(step.workflowId, {
+        currentStepNumber: nextTemplateStep.stepNumber,
+        updatedAt: now,
+      });
+    }
 
     return { ok: true, message: "Step approved, workflow advancing" };
   },

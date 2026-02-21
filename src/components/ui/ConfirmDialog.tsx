@@ -22,14 +22,7 @@ export default function ConfirmDialog({
   isDangerous = false,
   isLoading = false,
 }: ConfirmDialogProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  // No scroll lock needed - background scrolls freely, modal stays centered with fixed positioning
 
   if (!isOpen) return null;
 

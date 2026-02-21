@@ -20,10 +20,7 @@ export default function LoginModal({ onLogin, error, onClearError }: LoginModalP
 
   useEffect(() => {
     setMounted(true);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    // No scroll lock needed - background scrolls freely, modal stays centered with fixed positioning
   }, []);
 
   const handleSubmit = useCallback(

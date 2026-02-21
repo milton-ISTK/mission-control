@@ -23,11 +23,9 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
   useEffect(() => {
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
     }
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
     };
   }, [isOpen, handleEscape]);
 

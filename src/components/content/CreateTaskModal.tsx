@@ -6,7 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import Modal from "@/components/common/Modal";
 import Button from "@/components/common/Button";
-import { Loader2, Rocket, FileText, Image, MessageSquare, Briefcase } from "lucide-react";
+import { Loader2, Rocket, FileText, Image, MessageSquare, Briefcase, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ContentAngle {
@@ -71,12 +71,14 @@ export default function CreateTaskModal({
   researchId,
 }: CreateTaskModalProps) {
   const [contentType, setContentType] = useState<ContentType | null>(null);
+  const [authorId, setAuthorId] = useState<Id<"authors"> | null>(null);
   const [briefing, setBriefing] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const createWorkflow = useMutation(api.workflows.createWorkflow);
+  const authors = useQuery(api.authors.getAuthors, {});
 
   const handleCreateTask = async () => {
     if (!selectedAngle || !contentType) return;

@@ -31,9 +31,6 @@ export default function ContentLightbox({
   useEffect(() => {
     if (!isOpen) return;
 
-    // Prevent background scrolling
-    document.body.style.overflow = "hidden";
-
     // Handle Escape key
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -44,7 +41,6 @@ export default function ContentLightbox({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
 

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Clock } from "lucide-react";
+import { Clock, Trash2 } from "lucide-react";
 import WorkflowProgress from "@/components/workflows/WorkflowProgress";
 import { cn } from "@/lib/utils";
 
@@ -42,10 +42,44 @@ function timeAgo(isoString: string): string {
 
 export default function WorkflowsPage() {
   const [selectedStatus, setSelectedStatus] = useState<WorkflowStatus>("all");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const workflows = useQuery(api.workflows.getAllWorkflows, {
     status: selectedStatus === "all" ? undefined : selectedStatus,
   });
+
+  const deleteWorkflow = useMutation(api.workflows.deleteWorkflow);
+  const deleteWorkflowsByStatus = useMutation(api.workflows.deleteWorkflowsByStatus);
+
+  const handleDeleteWorkflow = async (workflowId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!confirm("Delete this workflow?")) return;
+
+    setDeleting(workflowId);
+    try {
+      await deleteWorkflow({ workflowId: workflowId as any });
+    } catch (err) {
+      console.error("Error deleting workflow:", err);
+      alert("Failed to delete workflow");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm(`Delete all ${selectedStatus === "all" ? "" : selectedStatus} workflows?`)) return;
+
+    try {
+      await deleteWorkflowsByStatus({
+        status: selectedStatus === "all" ? undefined : selectedStatus,
+      });
+    } catch (err) {
+      console.error("Error clearing workflows:", err);
+      alert("Failed to clear workflows");
+    }
+  };
 
   if (workflows === undefined) {
     return (
@@ -65,22 +99,32 @@ export default function WorkflowsPage() {
         </p>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-zinc-800/50 pb-4">
-        {statusFilters.map((filter) => (
+      {/* Filter Tabs + Clear All */}
+      <div className="flex items-center justify-between border-b border-zinc-800/50 pb-4">
+        <div className="flex gap-2">
+          {statusFilters.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setSelectedStatus(filter.value)}
+              className={cn(
+                "px-4 py-2 rounded-lg font-medium transition-all duration-300",
+                selectedStatus === filter.value
+                  ? "bg-istk-accent/20 text-istk-accent border border-istk-accent/40"
+                  : "text-istk-textMuted hover:text-istk-text hover:bg-zinc-800/30 border border-transparent"
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        {workflows && workflows.length > 0 && (
           <button
-            key={filter.value}
-            onClick={() => setSelectedStatus(filter.value)}
-            className={cn(
-              "px-4 py-2 rounded-lg font-medium transition-all duration-300",
-              selectedStatus === filter.value
-                ? "bg-istk-accent/20 text-istk-accent border border-istk-accent/40"
-                : "text-istk-textMuted hover:text-istk-text hover:bg-zinc-800/30 border border-transparent"
-            )}
+            onClick={handleClearAll}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all duration-300"
           >
-            {filter.label}
+            Clear All
           </button>
-        ))}
+        )}
       </div>
 
       {/* Workflow Cards Grid */}
@@ -102,8 +146,18 @@ export default function WorkflowsPage() {
               href={`/workflow/${workflow._id}`}
               className="group relative p-5 rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900/50 to-zinc-800/20 hover:from-zinc-900/70 hover:to-zinc-800/40 transition-all duration-300 hover:border-istk-accent/30 hover:shadow-[0_0_20px_rgba(255,107,0,0.1)]"
             >
+              {/* Delete button (top-right) */}
+              <button
+                onClick={(e) => handleDeleteWorkflow(workflow._id, e)}
+                disabled={deleting === workflow._id}
+                className="absolute top-3 right-3 p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 disabled:opacity-50"
+                title="Delete workflow"
+              >
+                <Trash2 className={cn("w-4 h-4", deleting === workflow._id && "animate-spin")} />
+              </button>
+
               {/* Content */}
-              <div className="space-y-3">
+              <div className="space-y-3 pr-8">
                 {/* Title + Status */}
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="text-sm font-bold text-istk-text group-hover:text-istk-accent transition-colors flex-1 line-clamp-2">

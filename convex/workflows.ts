@@ -927,3 +927,77 @@ export const deleteAllTemplates = mutation({
     return { deleted: templates.length };
   },
 });
+
+/**
+ * Delete a workflow and all its associated steps and linked task
+ */
+export const deleteWorkflow = mutation({
+  args: { workflowId: v.id("workflows") },
+  handler: async (ctx, args) => {
+    const workflow = await ctx.db.get(args.workflowId);
+    if (!workflow) throw new Error("Workflow not found");
+
+    // Delete all steps for this workflow
+    const steps = await ctx.db
+      .query("workflowSteps")
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", args.workflowId))
+      .collect();
+
+    for (const step of steps) {
+      await ctx.db.delete(step._id);
+    }
+
+    // Delete linked task if it exists
+    if (workflow.taskId) {
+      await ctx.db.delete(workflow.taskId);
+    }
+
+    // Delete the workflow itself
+    await ctx.db.delete(args.workflowId);
+
+    return { ok: true, message: `Workflow deleted (${steps.length} steps removed)` };
+  },
+});
+
+/**
+ * Delete all workflows matching a status filter
+ */
+export const deleteWorkflowsByStatus = mutation({
+  args: { status: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let workflows;
+    if (args.status) {
+      workflows = await ctx.db
+        .query("workflows")
+        .withIndex("by_status", (q) => q.eq("status", args.status as any))
+        .collect();
+    } else {
+      workflows = await ctx.db.query("workflows").collect();
+    }
+
+    let deletedCount = 0;
+
+    for (const workflow of workflows) {
+      // Delete all steps
+      const steps = await ctx.db
+        .query("workflowSteps")
+        .withIndex("by_workflowId", (q) => q.eq("workflowId", workflow._id))
+        .collect();
+
+      for (const step of steps) {
+        await ctx.db.delete(step._id);
+      }
+
+      // Delete linked task if exists
+      if (workflow.taskId) {
+        await ctx.db.delete(workflow.taskId);
+      }
+
+      // Delete workflow
+      await ctx.db.delete(workflow._id);
+      deletedCount++;
+    }
+
+    return { ok: true, deleted: deletedCount, message: `Deleted ${deletedCount} workflow(s)` };
+  },
+});

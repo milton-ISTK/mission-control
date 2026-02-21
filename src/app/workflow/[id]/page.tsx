@@ -35,7 +35,7 @@ function timeAgo(isoString: string): string {
 
 export default function WorkflowDetailPage() {
   const params = useParams();
-  const workflowId = params.id as string;
+  const workflowId = (params?.id as string) || "";
 
   const [feedbackText, setFeedbackText] = useState("");
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
@@ -45,11 +45,12 @@ export default function WorkflowDetailPage() {
 
   const workflow = useQuery(api.workflows.getWorkflow, { id: workflowId as any });
   const steps = useQuery(api.workflows.getWorkflowSteps, { workflowId: workflowId as any });
+  const templates = useQuery(api.workflows.getWorkflowTemplates, {});
 
   const approveStep = useMutation(api.workflows.approveStepFromUI);
   const rejectStep = useMutation(api.workflows.rejectStepFromUI);
 
-  if (workflow === undefined || steps === undefined) {
+  if (workflow === undefined || steps === undefined || templates === undefined) {
     return (
       <div className="p-8 flex items-center justify-center">
         <div className="animate-pulse text-istk-textDim">Loading workflow...</div>
@@ -67,6 +68,9 @@ export default function WorkflowDetailPage() {
       </div>
     );
   }
+
+  // Find the template for this workflow
+  const template = templates?.find((t) => t._id === workflow.templateId);
 
   const contentTypeLabel = {
     blog_post: "📝 Blog Post",
@@ -166,12 +170,12 @@ export default function WorkflowDetailPage() {
         <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/50">
           <p className="text-xs text-istk-textMuted mb-3 font-semibold uppercase tracking-wider">Progress</p>
           <WorkflowProgress
-            totalSteps={workflow.template?.steps?.length || 0}
+            totalSteps={template?.steps?.length || 0}
             currentStep={workflow.currentStepNumber}
             status={workflow.status}
           />
           <p className="text-xs text-istk-textMuted mt-3">
-            Step {workflow.currentStepNumber} of {workflow.template?.steps?.length || 0}
+            Step {workflow.currentStepNumber} of {template?.steps?.length || 0}
           </p>
         </div>
       </div>

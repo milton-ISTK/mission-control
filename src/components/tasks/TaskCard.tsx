@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2, Calendar } from "lucide-react";
 import { cn, formatRelative } from "@/lib/utils";
 import { PriorityBadge } from "@/components/common/Badge";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useDeleteTask, useToggleAssignee } from "@/hooks/useTasks";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -40,6 +42,9 @@ export default function TaskCard({ task, onEdit }: TaskCardProps) {
 }
 
 function TaskCardInner({ task, onEdit }: TaskCardProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const deleteTask = useDeleteTask();
   const toggleAssignee = useToggleAssignee();
 
@@ -57,10 +62,19 @@ function TaskCardInner({ task, onEdit }: TaskCardProps) {
     transition,
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Delete this task?")) {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
       await deleteTask({ id: task._id });
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -100,7 +114,7 @@ function TaskCardInner({ task, onEdit }: TaskCardProps) {
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             className="p-1.5 rounded-lg hover:bg-[rgba(248,113,113,0.08)] text-istk-textDim hover:text-istk-danger transition-all hover:shadow-[0_0_6px_rgba(248,113,113,0.1)]"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -156,6 +170,17 @@ function TaskCardInner({ task, onEdit }: TaskCardProps) {
           </div>
         )}
       </div>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => !isDeleting && setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Task"
+        message={`"${task.title}" will be permanently deleted. This action cannot be undone.`}
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

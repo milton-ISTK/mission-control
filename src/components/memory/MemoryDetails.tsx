@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowLeft, Calendar, Tag, FileText, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Badge from "@/components/common/Badge";
 import Button from "@/components/common/Button";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useDeleteMemory } from "@/hooks/useMemories";
 import { formatDate, formatRelative } from "@/lib/utils";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -27,12 +29,24 @@ interface MemoryDetailsProps {
 }
 
 export default function MemoryDetails({ memory, onBack }: MemoryDetailsProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const deleteMemory = useDeleteMemory();
 
-  const handleDelete = async () => {
-    if (confirm("Delete this memory?")) {
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
       await deleteMemory({ id: memory._id });
       onBack();
+    } catch (err) {
+      console.error("Error deleting memory:", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -47,10 +61,11 @@ export default function MemoryDetails({ memory, onBack }: MemoryDetailsProps) {
           <ArrowLeft className="w-4 h-4" />
           Back to Memories
         </button>
-        <Button variant="danger" onClick={handleDelete}>
+        <Button variant="danger" onClick={handleDeleteClick} disabled={isDeleting}>
           <span className="flex items-center gap-2">
-            <Trash2 className="w-4 h-4" />
-            Delete
+            {isDeleting && <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+            {!isDeleting && <Trash2 className="w-4 h-4" />}
+            {isDeleting ? "Deleting..." : "Delete"}
           </span>
         </Button>
       </div>
@@ -128,6 +143,17 @@ export default function MemoryDetails({ memory, onBack }: MemoryDetailsProps) {
         <span>Created: {formatRelative(memory.createdAt)}</span>
         <span>Updated: {formatRelative(memory.updatedAt)}</span>
       </div>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => !isDeleting && setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Memory"
+        message={`"${memory.title}" will be permanently deleted. This action cannot be undone.`}
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

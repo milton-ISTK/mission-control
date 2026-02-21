@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { X, Clock, Calendar, Play, Pause, Trash2, RefreshCw, ChevronRight } from "lucide-react";
 import Badge, { StatusBadge } from "@/components/common/Badge";
 import Button from "@/components/common/Button";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useToggleEventStatus, useDeleteEvent } from "@/hooks/useEvents";
 import { formatDate, formatTime, cn } from "@/lib/utils";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -127,6 +129,9 @@ function SingleEventPanel({
   event: CalEvent;
   onClose: () => void;
 }) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const toggleStatus = useToggleEventStatus();
   const deleteEvent = useDeleteEvent();
 
@@ -134,10 +139,19 @@ function SingleEventPanel({
     await toggleStatus({ id: event._id });
   };
 
-  const handleDelete = async () => {
-    if (confirm("Delete this event?")) {
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
       await deleteEvent({ id: event._id });
       onClose();
+    } catch (err) {
+      console.error("Error deleting event:", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -261,15 +275,28 @@ function SingleEventPanel({
         </Button>
         <Button
           variant="danger"
-          onClick={handleDelete}
+          onClick={handleDeleteClick}
+          disabled={isDeleting}
           className="w-full justify-center"
         >
           <span className="flex items-center gap-2">
-            <Trash2 className="w-4 h-4" />
-            Delete Event
+            {isDeleting && <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+            {!isDeleting && <Trash2 className="w-4 h-4" />}
+            {isDeleting ? "Deleting..." : "Delete Event"}
           </span>
         </Button>
       </div>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => !isDeleting && setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Event"
+        message={`"${event.title}" will be permanently deleted. This action cannot be undone.`}
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

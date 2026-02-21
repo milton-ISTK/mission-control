@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Clock, Trash2 } from "lucide-react";
 import WorkflowProgress from "@/components/workflows/WorkflowProgress";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
 
 type WorkflowStatus = "all" | "active" | "paused_for_review" | "completed" | "failed";
@@ -42,7 +43,14 @@ function timeAgo(isoString: string): string {
 
 export default function WorkflowsPage() {
   const [selectedStatus, setSelectedStatus] = useState<WorkflowStatus>("all");
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [pendingAction, setPendingAction] = useState<"delete-workflow" | "clear-all" | null>(null);
+  const [pendingWorkflowId, setPendingWorkflowId] = useState<string | null>(null);
 
   const workflows = useQuery(api.workflows.getAllWorkflows, {
     status: selectedStatus === "all" ? undefined : selectedStatus,
@@ -51,33 +59,51 @@ export default function WorkflowsPage() {
   const deleteWorkflow = useMutation(api.workflows.deleteWorkflow);
   const deleteWorkflowsByStatus = useMutation(api.workflows.deleteWorkflowsByStatus);
 
-  const handleDeleteWorkflow = async (workflowId: string, e: React.MouseEvent) => {
+  const handleDeleteWorkflowClick = (workflowId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    setDialogTitle("Delete Workflow");
+    setDialogMessage("This workflow and all its steps will be permanently deleted. This action cannot be undone.");
+    setPendingAction("delete-workflow");
+    setPendingWorkflowId(workflowId);
+    setDialogOpen(true);
+  };
 
-    if (!confirm("Delete this workflow?")) return;
+  const handleClearAllClick = () => {
+    const filterLabel = selectedStatus === "all" ? "all" : selectedStatus;
+    setDialogTitle("Clear All Workflows");
+    setDialogMessage(`All ${filterLabel} workflows will be permanently deleted. This action cannot be undone.`);
+    setPendingAction("clear-all");
+    setDialogOpen(true);
+  };
 
-    setDeleting(workflowId);
+  const handleConfirmDialog = async () => {
+    setIsDeleting(true);
     try {
-      await deleteWorkflow({ workflowId: workflowId as any });
+      if (pendingAction === "delete-workflow" && pendingWorkflowId) {
+        await deleteWorkflow({ workflowId: pendingWorkflowId as any });
+      } else if (pendingAction === "clear-all") {
+        await deleteWorkflowsByStatus({
+          status: selectedStatus === "all" ? undefined : selectedStatus,
+        });
+      }
     } catch (err) {
       console.error("Error deleting workflow:", err);
       alert("Failed to delete workflow");
     } finally {
-      setDeleting(null);
+      setIsDeleting(false);
+      setDialogOpen(false);
+      setPendingAction(null);
+      setPendingWorkflowId(null);
     }
   };
 
-  const handleClearAll = async () => {
-    if (!confirm(`Delete all ${selectedStatus === "all" ? "" : selectedStatus} workflows?`)) return;
-
-    try {
-      await deleteWorkflowsByStatus({
-        status: selectedStatus === "all" ? undefined : selectedStatus,
-      });
-    } catch (err) {
-      console.error("Error clearing workflows:", err);
-      alert("Failed to clear workflows");
+  const handleCloseDialog = () => {
+    if (!isDeleting) {
+      setDialogOpen(false);
+      setPendingAction(null);
+      setPendingWorkflowId(null);
     }
   };
 
@@ -119,8 +145,9 @@ export default function WorkflowsPage() {
         </div>
         {workflows && workflows.length > 0 && (
           <button
-            onClick={handleClearAll}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all duration-300"
+            onClick={handleClearAllClick}
+            disabled={isDeleting}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all duration-300 disabled:opacity-50"
           >
             Clear All
           </button>
@@ -148,12 +175,12 @@ export default function WorkflowsPage() {
             >
               {/* Delete button (top-right) */}
               <button
-                onClick={(e) => handleDeleteWorkflow(workflow._id, e)}
-                disabled={deleting === workflow._id}
+                onClick={(e) => handleDeleteWorkflowClick(workflow._id, e)}
+                disabled={isDeleting}
                 className="absolute top-3 right-3 p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 disabled:opacity-50"
                 title="Delete workflow"
               >
-                <Trash2 className={cn("w-4 h-4", deleting === workflow._id && "animate-spin")} />
+                <Trash2 className={cn("w-4 h-4", isDeleting && "animate-spin")} />
               </button>
 
               {/* Content */}
@@ -206,6 +233,17 @@ export default function WorkflowsPage() {
           </Link>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={dialogOpen}
+        onClose={handleCloseDialog}
+        onConfirm={handleConfirmDialog}
+        title={dialogTitle}
+        message={dialogMessage}
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

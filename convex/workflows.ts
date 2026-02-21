@@ -155,6 +155,50 @@ export const getWorkflowStep = query({
   },
 });
 
+/** Get all workflows with optional status filter, sorted newest first */
+export const getAllWorkflows = query({
+  args: { status: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let workflows;
+    if (args.status) {
+      workflows = await ctx.db
+        .query("workflows")
+        .withIndex("by_status", (q) => q.eq("status", args.status as any))
+        .collect();
+    } else {
+      workflows = await ctx.db.query("workflows").collect();
+    }
+    
+    // Sort by createdAt descending (newest first)
+    workflows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    // Enrich with template and task
+    const enriched = await Promise.all(
+      workflows.map(async (w) => {
+        const template = await ctx.db.get(w.templateId);
+        const task = w.taskId ? await ctx.db.get(w.taskId) : null;
+        return { ...w, template, task };
+      })
+    );
+    
+    return enriched;
+  },
+});
+
+/** Get workflow by linked taskId (returns first match or null) */
+export const getWorkflowByTaskId = query({
+  args: { taskId: v.id("tasks") },
+  handler: async (ctx, args) => {
+    const workflows = await ctx.db.query("workflows").collect();
+    const workflow = workflows.find((w) => w.taskId && w.taskId.toString() === args.taskId.toString());
+    
+    if (!workflow) return null;
+    
+    const template = await ctx.db.get(workflow.templateId);
+    return { ...workflow, template };
+  },
+});
+
 // ============================================================
 // MUTATIONS
 // ============================================================
@@ -583,6 +627,135 @@ export const rejectStep = mutation({
       status: "active",
       updatedAt: now,
     });
+  },
+});
+
+/**
+ * Approve a workflow step FROM THE UI (frontend wrapper).
+ * Calls approveStep, then advanceWorkflow to trigger next step creation.
+ */
+export const approveStepFromUI = mutation({
+  args: {
+    stepId: v.id("workflowSteps"),
+    reviewNotes: v.optional(v.string()),
+    selectedOption: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    const step = await ctx.db.get(args.stepId);
+    if (!step) throw new Error("Step not found");
+
+    // Verify step is awaiting review
+    if (step.status !== "awaiting_review") {
+      throw new Error(`Step status is "${step.status}", expected "awaiting_review"`);
+    }
+
+    // 1. Mark step as approved
+    await ctx.db.patch(args.stepId, {
+      status: "approved",
+      reviewNotes: args.reviewNotes,
+      selectedOption: args.selectedOption ? args.selectedOption.toString() : undefined,
+      reviewedAt: now,
+      updatedAt: now,
+    });
+
+    // 2. Set workflow back to "active" (running)
+    // The daemon will pick this up and call advanceWorkflow via HTTP endpoint
+    await ctx.db.patch(step.workflowId, {
+      status: "active",
+      updatedAt: now,
+    });
+
+    return { ok: true, message: "Step approved, workflow advancing" };
+  },
+});
+
+/**
+ * Reject a workflow step FROM THE UI (frontend wrapper).
+ * Marks step as rejected, creates a retry step, and sets workflow to active.
+ */
+export const rejectStepFromUI = mutation({
+  args: {
+    stepId: v.id("workflowSteps"),
+    reviewNotes: v.string(), // Required
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    const step = await ctx.db.get(args.stepId);
+    if (!step) throw new Error("Step not found");
+
+    // Verify step is awaiting review
+    if (step.status !== "awaiting_review") {
+      throw new Error(`Step status is "${step.status}", expected "awaiting_review"`);
+    }
+
+    // 1. Mark this step as rejected
+    await ctx.db.patch(args.stepId, {
+      status: "rejected",
+      reviewNotes: args.reviewNotes,
+      reviewedAt: now,
+      updatedAt: now,
+    });
+
+    // 2. Get workflow and template to understand the step we're retrying
+    const workflow = await ctx.db.get(step.workflowId);
+    if (!workflow) throw new Error("Workflow not found");
+
+    const template = await ctx.db.get(workflow.templateId);
+    if (!template) throw new Error("Template not found");
+
+    // 3. Find the PREVIOUS agent step (before this review gate)
+    // We need to re-execute the step that produced the content being reviewed
+    const templateStep = template.steps.find((ts) => ts.stepNumber === step.stepNumber);
+    if (!templateStep) throw new Error("Template step not found");
+
+    // Find the step number before this one
+    const prevStepNum = Math.max(...template.steps.filter((ts) => ts.stepNumber < step.stepNumber).map((ts) => ts.stepNumber));
+    if (!prevStepNum) throw new Error("No previous step found to retry");
+
+    const prevTemplateStep = template.steps.find((ts) => ts.stepNumber === prevStepNum);
+    if (!prevTemplateStep) throw new Error("Previous template step not found");
+
+    // Get the previous step that was completed
+    const allSteps = await ctx.db
+      .query("workflowSteps")
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+      .collect();
+    const prevStep = allSteps.find((s) => s.stepNumber === prevStepNum && s.status === "completed");
+
+    // 4. Create a new workflowStep to retry the previous agent's work
+    // Include Gregory's rejection feedback in the input or in a note
+    const retryInput = prevStep
+      ? JSON.stringify({
+          ...JSON.parse(prevStep.input || "{}"),
+          _rejectionFeedback: args.reviewNotes,
+          _retryCount: (JSON.parse(prevStep.input || "{}"))._retryCount ? (JSON.parse(prevStep.input || "{}"))._retryCount + 1 : 1,
+        })
+      : JSON.stringify({
+          _rejectionFeedback: args.reviewNotes,
+          _retryCount: 1,
+        });
+
+    await ctx.db.insert("workflowSteps", {
+      workflowId: step.workflowId,
+      stepNumber: prevStepNum,
+      name: prevTemplateStep.name,
+      agentRole: prevTemplateStep.agentRole,
+      status: "pending",
+      input: retryInput,
+      requiresApproval: prevTemplateStep.requiresApproval,
+      timeoutMinutes: prevTemplateStep.timeoutMinutes,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // 5. Set workflow back to "active" so daemon picks up the retry step
+    await ctx.db.patch(step.workflowId, {
+      status: "active",
+      updatedAt: now,
+    });
+
+    return { ok: true, message: "Step rejected and retry queued for previous agent" };
   },
 });
 

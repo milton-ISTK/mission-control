@@ -46,7 +46,11 @@ export default function TeamGrid({ sortOption, agentTypeFilter }: TeamGridProps)
 
     // Filter by agentType if specified
     if (agentTypeFilter) {
+      console.log(`[TeamGrid] Filtering agents by agentType='${agentTypeFilter}'`);
+      console.log(`[TeamGrid] Total agents before filter: ${list.length}`);
+      console.log('[TeamGrid] Agent list:', list.map((a) => ({ name: a.name, agentType: a.agentType, isSubagent: a.isSubagent })));
       list = list.filter((a) => (a.agentType ?? "agent") === agentTypeFilter);
+      console.log(`[TeamGrid] Agents after filter: ${list.length}`, list.map((a) => a.name));
     }
 
     switch (sortOption) {

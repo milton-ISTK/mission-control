@@ -58,7 +58,13 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
   
   // Filter for subagents only
   const subagents = useMemo(() => {
-    return (allAgents ?? []).filter((a: any) => a.agentType === "subagent") as Subagent[];
+    console.log('[SubagentList] allAgents:', allAgents?.length);
+    if (allAgents) {
+      console.log('[SubagentList] Agent types:', allAgents.map((a: any) => ({ name: a.name, agentType: a.agentType })));
+    }
+    const filtered = (allAgents ?? []).filter((a: any) => a.agentType === "subagent") as Subagent[];
+    console.log('[SubagentList] Filtered subagents:', filtered.length, filtered.map((s) => s.name));
+    return filtered;
   }, [allAgents]);
 
   const [editingAgent, setEditingAgent] = useState<Subagent | null>(null);

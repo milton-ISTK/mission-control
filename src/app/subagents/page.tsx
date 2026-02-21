@@ -14,7 +14,13 @@ export default function SubagentsPage() {
   
   // Filter for subagents (agentType === "subagent")
   const subagents = useMemo(() => {
-    return (allAgents ?? []).filter((a: any) => a.agentType === "subagent");
+    console.log('[SubagentsPage] allAgents:', allAgents?.length);
+    if (allAgents) {
+      console.log('[SubagentsPage] Agent list:', allAgents.map((a: any) => ({ name: a.name, agentType: a.agentType })));
+    }
+    const filtered = (allAgents ?? []).filter((a: any) => a.agentType === "subagent");
+    console.log('[SubagentsPage] Filtered subagents:', filtered.length);
+    return filtered;
   }, [allAgents]);
 
   const totalCount = subagents?.length ?? 0;

@@ -846,6 +846,79 @@ http.route({
   }),
 });
 
+// ---- POST /api/workflow/step-approve ----
+// Approve a workflow step (human review passed) + trigger advanceWorkflow
+http.route({
+  path: "/api/workflow/step-approve",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+
+      // Call approveStep mutation
+      await ctx.runMutation(api.workflows.approveStep, {
+        stepId: body.stepId,
+        selectedOption: body.selectedOption,
+        reviewNotes: body.reviewNotes,
+      });
+
+      // Trigger advanceWorkflow to create next steps
+      const step = await ctx.runQuery(api.workflows.getWorkflowStep, { id: body.stepId });
+      if (step) {
+        await ctx.runMutation(api.workflows.advanceWorkflow, {
+          workflowId: step.workflowId,
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/workflow/step-reject ----
+// Reject a workflow step (human review failed) + create retry step
+http.route({
+  path: "/api/workflow/step-reject",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+
+      // Call rejectStep mutation (creates retry step automatically)
+      await ctx.runMutation(api.workflows.rejectStep, {
+        stepId: body.stepId,
+        reviewNotes: body.reviewNotes,
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ---- POST /api/workflow/step-complete ----
 // Mark step as completed + trigger advanceWorkflow
 http.route({

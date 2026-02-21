@@ -204,8 +204,8 @@ export default function WorkflowDetailPage() {
               allSteps={sortedSteps}
               onApprove={() => handleApproveClick(step._id)}
               onReject={() => handleRejectClick(step._id)}
-              feedbackText={pendingStepId === step._id ? feedbackText : ""}
-              onFeedbackChange={pendingStepId === step._id ? setFeedbackText : undefined}
+              feedbackText={feedbackText}
+              onFeedbackChange={setFeedbackText}
               isSubmitting={isProcessing && pendingStepId === step._id}
             />
           ))

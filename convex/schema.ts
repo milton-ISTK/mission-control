@@ -17,7 +17,7 @@ export default defineSchema({
       v.literal("medium"),
       v.literal("low")
     ),
-    assignee: v.union(v.literal("Gregory"), v.literal("Milton")),
+    assignee: v.string(), // Can be any agent name, not just Gregory/Milton
     dueDate: v.optional(v.string()), // ISO date string
     tags: v.optional(v.array(v.string())),
     order: v.number(), // For drag-and-drop ordering

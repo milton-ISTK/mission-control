@@ -35,7 +35,7 @@ export const getTask = query({
 
 /** List tasks by assignee */
 export const tasksByAssignee = query({
-  args: { assignee: v.union(v.literal("Gregory"), v.literal("Milton")) },
+  args: { assignee: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("tasks")
@@ -57,7 +57,7 @@ export const createTask = mutation({
       v.literal("medium"),
       v.literal("low")
     ),
-    assignee: v.union(v.literal("Gregory"), v.literal("Milton")),
+    assignee: v.string(),
     dueDate: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
   },
@@ -121,7 +121,7 @@ export const updateTask = mutation({
         v.literal("low")
       )
     ),
-    assignee: v.optional(v.union(v.literal("Gregory"), v.literal("Milton"))),
+    assignee: v.optional(v.string()),
     dueDate: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
   },

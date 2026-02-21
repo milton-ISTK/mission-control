@@ -77,10 +77,10 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
 
   const handleEdit = (agent: Subagent) => {
     setEditForm({
-      name: agent.name,
-      llm: agent.llm,
-      role: agent.role,
-      description: agent.description || "",
+      name: agent.name || "",
+      llm: agent.llm || "",
+      role: agent.role || "",
+      description: (agent.description ?? "") as string,
     });
     setEditingAgent(agent);
   };

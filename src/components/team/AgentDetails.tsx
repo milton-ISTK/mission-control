@@ -66,12 +66,12 @@ const statusConfig = {
 export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: agent.name,
-    role: agent.role,
-    description: agent.description || "",
-    notes: agent.notes || "",
-    model: agent.model || "",
-    status: agent.status,
+    name: (agent?.name ?? "") as string,
+    role: (agent?.role ?? "") as string,
+    description: ((agent?.description ?? null) ?? "") as string,
+    notes: ((agent?.notes ?? null) ?? "") as string,
+    model: ((agent?.model ?? null) ?? "") as string,
+    status: (agent?.status ?? "active") as "active" | "idle" | "offline",
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,14 +80,14 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   // Sync edit form when agent prop changes
   useEffect(() => {
     setEditForm({
-      name: agent.name,
-      role: agent.role,
-      description: agent.description || "",
-      notes: agent.notes || "",
-      model: agent.model || "",
-      status: agent.status,
+      name: (agent?.name ?? "") as string,
+      role: (agent?.role ?? "") as string,
+      description: ((agent?.description ?? null) ?? "") as string,
+      notes: ((agent?.notes ?? null) ?? "") as string,
+      model: ((agent?.model ?? null) ?? "") as string,
+      status: (agent?.status ?? "active") as "active" | "idle" | "offline",
     });
-  }, [agent._id, agent.name, agent.role, agent.description, agent.notes, agent.model, agent.status]);
+  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.model, agent?.status]);
 
   // Fetch tasks assigned to this agent
   const assignedTasks = useTasksByAssignee(agent.name as "Gregory" | "Milton");
@@ -143,12 +143,12 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   };
 
   // Group tasks by status
-  const activeTasks = assignedTasks?.filter((t) => t.status !== "done") || [];
-  const completedTasks = assignedTasks?.filter((t) => t.status === "done") || [];
+  const activeTasks = (assignedTasks ?? [])?.filter((t) => t?.status !== "done") || [];
+  const completedTasks = (assignedTasks ?? [])?.filter((t) => t?.status === "done") || [];
 
   // Get related subagent configs
-  const relatedSubagents = subagents?.filter(
-    (s) => s.name.toLowerCase().includes(agent.name.toLowerCase())
+  const relatedSubagents = ((subagents ?? []) as any[])?.filter(
+    (s) => (s?.name ?? "").toLowerCase().includes((agent?.name ?? "").toLowerCase())
   ) || [];
 
   // Get model display name

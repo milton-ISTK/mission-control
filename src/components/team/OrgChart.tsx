@@ -118,19 +118,27 @@ export default function OrgChart({ agents = [] }: OrgChartProps) {
                     <button
                       onClick={() => setSelectedAgent(agent)}
                       className={cn(
-                        "w-full text-left p-4 rounded-lg transition-all border",
+                        "w-full text-left p-4 rounded-lg transition-all border-[3px]",
                         selectedAgent?._id === agent._id
-                          ? "bg-amber-500/10 border-amber-500/40 shadow-[0_0_12px_rgba(255,107,0,0.15)]"
-                          : "bg-istk-bg/50 border-amber-500/20 hover:border-amber-500/30 hover:bg-istk-surfaceLight"
+                          ? "bg-amber-500/10 border-orange-500/80 shadow-[0_0_16px_rgba(249,115,22,0.2)]"
+                          : "bg-istk-bg/50 border-orange-500/40 hover:border-orange-500/60 hover:bg-istk-surfaceLight"
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">🤖</span>
-                        <div>
-                          <p className="text-sm font-bold text-istk-text">{agent.name}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-istk-text">{agent.name}</p>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                              <Users className="w-2.5 h-2.5" /> Agent
+                            </span>
+                          </div>
                           <p className="text-xs text-istk-textMuted">{agent.role}</p>
+                          <p className="text-[10px] text-istk-textDim capitalize mt-0.5">
+                            {(agent.department ?? "").replace(/_/g, " ")}
+                          </p>
                         </div>
-                        <div className="ml-auto flex items-center gap-2">
+                        <div className="ml-auto flex items-center gap-2 shrink-0">
                           <span className={cn("status-dot", statusConfig[agent.status]?.dot)} />
                           <span className="text-[10px] text-istk-textMuted">
                             {statusConfig[agent.status]?.label}
@@ -141,28 +149,45 @@ export default function OrgChart({ agents = [] }: OrgChartProps) {
 
                     {/* Subagents */}
                     {agent.subagents && agent.subagents.length > 0 && (
-                      <div className="mt-3 ml-4 space-y-2 border-l border-istk-border/10 pl-4">
-                        {agent.subagents.map((sub) => (
-                          <button
-                            key={sub._id}
-                            onClick={() => setSelectedAgent(sub)}
-                            className={cn(
-                              "w-full text-left p-3 rounded-lg text-sm transition-all border",
-                              selectedAgent?._id === sub._id
-                                ? "bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(0,200,255,0.12)]"
-                                : "bg-istk-bg/30 border-cyan-500/15 hover:border-cyan-500/25 hover:bg-istk-bg"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">🔧</span>
-                              <div className="flex-1">
-                                <p className="text-xs font-semibold text-istk-text">{sub.name}</p>
-                                <p className="text-[10px] text-istk-textMuted">{sub.role}</p>
+                      <div className="mt-3 ml-8 space-y-2 border-l-2 border-cyan-500/20 pl-4">
+                        {agent.subagents.map((sub) => {
+                          // Get all parent names for this subagent
+                          const parentNames = (sub.parentAgentIds ?? [])
+                            .map((pid) => agents.find((a) => a._id === pid)?.name)
+                            .filter((n): n is string => !!n);
+
+                          return (
+                            <button
+                              key={sub._id}
+                              onClick={() => setSelectedAgent(sub)}
+                              className={cn(
+                                "w-full text-left p-3 rounded-lg text-sm transition-all border-2",
+                                selectedAgent?._id === sub._id
+                                  ? "bg-cyan-500/10 border-cyan-400/60 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+                                  : "bg-istk-bg/30 border-cyan-400/25 hover:border-cyan-400/40 hover:bg-istk-bg"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">🔧</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-xs font-semibold text-istk-text">{sub.name}</p>
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                                      <Bot className="w-2 h-2" /> Subagent
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-istk-textMuted">{sub.role}</p>
+                                  {parentNames.length > 0 && (
+                                    <p className="text-[10px] text-cyan-400/70 mt-0.5">
+                                      Reports to: {parentNames.join(", ")}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className={cn("status-dot w-2 h-2", statusConfig[sub.status]?.dot)} />
                               </div>
-                              <span className={cn("status-dot w-2 h-2", statusConfig[sub.status]?.dot)} />
-                            </div>
-                          </button>
-                        ))}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

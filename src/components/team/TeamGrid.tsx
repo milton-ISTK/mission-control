@@ -31,17 +31,23 @@ interface Agent {
 
 interface TeamGridProps {
   sortOption: SortOption;
+  agentTypeFilter?: "agent" | "subagent";
 }
 
 const STATUS_ORDER: Record<string, number> = { active: 0, idle: 1, offline: 2 };
 
-export default function TeamGrid({ sortOption }: TeamGridProps) {
+export default function TeamGrid({ sortOption, agentTypeFilter }: TeamGridProps) {
   const agents = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
   const sorted = useMemo(() => {
     if (!agents) return [];
-    const list = [...agents] as Agent[];
+    let list = [...agents] as Agent[];
+
+    // Filter by agentType if specified
+    if (agentTypeFilter) {
+      list = list.filter((a) => (a.agentType ?? "agent") === agentTypeFilter);
+    }
 
     switch (sortOption) {
       case "name-asc":

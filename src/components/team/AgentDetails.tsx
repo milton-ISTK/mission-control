@@ -44,6 +44,9 @@ interface Agent {
   recentTasks?: string[];
   isSubagent: boolean;
   createdAt: string;
+  agentType?: string;
+  department?: string;
+  parentAgentIds?: Id<"agents">[];
 }
 
 interface AgentDetailsProps {
@@ -495,7 +498,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    setEditForm({ ...editForm, agentType: "subagent" });
+                    setEditForm({ ...editForm, agentType: "subagent", department: "" });
                   }}
                   className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
                     editForm.agentType === "subagent"
@@ -508,18 +511,20 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
               </div>
             </div>
 
-            {/* Department Dropdown */}
-            <Select
-              label="Department"
-              options={[
-                { value: "content_production", label: "Content Production" },
-                { value: "research", label: "Research" },
-                { value: "distribution", label: "Distribution" },
-                { value: "creative", label: "Creative" },
-              ]}
-              value={editForm.department}
-              onChange={(e: any) => setEditForm({ ...editForm, department: e.target.value })}
-            />
+            {/* Department Dropdown (Agents only — subagents inherit from parent) */}
+            {editForm.agentType === "agent" && (
+              <Select
+                label="Department"
+                options={[
+                  { value: "content_production", label: "Content Production" },
+                  { value: "research", label: "Research" },
+                  { value: "distribution", label: "Distribution" },
+                  { value: "creative", label: "Creative" },
+                ]}
+                value={editForm.department}
+                onChange={(e: any) => setEditForm({ ...editForm, department: e.target.value })}
+              />
+            )}
           </div>
 
           {/* ── Reporting Structure (Subagents Only) ── */}

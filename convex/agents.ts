@@ -212,114 +212,148 @@ export const deleteAgent = mutation({
   },
 });
 
-/** Seed agent hierarchy (idempotent) */
+/** Seed agent hierarchy (force-update all, create missing, delete unknown) */
 export const seedAgentHierarchy = mutation({
   handler: async (ctx) => {
-    const allAgents = await ctx.db.query("agents").collect();
-    const results = { updated: 0, skipped: 0 };
+    const now = new Date().toISOString();
+    const results = { created: 0, updated: 0, deleted: 0 };
 
-    // Define hierarchy structure: name -> { agentType, department, role, parentRoles }
+    // Correct hierarchy spec (from Gregory's spec Parts 4-6)
     const hierarchy: Record<
       string,
       {
-        agentType: string;
+        agentType: "agent" | "subagent";
         department: string;
-        role: string;
-        parentRoles: string[];
+        isSubagent: boolean;
+        parentNames: string[];
+        defaultRole: string;
       }
     > = {
-      // Top-level agents
+      // AGENTS (4)
       "Blog Writer": {
         agentType: "agent",
         department: "content_production",
-        role: "blog_writer",
-        parentRoles: [],
+        isSubagent: false,
+        parentNames: [],
+        defaultRole: "Content Writer",
       },
       Copywriter: {
         agentType: "agent",
         department: "content_production",
-        role: "copywriter",
-        parentRoles: [],
+        isSubagent: false,
+        parentNames: [],
+        defaultRole: "Copy & Headlines",
       },
       "Social Publisher": {
         agentType: "agent",
         department: "distribution",
-        role: "social_publisher",
-        parentRoles: [],
+        isSubagent: false,
+        parentNames: [],
+        defaultRole: "Social Distribution",
       },
       "Research Enhancer": {
         agentType: "agent",
         department: "research",
-        role: "research_enhancer",
-        parentRoles: [],
+        isSubagent: false,
+        parentNames: [],
+        defaultRole: "Research & Analysis",
       },
-      // Subagents
+      // SUBAGENTS (6)
       "Sentiment Scraper": {
         agentType: "subagent",
         department: "research",
-        role: "sentiment_scraper",
-        parentRoles: ["blog_writer"],
+        isSubagent: true,
+        parentNames: ["Blog Writer"],
+        defaultRole: "Sentiment Analysis",
       },
       "News Scraper": {
         agentType: "subagent",
         department: "research",
-        role: "news_scraper",
-        parentRoles: ["blog_writer"],
+        isSubagent: true,
+        parentNames: ["Blog Writer"],
+        defaultRole: "News Aggregation",
       },
       Humanizer: {
         agentType: "subagent",
-        department: "content_production",
-        role: "humanizer",
-        parentRoles: ["blog_writer", "copywriter"],
+        department: "creative",
+        isSubagent: true,
+        parentNames: ["Blog Writer", "Copywriter"],
+        defaultRole: "Content Humanization",
       },
       "HTML Builder": {
         agentType: "subagent",
         department: "content_production",
-        role: "html_builder",
-        parentRoles: ["blog_writer"],
+        isSubagent: true,
+        parentNames: ["Blog Writer"],
+        defaultRole: "HTML Formatting",
       },
       "Headline Generator": {
         agentType: "subagent",
         department: "creative",
-        role: "headline_generator",
-        parentRoles: ["copywriter", "social_publisher"],
+        isSubagent: true,
+        parentNames: ["Copywriter", "Social Publisher"],
+        defaultRole: "Headline Creation",
       },
       "Image Maker": {
         agentType: "subagent",
         department: "creative",
-        role: "image_maker",
-        parentRoles: ["social_publisher"],
+        isSubagent: true,
+        parentNames: ["Social Publisher"],
+        defaultRole: "Image Generation",
       },
     };
 
-    // Update each agent
+    const validNames = new Set(Object.keys(hierarchy));
+
+    // Step 1: Delete agents NOT in spec (e.g. "thomas")
+    const allAgents = await ctx.db.query("agents").collect();
     for (const agent of allAgents) {
-      const spec = hierarchy[agent.name];
-      if (!spec) {
-        results.skipped++;
-        continue;
+      if (!validNames.has(agent.name)) {
+        await ctx.db.delete(agent._id);
+        results.deleted++;
       }
+    }
 
-      // Skip if already seeded
-      if (agent.agentType && agent.department) {
-        results.skipped++;
-        continue;
+    // Step 2: Create missing agents
+    const remaining = await ctx.db.query("agents").collect();
+    const existingNames = new Set(remaining.map((a) => a.name));
+
+    for (const [name, spec] of Object.entries(hierarchy)) {
+      if (!existingNames.has(name)) {
+        await ctx.db.insert("agents", {
+          name,
+          role: spec.defaultRole,
+          status: "idle",
+          isSubagent: spec.isSubagent,
+          agentType: spec.agentType,
+          department: spec.department,
+          createdAt: now,
+          updatedAt: now,
+        });
+        results.created++;
       }
+    }
 
-      // Resolve parent roles to parent IDs
-      const parentIds = spec.parentRoles
-        .map((parentRole) => {
-          const parent = allAgents.find((a) => a.agentRole === parentRole);
-          return parent ? parent._id : null;
-        })
-        .filter((id) => id !== null) as any[];
+    // Step 3: Re-fetch all agents to resolve parent IDs
+    const finalAgents = await ctx.db.query("agents").collect();
+    const nameToId = new Map(finalAgents.map((a) => [a.name, a._id]));
 
-      // Update agent with hierarchy info
+    // Step 4: Force-update ALL agents with correct hierarchy
+    for (const [name, spec] of Object.entries(hierarchy)) {
+      const agent = finalAgents.find((a) => a.name === name);
+      if (!agent) continue;
+
+      // Resolve parent names to IDs
+      const parentIds = spec.parentNames
+        .map((pName) => nameToId.get(pName))
+        .filter((id): id is typeof agent._id => id !== undefined);
+
       await ctx.db.patch(agent._id, {
         agentType: spec.agentType,
         department: spec.department,
-        parentAgentIds: parentIds.length > 0 ? parentIds : undefined,
-        updatedAt: new Date().toISOString(),
+        isSubagent: spec.isSubagent,
+        parentAgentIds: parentIds.length > 0 ? parentIds : [],
+        updatedAt: now,
       });
 
       results.updated++;

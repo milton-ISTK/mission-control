@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { Plus, Users, Bot, ArrowUpDown, LayoutGrid, Network } from "lucide-react";
 import TeamGrid from "@/components/team/TeamGrid";
-import SubagentList from "@/components/team/SubagentList";
 import OrgChart from "@/components/team/OrgChart";
 import CreateAgentModal from "@/components/team/CreateAgentModal";
 import Button from "@/components/common/Button";
-import { useAgents, useSubagents } from "@/hooks/useAgents";
+import { useAgents } from "@/hooks/useAgents";
 
 export type SortOption =
   | "name-asc"
@@ -34,11 +33,10 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState<"agents" | "subagents">("agents");
   const [viewMode, setViewMode] = useState<"list" | "orgchart">("list");
   const [sortOption, setSortOption] = useState<SortOption>("status-active");
-  const agents = useAgents();
-  const subagents = useSubagents();
+  const allAgents = useAgents();
 
-  const agentCount = agents?.length ?? 0;
-  const subagentCount = subagents?.length ?? 0;
+  const agentCount = (allAgents ?? []).filter((a: any) => (a.agentType ?? "agent") === "agent").length;
+  const subagentCount = (allAgents ?? []).filter((a: any) => a.agentType === "subagent").length;
 
   const handleCreateAgent = () => {
     setCreateCategory("agent");
@@ -156,12 +154,12 @@ export default function TeamPage() {
       {/* Content */}
       {activeTab === "agents" ? (
         viewMode === "list" ? (
-          <TeamGrid sortOption={sortOption} />
+          <TeamGrid sortOption={sortOption} agentTypeFilter="agent" />
         ) : (
-          <OrgChart agents={agents} />
+          <OrgChart agents={allAgents as any} />
         )
       ) : (
-        <SubagentList sortOption={sortOption} />
+        <TeamGrid sortOption={sortOption} agentTypeFilter="subagent" />
       )}
 
       {/* Create Modal */}

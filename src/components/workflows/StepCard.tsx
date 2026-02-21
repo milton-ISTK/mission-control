@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import ContentLightbox from "@/components/workflows/ContentLightbox";
 
 interface WorkflowStep {
   _id: string;
@@ -153,11 +154,54 @@ export default function StepCard({
   isSubmitting = false,
 }: StepCardProps) {
   const [isExpanded, setIsExpanded] = useState(step.status === "awaiting_review" || step.status === "agent_working");
+  const [showLightbox, setShowLightbox] = useState(false);
   const config = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.pending;
 
   const duration = formatDuration(step.startedAt, step.completedAt);
   const isCompletedOrApproved = step.status === "completed" || step.status === "approved";
   const isAwaitingReview = step.status === "awaiting_review";
+
+  // Determine if this is a blog content step
+  const isBlogContentStep = ["blog_writer", "humanizer"].includes(step.agentRole) || step.name === "Content Review";
+  const isHtmlStep = step.agentRole === "html_builder";
+
+  // Extract blog content from output
+  const extractBlogContent = (): string => {
+    if (!step.output) return "";
+    try {
+      const parsed = JSON.parse(step.output);
+      const content = parsed.result?.content || parsed.content || step.output;
+      return typeof content === "string" ? content : JSON.stringify(content, null, 2);
+    } catch {
+      return step.output;
+    }
+  };
+
+  // Extract HTML content
+  const extractHtmlContent = (): string => {
+    if (!step.output) return "";
+    try {
+      const parsed = JSON.parse(step.output);
+      const html = parsed.html || parsed.result?.html || step.output;
+      return typeof html === "string" ? html : JSON.stringify(html, null, 2);
+    } catch {
+      return step.output;
+    }
+  };
+
+  const handlePreviewHtml = () => {
+    const html = extractHtmlContent();
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
+  const handleCopyHtml = () => {
+    const html = extractHtmlContent();
+    navigator.clipboard.writeText(html).then(() => {
+      alert("HTML copied to clipboard!");
+    });
+  };
 
   return (
     <div className={cn("rounded-xl border transition-all", config.bg, config.border)}>
@@ -218,7 +262,17 @@ export default function StepCard({
           {/* Input Content (for review steps) */}
           {isAwaitingReview && step.input && (
             <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
-              <p className="text-xs font-semibold text-amber-300 mb-2">📄 Content to Review:</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-amber-300">📄 Content to Review:</p>
+                {isBlogContentStep && (
+                  <button
+                    onClick={() => setShowLightbox(true)}
+                    className="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-600/40 hover:bg-amber-600/30 transition-all"
+                  >
+                    📖 Read Content
+                  </button>
+                )}
+              </div>
               <div className="text-xs text-amber-100 max-h-60 overflow-y-auto">{renderContent(step.input, step.agentRole, true)}</div>
             </div>
           )}
@@ -226,7 +280,33 @@ export default function StepCard({
           {/* Output Content */}
           {step.output && !isAwaitingReview && (
             <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-700/30">
-              <p className="text-xs font-semibold text-istk-textMuted mb-2">📋 Output:</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-istk-textMuted">📋 Output:</p>
+                {isBlogContentStep && (
+                  <button
+                    onClick={() => setShowLightbox(true)}
+                    className="text-xs px-2 py-1 rounded bg-blue-600/20 text-blue-300 border border-blue-600/40 hover:bg-blue-600/30 transition-all"
+                  >
+                    📖 Read Content
+                  </button>
+                )}
+                {isHtmlStep && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handlePreviewHtml}
+                      className="text-xs px-2 py-1 rounded bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 transition-all"
+                    >
+                      🌐 Preview
+                    </button>
+                    <button
+                      onClick={handleCopyHtml}
+                      className="text-xs px-2 py-1 rounded bg-blue-600/20 text-blue-300 border border-blue-600/40 hover:bg-blue-600/30 transition-all"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="text-xs text-istk-textMuted max-h-60 overflow-y-auto">{renderContent(step.output, step.agentRole)}</div>
             </div>
           )}
@@ -277,6 +357,35 @@ export default function StepCard({
           )}
         </div>
       )}
+
+      {/* Content Lightbox */}
+      <ContentLightbox
+        isOpen={showLightbox}
+        onClose={() => setShowLightbox(false)}
+        title={isBlogContentStep ? "📖 Blog Content" : "Content"}
+        content={isBlogContentStep ? extractBlogContent() : ""}
+        mode="html"
+        children={
+          isAwaitingReview ? (
+            <div className="flex gap-2 w-full">
+              <button
+                onClick={onReject}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-red-600/20 text-red-600 border border-red-600/40 hover:bg-red-600/30 transition-all disabled:opacity-50"
+              >
+                ❌ Reject & Redo
+              </button>
+              <button
+                onClick={onApprove}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-green-600/20 text-green-600 border border-green-600/40 hover:bg-green-600/30 transition-all disabled:opacity-50"
+              >
+                ✅ Approve & Continue
+              </button>
+            </div>
+          ) : null
+        }
+      />
     </div>
   );
 }

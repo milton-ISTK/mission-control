@@ -13,6 +13,7 @@ import {
   Sparkles,
   Settings,
   LogOut,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/components/auth/AuthGuard";
@@ -20,6 +21,7 @@ import { useAuthContext } from "@/components/auth/AuthGuard";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/content", label: "Content Pipeline", icon: Sparkles },
+  { href: "/workflows", label: "Workflows", icon: Network },
   { href: "/tasks", label: "Tasks", icon: KanbanSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/memories", label: "Memories", icon: Brain },

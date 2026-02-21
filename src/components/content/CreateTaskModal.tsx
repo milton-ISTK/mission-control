@@ -82,6 +82,12 @@ export default function CreateTaskModal({
 
   const handleCreateTask = async () => {
     if (!selectedAngle || !contentType) return;
+    
+    // For blog posts, author is required
+    if (contentType === "blog_post" && !authorId) {
+      setError("Author is required for blog posts");
+      return;
+    }
 
     setIsCreating(true);
     setError(null);
@@ -91,6 +97,7 @@ export default function CreateTaskModal({
         selectedAngle: selectedAngle.title,
         contentType,
         briefing: briefing || undefined,
+        authorId: authorId || undefined,
       });
 
       setSuccess(true);

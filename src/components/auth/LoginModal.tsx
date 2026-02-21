@@ -62,7 +62,7 @@ export default function LoginModal({ onLogin, error, onClearError }: LoginModalP
 
       {/* Login Card */}
       <div
-        className={`relative w-full max-w-md rounded-2xl overflow-hidden transition-all duration-500 max-h-[85vh] overflow-y-auto ${
+        className={`relative w-full max-w-md rounded-2xl transition-all duration-500 max-h-[85vh] overflow-y-auto ${
           mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
         } ${shake ? "animate-[shake_0.5s_ease-in-out]" : ""}`}
         style={{

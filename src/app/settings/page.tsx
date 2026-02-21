@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Key, Save, AlertCircle, ExternalLink, CheckCircle, AlertTriangle } from "lucide-react";
+import { Key, Save, AlertCircle, ExternalLink, CheckCircle, AlertTriangle, Users, Plus, Trash2, Edit2 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { PROVIDERS, type LLMProvider } from "@/lib/llm-models";
+import { Id } from "../../../convex/_generated/dataModel";
 
 type ProviderApiKeys = Record<LLMProvider, string>;
 
@@ -22,13 +23,26 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  
+  // Author management state
+  const [showAuthorForm, setShowAuthorForm] = useState(false);
+  const [editingAuthorId, setEditingAuthorId] = useState<Id<"authors"> | null>(null);
+  const [authorForm, setAuthorForm] = useState({ name: "", title: "", bio: "", writingStyle: "", voiceNotes: "", isActive: true });
+  const [authorError, setAuthorError] = useState("");
+  const [authorSaving, setAuthorSaving] = useState(false);
 
   // Read daemon status from Convex (real-time)
   const daemonStatusData = useQuery(api.systemStatus.getDaemonStatus);
   const daemonStatus = daemonStatusData?.status ?? "unknown";
 
-  // Convex mutations for API key management
+  // Queries
+  const authors = useQuery(api.authors.getAuthors, { includeInactive: true });
+
+  // Convex mutations
   const saveApiKey = useMutation(api.contentPipeline.saveApiKey);
+  const createAuthor = useMutation(api.authors.createAuthor);
+  const updateAuthor = useMutation(api.authors.updateAuthor);
+  const deleteAuthor = useMutation(api.authors.deleteAuthor);
 
   // Load API keys on mount
   useEffect(() => {
@@ -69,6 +83,67 @@ export default function SettingsPage() {
 
   const handleChange = (provider: LLMProvider, value: string) => {
     setApiKeys((prev) => ({ ...prev, [provider]: value }));
+  };
+
+  const handleAuthorSave = async () => {
+    setAuthorError("");
+    if (!authorForm.name.trim() || !authorForm.title.trim()) {
+      setAuthorError("Name and title are required");
+      return;
+    }
+
+    setAuthorSaving(true);
+    try {
+      if (editingAuthorId) {
+        await updateAuthor({
+          id: editingAuthorId,
+          name: authorForm.name.trim(),
+          title: authorForm.title.trim(),
+          bio: authorForm.bio.trim() || undefined,
+          writingStyle: authorForm.writingStyle.trim() || undefined,
+          voiceNotes: authorForm.voiceNotes.trim() || undefined,
+          isActive: authorForm.isActive,
+        });
+      } else {
+        await createAuthor({
+          name: authorForm.name.trim(),
+          title: authorForm.title.trim(),
+          bio: authorForm.bio.trim() || undefined,
+          writingStyle: authorForm.writingStyle.trim() || undefined,
+          voiceNotes: authorForm.voiceNotes.trim() || undefined,
+          isActive: authorForm.isActive,
+        });
+      }
+      setAuthorForm({ name: "", title: "", bio: "", writingStyle: "", voiceNotes: "", isActive: true });
+      setEditingAuthorId(null);
+      setShowAuthorForm(false);
+    } catch (err) {
+      setAuthorError(err instanceof Error ? err.message : "Failed to save author");
+    } finally {
+      setAuthorSaving(false);
+    }
+  };
+
+  const handleDeleteAuthor = async (id: Id<"authors">) => {
+    if (!confirm("Are you sure? This cannot be undone.")) return;
+    try {
+      await deleteAuthor({ id });
+    } catch (err) {
+      setAuthorError(err instanceof Error ? err.message : "Failed to delete author");
+    }
+  };
+
+  const handleEditAuthor = (author: any) => {
+    setAuthorForm({
+      name: author.name,
+      title: author.title,
+      bio: author.bio || "",
+      writingStyle: author.writingStyle || "",
+      voiceNotes: author.voiceNotes || "",
+      isActive: author.isActive,
+    });
+    setEditingAuthorId(author._id);
+    setShowAuthorForm(true);
   };
 
   if (loading) {
@@ -242,6 +317,179 @@ export default function SettingsPage() {
           <span className="text-sm text-istk-success flex items-center gap-1 animate-in fade-in duration-200">
             ✓ Keys saved to daemon
           </span>
+        )}
+      </div>
+
+      {/* Blog Authors Section */}
+      <div className="border-t border-istk-border/10 pt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-5 h-5 text-istk-accent" />
+          <h2 className="text-lg font-semibold text-istk-text">Blog Authors</h2>
+        </div>
+
+        {/* Author List */}
+        <div className="grid grid-cols-1 gap-3 mb-6">
+          {authors && authors.length > 0 ? (
+            authors.map((author: any) => (
+              <div
+                key={author._id}
+                className="p-4 rounded-lg border"
+                style={{
+                  background: author.isActive ? "rgba(52,211,153,0.04)" : "rgba(100,100,100,0.04)",
+                  border: author.isActive ? "1px solid rgba(52,211,153,0.12)" : "1px solid rgba(100,100,100,0.12)",
+                }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-istk-text">{author.name}</h3>
+                    <p className="text-xs text-istk-textMuted mt-1">{author.title}</p>
+                    {author.writingStyle && (
+                      <p className="text-xs text-istk-textMuted mt-2 italic">{author.writingStyle}</p>
+                    )}
+                    {!author.isActive && (
+                      <p className="text-xs text-istk-warning mt-2">⚠️ Inactive</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => handleEditAuthor(author)}
+                      className="p-2 rounded-lg bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 transition-all"
+                      title="Edit author"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAuthor(author._id)}
+                      className="p-2 rounded-lg bg-red-600/20 text-red-300 hover:bg-red-600/30 transition-all"
+                      title="Delete author"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-istk-textMuted italic">No authors yet</p>
+          )}
+        </div>
+
+        {/* Author Form */}
+        {showAuthorForm && (
+          <div className="p-4 rounded-lg border border-istk-border/20 bg-istk-bg/50 space-y-4">
+            <h3 className="font-semibold text-istk-text">
+              {editingAuthorId ? "Edit Author" : "Add New Author"}
+            </h3>
+
+            {authorError && (
+              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-sm text-red-300">
+                {authorError}
+              </div>
+            )}
+
+            <input
+              type="text"
+              placeholder="Author Name (required)"
+              value={authorForm.name}
+              onChange={(e) => setAuthorForm({ ...authorForm, name: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm"
+              style={{
+                background: "rgba(10,10,14,0.60)",
+                border: "1px solid rgba(255,107,0,0.12)",
+                color: "rgb(240,240,245)",
+              }}
+            />
+
+            <input
+              type="text"
+              placeholder="Title (required) - e.g., CEO, IntelliStake Technologies"
+              value={authorForm.title}
+              onChange={(e) => setAuthorForm({ ...authorForm, title: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm"
+              style={{
+                background: "rgba(10,10,14,0.60)",
+                border: "1px solid rgba(255,107,0,0.12)",
+                color: "rgb(240,240,245)",
+              }}
+            />
+
+            <textarea
+              placeholder="Bio (optional)"
+              value={authorForm.bio}
+              onChange={(e) => setAuthorForm({ ...authorForm, bio: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm min-h-[60px]"
+              style={{
+                background: "rgba(10,10,14,0.60)",
+                border: "1px solid rgba(255,107,0,0.12)",
+                color: "rgb(240,240,245)",
+              }}
+            />
+
+            <textarea
+              placeholder="Writing Style (optional) - How this author writes"
+              value={authorForm.writingStyle}
+              onChange={(e) => setAuthorForm({ ...authorForm, writingStyle: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm min-h-[80px]"
+              style={{
+                background: "rgba(10,10,14,0.60)",
+                border: "1px solid rgba(255,107,0,0.12)",
+                color: "rgb(240,240,245)",
+              }}
+            />
+
+            <textarea
+              placeholder="Voice Notes (optional) - Additional personality notes"
+              value={authorForm.voiceNotes}
+              onChange={(e) => setAuthorForm({ ...authorForm, voiceNotes: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm min-h-[80px]"
+              style={{
+                background: "rgba(10,10,14,0.60)",
+                border: "1px solid rgba(255,107,0,0.12)",
+                color: "rgb(240,240,245)",
+              }}
+            />
+
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="checkbox"
+                checked={authorForm.isActive}
+                onChange={(e) => setAuthorForm({ ...authorForm, isActive: e.target.checked })}
+                className="w-4 h-4 rounded"
+              />
+              <span className="text-istk-text">Active</span>
+            </label>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowAuthorForm(false);
+                  setEditingAuthorId(null);
+                  setAuthorForm({ name: "", title: "", bio: "", writingStyle: "", voiceNotes: "", isActive: true });
+                  setAuthorError("");
+                }}
+                className="flex-1 px-3 py-2 rounded-lg text-sm font-medium text-istk-textMuted border border-istk-border/20 hover:bg-istk-surfaceLight transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAuthorSave}
+                disabled={authorSaving}
+                className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-istk-accent/20 text-istk-accent border border-istk-accent/40 hover:bg-istk-accent/30 transition-all disabled:opacity-50"
+              >
+                {authorSaving ? "Saving..." : editingAuthorId ? "Update" : "Add"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!showAuthorForm && (
+          <button
+            onClick={() => setShowAuthorForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-istk-accent/20 text-istk-accent border border-istk-accent/40 hover:bg-istk-accent/30 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Author
+          </button>
         )}
       </div>
     </div>

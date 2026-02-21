@@ -207,6 +207,38 @@ export default function CreateTaskModal({
               </div>
             </div>
 
+            {/* Author selector (for blog posts) */}
+            {contentType === "blog_post" && (
+              <div>
+                <label className="block text-sm font-medium text-istk-text mb-2">
+                  Author <span className="text-istk-warning">*</span>
+                </label>
+                <select
+                  value={authorId || ""}
+                  onChange={(e) => setAuthorId((e.target.value as any) || null)}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{
+                    background: "rgba(10,10,14,0.60)",
+                    border: "1px solid rgba(255,107,0,0.12)",
+                    color: "rgb(240,240,245)",
+                  }}
+                >
+                  <option value="">Select an author...</option>
+                  {authors && authors.length > 0 ? (
+                    authors
+                      .filter((a: any) => a.isActive)
+                      .map((author: any) => (
+                        <option key={author._id} value={author._id}>
+                          {author.name} — {author.title}
+                        </option>
+                      ))
+                  ) : (
+                    <option disabled>No authors available</option>
+                  )}
+                </select>
+              </div>
+            )}
+
             {/* Additional instructions */}
             <div>
               <label className="block text-sm font-medium text-istk-text mb-2">

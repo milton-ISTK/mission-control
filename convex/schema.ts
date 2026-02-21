@@ -89,6 +89,10 @@ export default defineSchema({
     provider: v.optional(v.string()),               // LLM provider ("anthropic", "openai", etc.)
     isAutonomous: v.optional(v.boolean()),          // Can work without human intervention
     maxConcurrentTasks: v.optional(v.number()),     // Max parallel tasks this agent can handle
+    // ---- Agent Hierarchy (Phase 3) ----
+    agentType: v.optional(v.string()),              // "agent" | "subagent" — default "agent"
+    parentAgentIds: v.optional(v.array(v.id("agents"))), // Which agents this subagent reports to
+    department: v.optional(v.string()),             // "content_production" | "research" | "distribution" | "creative"
   })
     .index("by_status", ["status"])
     .index("by_name", ["name"])

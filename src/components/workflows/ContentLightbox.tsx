@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 
 interface ContentLightboxProps {
@@ -66,29 +67,91 @@ export default function ContentLightbox({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-12 py-8 bg-white">
-          {mode === "html" ? (
-            <div
-              className={cn(
-                "prose prose-sm max-w-none",
-                "prose-headings:text-zinc-900 prose-headings:font-bold",
-                "prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl",
-                "prose-p:text-zinc-700 prose-p:leading-relaxed prose-p:mb-4",
-                "prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline",
-                "prose-strong:text-zinc-900 prose-strong:font-bold",
-                "prose-code:text-red-600 prose-code:bg-zinc-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded",
-                "prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:rounded-lg prose-pre:p-4",
-                "prose-ul:text-zinc-700 prose-ol:text-zinc-700",
-                "prose-li:text-zinc-700 prose-li:mb-1",
-                "prose-blockquote:border-zinc-300 prose-blockquote:text-zinc-600",
-                "prose-hr:border-zinc-200"
-              )}
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
-          ) : (
-            <div className="text-zinc-700 leading-relaxed whitespace-pre-wrap break-words font-sans">
-              {content}
-            </div>
-          )}
+          <div className="max-w-2xl mx-auto">
+            {mode === "html" ? (
+              <ReactMarkdown
+                className="prose prose-sm max-w-none"
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="text-3xl font-bold mb-4 mt-6 text-[#1a1a1a]">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-2xl font-bold mb-3 mt-5 text-[#1a1a1a]">
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-xl font-bold mb-2 mt-4 text-[#1a1a1a]">
+                      {children}
+                    </h3>
+                  ),
+                  p: ({ children }) => (
+                    <p className="text-base leading-[1.8] mb-4 text-[#1a1a1a]">
+                      {children}
+                    </p>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-bold text-[#1a1a1a]">
+                      {children}
+                    </strong>
+                  ),
+                  em: ({ children }) => (
+                    <em className="italic text-[#1a1a1a]">
+                      {children}
+                    </em>
+                  ),
+                  a: ({ children, href }) => (
+                    <a
+                      href={href}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc list-inside mb-4 text-[#1a1a1a] space-y-1">
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal list-inside mb-4 text-[#1a1a1a] space-y-1">
+                      {children}
+                    </ol>
+                  ),
+                  li: ({ children }) => (
+                    <li className="text-base text-[#1a1a1a]">
+                      {children}
+                    </li>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-zinc-300 pl-4 italic text-[#1a1a1a] mb-4">
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({ children }) => (
+                    <code className="bg-zinc-100 text-red-600 px-2 py-1 rounded font-mono text-sm">
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ children }) => (
+                    <pre className="bg-zinc-900 text-zinc-100 rounded-lg p-4 mb-4 overflow-x-auto">
+                      {children}
+                    </pre>
+                  ),
+                }}
+              >
+                {content}
+              </ReactMarkdown>
+            ) : (
+              <div className="text-[#1a1a1a] leading-[1.8] whitespace-pre-wrap break-words font-sans text-base">
+                {content}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer (Action Buttons) */}

@@ -165,15 +165,17 @@ export default function StepCard({
   const isBlogContentStep = ["blog_writer", "humanizer"].includes(step.agentRole) || step.name === "Content Review";
   const isHtmlStep = step.agentRole === "html_builder";
 
-  // Extract blog content from output
+  // Extract blog content from output OR input (for review steps)
   const extractBlogContent = (): string => {
-    if (!step.output) return "";
+    // For review steps (awaiting_review), content is in input field
+    const source = isAwaitingReview && step.input ? step.input : step.output;
+    if (!source) return "";
     try {
-      const parsed = JSON.parse(step.output);
-      const content = parsed.result?.content || parsed.content || step.output;
+      const parsed = JSON.parse(source);
+      const content = parsed.result?.content || parsed.content || source;
       return typeof content === "string" ? content : JSON.stringify(content, null, 2);
     } catch {
-      return step.output;
+      return source;
     }
   };
 

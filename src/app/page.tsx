@@ -37,9 +37,10 @@ export default function DashboardPage() {
   }
 
   // Count workflows by status
-  const completedWorkflows = stats?.workflows?.completed || 0;
   const activeWorkflowsCount = activeWorkflows?.length || 0;
   const awaitingReviewCount = awaitingReviewSteps?.length || 0;
+  // Note: completed workflows count would need to be queried separately if needed
+  const completedWorkflows = 0;
 
   return (
     <div className="flex flex-col gap-8">

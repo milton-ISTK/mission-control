@@ -152,14 +152,14 @@ export default function TeamPage() {
       </div>
 
       {/* Content */}
-      {activeTab === "agents" ? (
-        viewMode === "list" ? (
-          <TeamGrid sortOption={sortOption} agentTypeFilter="agent" />
-        ) : (
-          <OrgChart agents={allAgents as any} />
-        )
+      {activeTab !== "agents" || viewMode === "list" ? (
+        <TeamGrid
+          key="team-grid-stable"
+          sortOption={sortOption}
+          agentTypeFilter={activeTab === "agents" ? "agent" : "subagent"}
+        />
       ) : (
-        <TeamGrid sortOption={sortOption} agentTypeFilter="subagent" />
+        <OrgChart agents={allAgents as any} />
       )}
 
       {/* Create Modal */}

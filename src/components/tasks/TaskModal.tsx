@@ -44,12 +44,12 @@ export default function TaskModal({ isOpen, onClose, editTaskId }: TaskModalProp
   // Populate form when editing
   useEffect(() => {
     if (existingTask && isEditing) {
-      setTitle(existingTask.title || "");
-      setDescription(existingTask.description || "");
-      setPriority(existingTask.priority || "medium");
-      setAssignee(existingTask.assignee || "Gregory");
-      setDueDate(existingTask.dueDate || "");
-      setTagsInput(existingTask.tags?.join(", ") || "");
+      setTitle((existingTask?.title) || "");
+      setDescription((existingTask?.description) || "");
+      setPriority((existingTask?.priority) || "medium");
+      setAssignee((existingTask?.assignee) || "Gregory");
+      setDueDate((existingTask?.dueDate) || "");
+      setTagsInput(Array.isArray(existingTask?.tags) ? existingTask.tags.join(", ") : "");
     } else if (!isEditing) {
       resetForm();
     }

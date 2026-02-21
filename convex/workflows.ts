@@ -430,16 +430,20 @@ export const advanceWorkflow = mutation({
 
     let combinedInput: string | undefined;
     if (prevBatchOutputs.length === 1) {
-      combinedInput = prevBatchOutputs[0].output;
+      // Single previous step — wrap in dict so daemon always gets a dict
+      combinedInput = JSON.stringify({
+        output: prevBatchOutputs[0].output,
+      });
     } else if (prevBatchOutputs.length > 1) {
-      // Multiple parallel steps completed — combine their outputs
-      combinedInput = JSON.stringify(
-        prevBatchOutputs.map((s) => ({
+      // Multiple parallel steps completed — combine their outputs in an array wrapped in dict
+      combinedInput = JSON.stringify({
+        outputs: prevBatchOutputs.map((s) => ({
           stepNumber: s.stepNumber,
           name: s.name,
+          agentRole: s.agentRole,
           output: s.output,
-        }))
-      );
+        })),
+      });
     }
 
     // 8. Create workflowSteps for the next batch

@@ -186,7 +186,7 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
             key={agent._id}
             className={cn(
               "neu-card p-5 transition-all",
-              !agent.isActive && "opacity-60"
+              agent.status === "offline" && "opacity-60"
             )}
           >
             {/* Top Row */}

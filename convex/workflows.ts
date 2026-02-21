@@ -693,13 +693,65 @@ export const approveStepFromUI = mutation({
     // 4. Create the next step
     const nextTemplateStep = template.steps.find((ts) => ts.stepNumber === step.stepNumber + 1);
     if (nextTemplateStep) {
+      // If this is a review gate (agentRole: "none"), find the previous executed step's output
+      let inputForNextStep = step.output;
+      if (step.agentRole === "none") {
+        // This is a review gate — look back to find the previous actual step's output
+        const allSteps = await ctx.db
+          .query("workflowSteps")
+          .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+          .collect();
+        
+        // Find the highest stepNumber < current step that has "completed" or "approved" status
+        const previousExecutedStep = allSteps
+          .filter((s) => s.stepNumber < step.stepNumber && ["completed", "approved"].includes(s.status))
+          .sort((a, b) => b.stepNumber - a.stepNumber)
+          [0];
+        
+        if (previousExecutedStep) {
+          inputForNextStep = previousExecutedStep.output;
+        }
+      }
+
+      // Fetch author info if available
+      let authorInfo: any = undefined;
+      if (workflow.authorId) {
+        const author = await ctx.db.get(workflow.authorId);
+        if (author) {
+          authorInfo = {
+            name: author.name,
+            title: author.title,
+            writingStyle: author.writingStyle,
+            voiceNotes: author.voiceNotes,
+          };
+        }
+      }
+
+      // Wrap input with author info if available
+      let finalInput = inputForNextStep;
+      if (authorInfo) {
+        try {
+          const parsed = JSON.parse(inputForNextStep || "{}");
+          finalInput = JSON.stringify({
+            ...parsed,
+            author: authorInfo,
+          });
+        } catch {
+          // If not JSON, wrap in object
+          finalInput = JSON.stringify({
+            output: inputForNextStep,
+            author: authorInfo,
+          });
+        }
+      }
+
       await ctx.db.insert("workflowSteps", {
         workflowId: step.workflowId,
         stepNumber: nextTemplateStep.stepNumber,
         name: nextTemplateStep.name,
         agentRole: nextTemplateStep.agentRole,
         status: "pending",
-        input: step.output, // Pass approved output as input to next step
+        input: finalInput,
         requiresApproval: nextTemplateStep.requiresApproval,
         timeoutMinutes: nextTemplateStep.timeoutMinutes,
         createdAt: now,

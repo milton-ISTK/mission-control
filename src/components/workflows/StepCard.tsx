@@ -173,7 +173,8 @@ export default function StepCard({
       .replace(/\\u2019/g, "'")
       .replace(/\\u201c/g, "\u201c")
       .replace(/\\u201d/g, "\u201d")
-      .replace(/\\"/g, '"');
+      .replace(/\\"/g, '"')
+      .replace(/\\(?![n"u])/g, ''); // Remove stray backslashes
   };
 
   // Extract blog content from output OR input (for review steps)
@@ -182,24 +183,33 @@ export default function StepCard({
     const source = isAwaitingReview && step.input ? step.input : step.output;
     if (!source) return "";
 
-    try {
-      let parsed = JSON.parse(source);
-
-      // Navigate nested structures
-      if (parsed.output) parsed = parsed.output;
-
-      // Find the actual content field
-      const content =
-        parsed.revisedContent || parsed.content || parsed.text || JSON.stringify(parsed);
-
-      // Clean escape sequences and return
-      return cleanEscapes(
-        typeof content === "string" ? content : JSON.stringify(content, null, 2)
-      );
-    } catch {
-      // Not JSON or parse failed, return cleaned raw text
-      return cleanEscapes(source);
+    // Keep parsing until we get to actual content (handle double-wrapped JSON)
+    let data = source;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const parsed = JSON.parse(data);
+        if (typeof parsed === "string") {
+          data = parsed; // It was a JSON-encoded string, unwrap it
+          continue;
+        }
+        // It's an object — look for content fields
+        data =
+          parsed.revisedContent ||
+          parsed.content ||
+          parsed.output?.revisedContent ||
+          parsed.output?.content ||
+          parsed.text ||
+          JSON.stringify(parsed);
+        break;
+      } catch {
+        break; // Not JSON, we have the raw content
+      }
     }
+
+    // Clean escape sequences and return
+    return cleanEscapes(
+      typeof data === "string" ? data : JSON.stringify(data, null, 2)
+    );
   };
 
   // Extract HTML content

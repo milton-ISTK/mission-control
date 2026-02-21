@@ -10,7 +10,7 @@ import {
   Trash2,
   Shield,
 } from "lucide-react";
-import { useSubagents, useToggleSubagent, useDeleteSubagent, useUpdateSubagent } from "@/hooks/useAgents";
+import { useAgents, useUpdateAgent, useDeleteAgent } from "@/hooks/useAgents";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Modal from "@/components/common/Modal";
@@ -30,16 +30,15 @@ interface SubagentListProps {
 }
 
 interface Subagent {
-  _id: Id<"subagents">;
+  _id: Id<"agents">;
   name: string;
-  llm: string;
+  model: string;
   role: string;
   description?: string;
-  hasApiKey: boolean;
-  isActive: boolean;
-  config?: string;
+  status: "active" | "idle" | "offline";
+  agentType: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 const ROLE_OPTIONS = [
@@ -53,23 +52,32 @@ const ROLE_OPTIONS = [
 ];
 
 export default function SubagentList({ sortOption }: SubagentListProps) {
-  const subagents = useSubagents();
-  const toggleSubagent = useToggleSubagent();
-  const deleteSubagent = useDeleteSubagent();
-  const updateSubagent = useUpdateSubagent();
+  const allAgents = useAgents();
+  const updateAgent = useUpdateAgent();
+  const deleteAgent = useDeleteAgent();
+  
+  // Filter for subagents only
+  const subagents = useMemo(() => {
+    return (allAgents ?? []).filter((a: any) => a.agentType === "subagent") as Subagent[];
+  }, [allAgents]);
 
   const [editingAgent, setEditingAgent] = useState<Subagent | null>(null);
-  const [deletingId, setDeletingId] = useState<Id<"subagents"> | null>(null);
+  const [deletingId, setDeletingId] = useState<Id<"agents"> | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
-    llm: "",
+    model: "",
     role: "",
     description: "",
   });
 
-  const handleToggle = async (id: Id<"subagents">) => {
+  const handleToggle = async (id: Id<"agents">, currentStatus: string) => {
     try {
-      await toggleSubagent({ id });
+      const nextStatus: "active" | "idle" | "offline" = 
+        currentStatus === "active" ? "idle" : "active";
+      await updateAgent({
+        id,
+        status: nextStatus,
+      });
     } catch (err) {
       console.error("Failed to toggle subagent:", err);
     }
@@ -78,7 +86,7 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
   const handleEdit = (agent: Subagent) => {
     setEditForm({
       name: agent.name || "",
-      llm: agent.llm || "",
+      model: agent.model || "",
       role: agent.role || "",
       description: (agent.description ?? "") as string,
     });
@@ -88,10 +96,10 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
   const handleSaveEdit = async () => {
     if (!editingAgent) return;
     try {
-      await updateSubagent({
+      await updateAgent({
         id: editingAgent._id,
         name: editForm.name,
-        llm: editForm.llm,
+        model: editForm.model,
         role: editForm.role,
         description: editForm.description || undefined,
       });
@@ -104,14 +112,14 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
   const handleDelete = async () => {
     if (!deletingId) return;
     try {
-      await deleteSubagent({ id: deletingId });
+      await deleteAgent({ id: deletingId });
       setDeletingId(null);
     } catch (err) {
       console.error("Failed to delete subagent:", err);
     }
   };
 
-  if (subagents === undefined) {
+  if (allAgents === undefined) {
     return <PageLoader label="Loading subagents..." />;
   }
 
@@ -126,7 +134,7 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
   }
 
   const rawAgents = subagents as Subagent[];
-  const activeCount = rawAgents.filter((a) => a.isActive).length;
+  const activeCount = rawAgents.filter((a) => a.status === "active").length;
 
   // Apply sorting
   const agents = useMemo(() => {
@@ -138,8 +146,8 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
         return list.sort((a, b) => b.name.localeCompare(a.name));
       case "status-active":
         return list.sort((a, b) => {
-          if (a.isActive && !b.isActive) return -1;
-          if (!a.isActive && b.isActive) return 1;
+          if (a.status === "active" && b.status !== "active") return -1;
+          if (a.status !== "active" && b.status === "active") return 1;
           return a.name.localeCompare(b.name);
         });
       case "date-newest":
@@ -186,23 +194,17 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
                   <p className="text-xs text-istk-textMuted capitalize">{agent.role}</p>
                 </div>
               </div>
-              <Badge variant={agent.isActive ? "success" : "default"}>
-                {agent.isActive ? "Active" : "Inactive"}
+              <Badge variant={agent.status === "active" ? "success" : "default"}>
+                {agent.status === "active" ? "Active" : "Inactive"}
               </Badge>
             </div>
 
-            {/* Model & API Key */}
+            {/* Model */}
             <div className="flex items-center gap-3 mb-3 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs text-istk-textDim">
                 <Cpu className="w-3.5 h-3.5" />
-                <span className="font-mono">{agent.llm}</span>
+                <span className="font-mono">{agent.model}</span>
               </div>
-              {agent.hasApiKey && (
-                <div className="flex items-center gap-1 text-xs text-istk-success">
-                  <Shield className="w-3 h-3" />
-                  <span>API Key Set</span>
-                </div>
-              )}
             </div>
 
             {/* Description */}
@@ -219,16 +221,16 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
               </span>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => handleToggle(agent._id)}
+                  onClick={() => handleToggle(agent._id, agent.status)}
                   className={cn(
                     "p-1.5 rounded-lg transition-colors",
-                    agent.isActive
+                    agent.status === "active"
                       ? "hover:bg-istk-warning/10 text-istk-textDim hover:text-istk-warning"
                       : "hover:bg-istk-success/10 text-istk-textDim hover:text-istk-success"
                   )}
-                  title={agent.isActive ? "Deactivate" : "Activate"}
+                  title={agent.status === "active" ? "Deactivate" : "Activate"}
                 >
-                  {agent.isActive ? (
+                  {agent.status === "active" ? (
                     <PowerOff className="w-4 h-4" />
                   ) : (
                     <Power className="w-4 h-4" />
@@ -272,8 +274,8 @@ export default function SubagentList({ sortOption }: SubagentListProps) {
               Model
             </label>
             <select
-              value={editForm.llm}
-              onChange={(e) => setEditForm({ ...editForm, llm: e.target.value })}
+              value={editForm.model}
+              onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
               className="glass-input text-sm appearance-none cursor-pointer w-full pr-8"
             >
               {getModelGroups().map((group) => (

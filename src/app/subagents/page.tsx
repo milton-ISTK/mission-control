@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Bot, Cpu, Filter } from "lucide-react";
 import SubagentList from "@/components/team/SubagentList";
 import CreateSubagentModal from "@/components/team/CreateSubagentModal";
 import Button from "@/components/common/Button";
-import { useSubagents } from "@/hooks/useAgents";
+import { useAgents } from "@/hooks/useAgents";
 
 export default function SubagentsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
-  const subagents = useSubagents();
+  const allAgents = useAgents();
+  
+  // Filter for subagents (agentType === "subagent")
+  const subagents = useMemo(() => {
+    return (allAgents ?? []).filter((a: any) => a.agentType === "subagent");
+  }, [allAgents]);
 
   const totalCount = subagents?.length ?? 0;
-  const activeCount = subagents?.filter((s) => s.isActive).length ?? 0;
+  const activeCount = subagents?.filter((s: any) => s.status === "active").length ?? 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,7 +69,7 @@ export default function SubagentsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-istk-text">
-                {new Set(subagents?.map((s) => s.llm) ?? []).size}
+                {new Set(subagents?.map((s: any) => s.model) ?? []).size}
               </p>
               <p className="text-xs text-istk-textMuted">Unique Models</p>
             </div>

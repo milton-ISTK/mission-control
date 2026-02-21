@@ -18,8 +18,8 @@ interface Task {
   dueDate?: string;
   tags?: string[];
   order: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | number;
+  updatedAt: string | number;
 }
 
 interface TaskCardProps {

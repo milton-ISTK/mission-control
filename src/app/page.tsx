@@ -262,7 +262,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-istk-textDim">{item.detail}</p>
                   </div>
                   <span className="text-[10px] text-istk-textDim shrink-0">
-                    {formatRelative(item.timestamp)}
+                    {formatRelative(String(item.timestamp))}
                   </span>
                 </div>
               ))}

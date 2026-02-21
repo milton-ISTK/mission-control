@@ -201,6 +201,7 @@ export default function WorkflowDetailPage() {
             <StepCard
               key={step._id}
               step={step}
+              allSteps={sortedSteps}
               onApprove={() => handleApproveClick(step._id)}
               onReject={() => handleRejectClick(step._id)}
               feedbackText={pendingStepId === step._id ? feedbackText : ""}

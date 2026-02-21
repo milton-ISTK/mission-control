@@ -24,6 +24,7 @@ interface WorkflowStep {
 
 interface StepCardProps {
   step: WorkflowStep;
+  allSteps?: WorkflowStep[];
   onApprove?: () => void;
   onReject?: () => void;
   feedbackText?: string;
@@ -147,6 +148,7 @@ function renderContent(content?: string, agentRole?: string, isInput: boolean = 
 
 export default function StepCard({
   step,
+  allSteps,
   onApprove,
   onReject,
   feedbackText = "",
@@ -202,8 +204,14 @@ export default function StepCard({
 
   // Extract blog content from output OR input (for review steps)
   const extractBlogContent = (): string => {
-    // For review steps (awaiting_review), content is in input field
-    const source = isAwaitingReview && step.input ? step.input : step.output;
+    // For review steps (agentRole 'none'), use the previous step's output
+    let source = step.output;
+    if ((step.agentRole === "none" || step.status === "awaiting_review") && allSteps) {
+      const previousStep = allSteps.find((s) => s.stepNumber === step.stepNumber - 1);
+      if (previousStep?.output) {
+        source = previousStep.output;
+      }
+    }
     if (!source) return "";
 
     // Keep parsing until we get to actual content (handle double-wrapped JSON)

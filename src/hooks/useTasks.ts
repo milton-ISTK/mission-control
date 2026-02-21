@@ -12,8 +12,8 @@ export function useTasks(status?: TaskStatus) {
   return useQuery(api.tasks.listTasks, status ? { status } : {});
 }
 
-export function useTask(id: Id<"tasks">) {
-  return useQuery(api.tasks.getTask, { id });
+export function useTask(id: Id<"tasks"> | null | undefined) {
+  return useQuery(api.tasks.getTask, id ? { id } : "skip");
 }
 
 export function useTasksByAssignee(assignee: Assignee) {

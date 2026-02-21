@@ -28,7 +28,7 @@ const assigneeOptions = [
 export default function TaskModal({ isOpen, onClose, editTaskId }: TaskModalProps) {
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
-  const existingTask = editTaskId ? useTask(editTaskId) : null;
+  const existingTask = useTask(editTaskId ?? undefined);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

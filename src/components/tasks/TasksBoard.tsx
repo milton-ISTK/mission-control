@@ -33,6 +33,18 @@ const columns: { id: TaskStatus; title: string; color: string }[] = [
 ];
 
 export default function TasksBoard() {
+  try { return TasksBoardInner(); } catch (error) {
+    return (
+      <div className="p-4 rounded-lg bg-istk-danger/10 border border-istk-danger text-istk-danger">
+        <p className="font-bold">Error in TasksBoard</p>
+        <p className="text-sm mt-2">{String(error)}</p>
+        {error instanceof Error && <p className="text-xs mt-1 font-mono">{error.stack}</p>}
+      </div>
+    );
+  }
+}
+
+function TasksBoardInner() {
   const tasksByStatus = useTasksByStatus();
   const updateTaskStatus = useUpdateTaskStatus();
   const [modalOpen, setModalOpen] = useState(false);

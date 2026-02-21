@@ -151,16 +151,16 @@ export default function TeamPage() {
         )}
       </div>
 
-      {/* Content */}
-      {activeTab !== "agents" || viewMode === "list" ? (
+      {/* Content — render both, show/hide to avoid unmount/remount cycles */}
+      <div className={activeTab !== "agents" || viewMode === "list" ? "" : "hidden"}>
         <TeamGrid
-          key="team-grid-stable"
           sortOption={sortOption}
           agentTypeFilter={activeTab === "agents" ? "agent" : "subagent"}
         />
-      ) : (
+      </div>
+      <div className={activeTab === "agents" && viewMode === "orgchart" ? "" : "hidden"}>
         <OrgChart agents={allAgents as any} />
-      )}
+      </div>
 
       {/* Create Modal */}
       <CreateAgentModal

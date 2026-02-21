@@ -28,6 +28,18 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onEdit }: TaskCardProps) {
+  try { return TaskCardInner({ task, onEdit }); } catch (error) {
+    return (
+      <div className="p-4 rounded-lg bg-istk-danger/10 border border-istk-danger text-istk-danger">
+        <p className="font-bold">Error in TaskCard</p>
+        <p className="text-sm mt-2">{String(error)}</p>
+        {error instanceof Error && <p className="text-xs mt-1 font-mono">{error.stack}</p>}
+      </div>
+    );
+  }
+}
+
+function TaskCardInner({ task, onEdit }: TaskCardProps) {
   const deleteTask = useDeleteTask();
   const toggleAssignee = useToggleAssignee();
 

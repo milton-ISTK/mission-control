@@ -220,6 +220,7 @@ export default defineSchema({
     selectedAngle: v.string(),
     contentType: v.string(),
     briefing: v.optional(v.string()),
+    authorId: v.optional(v.id("authors")), // Blog author for this workflow
     status: v.union(
       v.literal("pending"),
       v.literal("active"),
@@ -299,4 +300,19 @@ export default defineSchema({
     .index("by_workflowId", ["workflowId"])
     .index("by_status", ["status"])
     .index("by_platform", ["platform"]),
+
+  // ---- Blog Authors ----
+  // Author profiles for blog post generation
+  authors: defineTable({
+    name: v.string(),
+    title: v.string(),
+    bio: v.optional(v.string()),
+    writingStyle: v.optional(v.string()),
+    voiceNotes: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_isActive", ["isActive"])
+    .index("by_name", ["name"]),
 });

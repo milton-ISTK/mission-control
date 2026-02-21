@@ -245,6 +245,7 @@ export const createWorkflow = mutation({
     selectedAngle: v.string(),
     contentType: v.string(),
     briefing: v.optional(v.string()),
+    authorId: v.optional(v.id("authors")),
   },
   handler: async (ctx, args) => {
     const nowTimestamp = Date.now();
@@ -295,6 +296,7 @@ export const createWorkflow = mutation({
       selectedAngle: args.selectedAngle,
       contentType: args.contentType,
       briefing: args.briefing,
+      authorId: args.authorId,
       status: "active",
       currentStepNumber: 1,
       createdAt: nowIso,
@@ -472,11 +474,26 @@ export const advanceWorkflow = mutation({
     const prevBatchOutputs = allSteps
       .filter((s) => ["completed", "approved"].includes(s.status) && prevBatchNums.has(s.stepNumber));
 
+    // Fetch author information if this workflow has an author
+    let authorInfo: any = undefined;
+    if (workflow.authorId) {
+      const author = await ctx.db.get(workflow.authorId);
+      if (author) {
+        authorInfo = {
+          name: author.name,
+          title: author.title,
+          writingStyle: author.writingStyle,
+          voiceNotes: author.voiceNotes,
+        };
+      }
+    }
+
     let combinedInput: string | undefined;
     if (prevBatchOutputs.length === 1) {
       // Single previous step — wrap in dict so daemon always gets a dict
       combinedInput = JSON.stringify({
         output: prevBatchOutputs[0].output,
+        ...(authorInfo && { author: authorInfo }),
       });
     } else if (prevBatchOutputs.length > 1) {
       // Multiple parallel steps completed — combine their outputs in an array wrapped in dict
@@ -487,6 +504,7 @@ export const advanceWorkflow = mutation({
           agentRole: s.agentRole,
           output: s.output,
         })),
+        ...(authorInfo && { author: authorInfo }),
       });
     }
 

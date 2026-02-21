@@ -48,9 +48,8 @@ export default function LoginModal({ onLogin, error, onClearError }: LoginModalP
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4 bg-black/70"
       style={{
-        background: "rgba(4,4,6,0.92)",
         backdropFilter: "blur(24px) saturate(180%)",
         WebkitBackdropFilter: "blur(24px) saturate(180%)",
       }}
@@ -66,7 +65,7 @@ export default function LoginModal({ onLogin, error, onClearError }: LoginModalP
 
       {/* Login Card */}
       <div
-        className={`relative w-full max-w-md mx-4 rounded-2xl overflow-hidden transition-all duration-500 ${
+        className={`relative w-full max-w-md rounded-2xl overflow-hidden transition-all duration-500 max-h-[85vh] overflow-y-auto ${
           mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
         } ${shake ? "animate-[shake_0.5s_ease-in-out]" : ""}`}
         style={{

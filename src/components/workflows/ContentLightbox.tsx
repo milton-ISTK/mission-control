@@ -56,15 +56,9 @@ export default function ContentLightbox({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-start justify-center py-10">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-zinc-900/90 backdrop-blur-sm -z-10"
-        onClick={onClose}
-      />
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 bg-black/70" onClick={onClose}>
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-3xl max-h-[85vh] mx-4 flex flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
+      <div className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header (sticky at top) */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 border-b border-zinc-200 bg-white">
           <h2 className="text-xl font-bold text-zinc-900">{title}</h2>

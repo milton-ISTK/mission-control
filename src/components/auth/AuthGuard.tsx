@@ -30,12 +30,8 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
   // Show nothing while checking auth (prevents flash)
   if (isLoading) {
     return (
-      <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto"
-        style={{
-          background: "#0A0A0A",
-        }}
-      >
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4 bg-black/70">
+        {/* Loading spinner container */}
         <div className="flex flex-col items-center gap-4">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center animate-pulse-neon"

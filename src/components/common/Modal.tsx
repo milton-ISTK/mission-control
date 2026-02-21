@@ -40,19 +40,14 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
   };
 
   return (
-    <div className="modal-overlay animate-fade-in overflow-y-auto flex items-start justify-center py-10" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 overflow-y-auto p-4" onClick={onClose}>
       <div
         className={cn(
-          "w-full mx-4 animate-scale-in rounded-2xl backdrop-blur-xl max-h-[85vh] overflow-y-auto flex flex-col",
+          "w-full animate-scale-in rounded-2xl max-h-[85vh] overflow-y-auto flex flex-col bg-zinc-900 border border-zinc-700",
           sizes[size]
         )}
         style={{
-          background: "rgba(15,15,20,0.80)",
-          border: "1px solid rgba(255,107,0,0.15)",
           boxShadow: `
-            inset 0 1px 0 rgba(255,255,255,0.04),
-            0 0 15px rgba(255,107,0,0.10),
-            0 0 40px rgba(255,107,0,0.04),
             0 8px 32px rgba(0,0,0,0.5),
             0 32px 64px rgba(0,0,0,0.3)
           `,

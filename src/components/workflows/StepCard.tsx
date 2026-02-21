@@ -198,6 +198,10 @@ export default function StepCard({
           parsed.content ||
           parsed.output?.revisedContent ||
           parsed.output?.content ||
+          parsed.output?.result?.revisedContent ||
+          parsed.output?.result?.content ||
+          parsed.result?.revisedContent ||
+          parsed.result?.content ||
           parsed.text ||
           JSON.stringify(parsed);
         break;

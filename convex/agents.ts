@@ -227,6 +227,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: boolean;
         parentNames: string[];
         defaultRole: string;
+        model: string;
       }
     > = {
       // AGENTS (4)
@@ -235,28 +236,32 @@ export const seedAgentHierarchy = mutation({
         department: "content_production",
         isSubagent: false,
         parentNames: [],
-        defaultRole: "Content Writer",
+        defaultRole: "Long-Form Content Writer",
+        model: "claude-haiku-4-5-20251001",
       },
       Copywriter: {
         agentType: "agent",
         department: "content_production",
         isSubagent: false,
         parentNames: [],
-        defaultRole: "Copy & Headlines",
+        defaultRole: "Social Media Copywriter",
+        model: "claude-haiku-4-5-20251001",
       },
       "Social Publisher": {
         agentType: "agent",
         department: "distribution",
         isSubagent: false,
         parentNames: [],
-        defaultRole: "Social Distribution",
+        defaultRole: "Multi-Platform Publisher",
+        model: "claude-haiku-4-5-20251001",
       },
       "Research Enhancer": {
         agentType: "agent",
         department: "research",
         isSubagent: false,
         parentNames: [],
-        defaultRole: "Research & Analysis",
+        defaultRole: "Research Enhancement Specialist",
+        model: "claude-opus-4-5-20251101",
       },
       // SUBAGENTS (6)
       "Sentiment Scraper": {
@@ -264,42 +269,48 @@ export const seedAgentHierarchy = mutation({
         department: "research",
         isSubagent: true,
         parentNames: ["Blog Writer"],
-        defaultRole: "Sentiment Analysis",
+        defaultRole: "Market Sentiment Analyst",
+        model: "claude-haiku-4-5-20251001",
       },
       "News Scraper": {
         agentType: "subagent",
         department: "research",
         isSubagent: true,
         parentNames: ["Blog Writer"],
-        defaultRole: "News Aggregation",
+        defaultRole: "News & Data Aggregator",
+        model: "claude-haiku-4-5-20251001",
       },
       Humanizer: {
         agentType: "subagent",
         department: "creative",
         isSubagent: true,
         parentNames: ["Blog Writer", "Copywriter"],
-        defaultRole: "Content Humanization",
+        defaultRole: "Content Humanization Specialist",
+        model: "claude-haiku-4-5-20251001",
       },
       "HTML Builder": {
         agentType: "subagent",
         department: "content_production",
         isSubagent: true,
         parentNames: ["Blog Writer"],
-        defaultRole: "HTML Formatting",
+        defaultRole: "HTML/CSS Production Specialist",
+        model: "claude-haiku-4-5-20251001",
       },
       "Headline Generator": {
         agentType: "subagent",
         department: "creative",
         isSubagent: true,
         parentNames: ["Copywriter", "Social Publisher"],
-        defaultRole: "Headline Creation",
+        defaultRole: "Headlines & Hooks Specialist",
+        model: "claude-haiku-4-5-20251001",
       },
       "Image Maker": {
         agentType: "subagent",
         department: "creative",
         isSubagent: true,
         parentNames: ["Social Publisher"],
-        defaultRole: "Image Generation",
+        defaultRole: "Visual Content Creator",
+        model: "claude-haiku-4-5-20251001",
       },
     };
 
@@ -323,6 +334,7 @@ export const seedAgentHierarchy = mutation({
         await ctx.db.insert("agents", {
           name,
           role: spec.defaultRole,
+          model: spec.model,
           status: "idle",
           isSubagent: spec.isSubagent,
           agentType: spec.agentType,
@@ -352,6 +364,8 @@ export const seedAgentHierarchy = mutation({
         agentType: spec.agentType,
         department: spec.department,
         isSubagent: spec.isSubagent,
+        model: spec.model,
+        role: spec.defaultRole,
         parentAgentIds: parentIds.length > 0 ? parentIds : [],
         updatedAt: now,
       });

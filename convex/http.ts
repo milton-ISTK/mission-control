@@ -1018,4 +1018,35 @@ http.route({
   }),
 });
 
+// ---- POST /api/admin/reseed-templates ----
+// Delete all templates and re-seed with fixed agentRole values
+http.route({
+  path: "/api/admin/reseed-templates",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      // Delete all templates
+      const deleteResult = await ctx.runMutation(api.workflows.deleteAllTemplates, {});
+      
+      // Re-seed
+      const seedResult = await ctx.runMutation(api.seed.seedWorkflowData, {});
+      
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          message: `Deleted ${deleteResult.deleted} templates and re-seeded`,
+          seedResult,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;

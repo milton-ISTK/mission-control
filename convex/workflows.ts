@@ -740,3 +740,17 @@ export const completeStep = mutation({
     });
   },
 });
+
+/**
+ * Delete all workflow templates (cleanup for re-seeding)
+ */
+export const deleteAllTemplates = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const templates = await ctx.db.query("workflowTemplates").collect();
+    for (const template of templates) {
+      await ctx.db.delete(template._id);
+    }
+    return { deleted: templates.length };
+  },
+});

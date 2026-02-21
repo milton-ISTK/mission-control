@@ -165,17 +165,40 @@ export default function StepCard({
   const isBlogContentStep = ["blog_writer", "humanizer"].includes(step.agentRole) || step.name === "Content Review";
   const isHtmlStep = step.agentRole === "html_builder";
 
+  // Helper to clean escape sequences
+  const cleanEscapes = (text: string): string => {
+    return text
+      .replace(/\\n/g, "\n")
+      .replace(/\\u2014/g, "—")
+      .replace(/\\u2019/g, "'")
+      .replace(/\\u201c/g, "\u201c")
+      .replace(/\\u201d/g, "\u201d")
+      .replace(/\\"/g, '"');
+  };
+
   // Extract blog content from output OR input (for review steps)
   const extractBlogContent = (): string => {
     // For review steps (awaiting_review), content is in input field
     const source = isAwaitingReview && step.input ? step.input : step.output;
     if (!source) return "";
+
     try {
-      const parsed = JSON.parse(source);
-      const content = parsed.result?.content || parsed.content || source;
-      return typeof content === "string" ? content : JSON.stringify(content, null, 2);
+      let parsed = JSON.parse(source);
+
+      // Navigate nested structures
+      if (parsed.output) parsed = parsed.output;
+
+      // Find the actual content field
+      const content =
+        parsed.revisedContent || parsed.content || parsed.text || JSON.stringify(parsed);
+
+      // Clean escape sequences and return
+      return cleanEscapes(
+        typeof content === "string" ? content : JSON.stringify(content, null, 2)
+      );
     } catch {
-      return source;
+      // Not JSON or parse failed, return cleaned raw text
+      return cleanEscapes(source);
     }
   };
 

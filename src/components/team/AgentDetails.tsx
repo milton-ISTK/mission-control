@@ -36,6 +36,7 @@ interface Agent {
   role: string;
   description?: string;
   notes?: string;
+  systemPrompt?: string;
   model?: string;
   avatar?: string;
   status: "active" | "idle" | "offline";
@@ -73,6 +74,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
     role: (agent?.role ?? "") as string,
     description: ((agent?.description ?? null) ?? "") as string,
     notes: ((agent?.notes ?? null) ?? "") as string,
+    systemPrompt: ((agent?.systemPrompt ?? null) ?? "") as string,
     model: ((agent?.model ?? null) ?? "") as string,
     status: (agent?.status ?? "active") as "active" | "idle" | "offline",
     agentType: ((agent?.agentType ?? null) ?? "agent") as string,
@@ -90,13 +92,14 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
       role: (agent?.role ?? "") as string,
       description: ((agent?.description ?? null) ?? "") as string,
       notes: ((agent?.notes ?? null) ?? "") as string,
+      systemPrompt: ((agent?.systemPrompt ?? null) ?? "") as string,
       model: ((agent?.model ?? null) ?? "") as string,
       status: (agent?.status ?? "active") as "active" | "idle" | "offline",
       agentType: ((agent?.agentType ?? null) ?? "agent") as string,
       department: ((agent?.department ?? null) ?? "") as string,
       parentAgentIds: ((agent?.parentAgentIds ?? null) ?? []) as any[],
     });
-  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
+  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.systemPrompt, agent?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
 
   // Fetch tasks assigned to this agent
   const assignedTasks = useTasksByAssignee(agent.name as "Gregory" | "Milton");
@@ -140,6 +143,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         role: editForm.role.trim() || undefined,
         description: editForm.description.trim() || undefined,
         notes: editForm.notes.trim() || undefined,
+        systemPrompt: editForm.systemPrompt.trim() || undefined,
         model: editForm.model || undefined,
         status: editForm.status as "active" | "idle" | "offline",
         agentType: editForm.agentType || undefined,
@@ -441,6 +445,15 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
             onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
             placeholder="Internal notes, instructions, or context..."
             className="min-h-[80px]"
+          />
+
+          {/* Instructions / Personality */}
+          <Textarea
+            label="Instructions / Personality"
+            value={editForm.systemPrompt}
+            onChange={(e) => setEditForm({ ...editForm, systemPrompt: e.target.value })}
+            placeholder="Define how this agent should behave, its tone, personality, and specific instructions. This is sent as the system prompt when the agent runs."
+            className="min-h-[120px]"
           />
 
           {/* Model Dropdown (from llm-models.ts) */}

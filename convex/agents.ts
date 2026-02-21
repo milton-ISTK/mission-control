@@ -184,6 +184,7 @@ export const updateAgent = mutation({
     role: v.optional(v.string()),
     description: v.optional(v.string()),
     notes: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()),
     model: v.optional(v.string()),
     status: v.optional(v.union(v.literal("active"), v.literal("idle"), v.literal("offline"))),
     agentType: v.optional(v.string()),              // "agent" | "subagent"

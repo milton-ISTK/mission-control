@@ -193,6 +193,7 @@ export default function StepCard({
           continue;
         }
         // It's an object — look for content fields
+        // Check direct fields, nested output/result, and daemon's assemble_step_input keys
         data =
           parsed.revisedContent ||
           parsed.content ||
@@ -202,6 +203,14 @@ export default function StepCard({
           parsed.output?.result?.content ||
           parsed.result?.revisedContent ||
           parsed.result?.content ||
+          parsed.humanizedOutput?.revisedContent ||
+          parsed.humanizedOutput?.content ||
+          parsed.humanizedOutput?.result?.content ||
+          parsed.humanizedOutput?.result?.revisedContent ||
+          parsed.blogOutput?.content ||
+          parsed.blogOutput?.result?.content ||
+          parsed.sentimentOutput?.content ||
+          parsed.sentimentOutput?.result?.content ||
           parsed.text ||
           JSON.stringify(parsed);
         break;

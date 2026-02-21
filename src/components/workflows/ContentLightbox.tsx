@@ -44,6 +44,11 @@ export default function ContentLightbox({
 
   if (!isMounted || !isOpen) return null;
 
+  // Debug: Log raw source
+  if (content) {
+    console.log('RAW SOURCE:', content.substring(0, 200));
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}

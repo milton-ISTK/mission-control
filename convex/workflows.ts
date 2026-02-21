@@ -142,7 +142,8 @@ export const createWorkflow = mutation({
     briefing: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const now = new Date().toISOString();
+    const nowTimestamp = Date.now();
+    const nowIso = new Date().toISOString();
 
     // Find active template for this content type
     const template = await ctx.db
@@ -168,16 +169,18 @@ export const createWorkflow = mutation({
       linkedin_post: "💼 LinkedIn Post",
     }[args.contentType] || args.contentType;
 
+    console.log("ABOUT TO INSERT TASK");
     const taskId = await ctx.db.insert("tasks", {
       title: `${contentTypeLabel}: ${args.selectedAngle}`,
       description: args.briefing || "",
       status: "in_progress",
       priority: "medium",
       assignee: "Milton",
-      createdAt: now,
-      updatedAt: now,
+      createdAt: nowTimestamp,
+      updatedAt: nowTimestamp,
       order: 0,
     });
+    console.log("TASK INSERTED:", taskId);
 
     // Step 2: Create workflow record linked to the task
     const workflowId = await ctx.db.insert("workflows", {
@@ -189,8 +192,8 @@ export const createWorkflow = mutation({
       briefing: args.briefing,
       status: "active",
       currentStepNumber: 1,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: nowIso,
+      updatedAt: nowIso,
     });
 
     // Build the initial input from research data
@@ -234,8 +237,8 @@ export const createWorkflow = mutation({
         input: initialInput,
         requiresApproval: templateStep.requiresApproval,
         timeoutMinutes: templateStep.timeoutMinutes,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: nowIso,
+        updatedAt: nowIso,
       });
     }
 
@@ -260,6 +263,7 @@ export const advanceWorkflow = mutation({
   args: { workflowId: v.id("workflows") },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
+    const nowTimestamp = Date.now();
 
     // 1. Get workflow
     const workflow = await ctx.db.get(args.workflowId);
@@ -311,7 +315,7 @@ export const advanceWorkflow = mutation({
         try {
           await ctx.db.patch(workflow.taskId, {
             status: "done",
-            updatedAt: now,
+            updatedAt: nowTimestamp,
           });
         } catch {
           // Task may not exist — non-fatal

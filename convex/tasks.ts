@@ -62,7 +62,7 @@ export const createTask = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const now = new Date().toISOString();
+    const now = Date.now();
     // Get current max order for todo column
     const todos = await ctx.db
       .query("tasks")
@@ -95,7 +95,7 @@ export const updateTaskStatus = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const now = new Date().toISOString();
+    const now = Date.now();
     const updates: Record<string, unknown> = {
       status: args.status,
       updatedAt: now,
@@ -130,7 +130,7 @@ export const updateTask = mutation({
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
-    await ctx.db.patch(id, { ...filtered, updatedAt: new Date().toISOString() });
+    await ctx.db.patch(id, { ...filtered, updatedAt: Date.now() });
   },
 });
 
@@ -143,7 +143,7 @@ export const toggleAssignee = mutation({
     const newAssignee = task.assignee === "Gregory" ? "Milton" : "Gregory";
     await ctx.db.patch(args.id, {
       assignee: newAssignee,
-      updatedAt: new Date().toISOString(),
+      updatedAt: Date.now(),
     });
   },
 });

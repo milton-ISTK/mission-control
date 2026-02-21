@@ -21,8 +21,8 @@ export default defineSchema({
     dueDate: v.optional(v.string()), // ISO date string
     tags: v.optional(v.array(v.string())),
     order: v.number(), // For drag-and-drop ordering
-    createdAt: v.string(),
-    updatedAt: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_status", ["status"])
     .index("by_assignee", ["assignee"])

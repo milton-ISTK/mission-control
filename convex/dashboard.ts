@@ -67,7 +67,11 @@ export const getRecentActivity = query({
     ];
 
     return activity
-      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      .sort((a, b) => {
+        const aTime = typeof a.timestamp === "number" ? a.timestamp : new Date(a.timestamp).getTime();
+        const bTime = typeof b.timestamp === "number" ? b.timestamp : new Date(b.timestamp).getTime();
+        return bTime - aTime;
+      })
       .slice(0, 10);
   },
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface WorkflowStep {
@@ -15,121 +16,265 @@ interface WorkflowStep {
   thinkingLine2?: string;
   startedAt?: string;
   completedAt?: string;
+  createdAt?: string;
   reviewNotes?: string;
   reviewedAt?: string;
-  selectedOption?: string;
 }
 
 interface StepCardProps {
   step: WorkflowStep;
-  totalSteps: number;
   onApprove?: () => void;
   onReject?: () => void;
-  isLoading?: boolean;
+  feedbackText?: string;
+  onFeedbackChange?: (text: string) => void;
+  isSubmitting?: boolean;
 }
 
 const statusConfig = {
-  pending: { bg: "bg-zinc-900/40", border: "border-zinc-700/50", badge: "bg-zinc-700 text-zinc-300", icon: "⏳", label: "Pending" },
-  agent_working: { bg: "bg-blue-900/20", border: "border-blue-700/50", badge: "bg-blue-600 text-blue-100", icon: "⚙️", label: "Working" },
-  completed: { bg: "bg-green-900/20", border: "border-green-700/50", badge: "bg-green-600 text-green-100", icon: "✅", label: "Completed" },
-  awaiting_review: { bg: "bg-amber-900/20", border: "border-amber-700/50", badge: "bg-amber-600 text-amber-100", icon: "⏸️", label: "Awaiting Review" },
-  approved: { bg: "bg-green-900/20", border: "border-green-700/50", badge: "bg-green-600 text-green-100", icon: "✓", label: "Approved" },
-  rejected: { bg: "bg-red-900/20", border: "border-red-700/50", badge: "bg-red-600 text-red-100", icon: "✕", label: "Rejected" },
-  failed: { bg: "bg-red-900/20", border: "border-red-700/50", badge: "bg-red-600 text-red-100", icon: "❌", label: "Failed" },
-  skipped: { bg: "bg-zinc-900/20", border: "border-zinc-700/50", badge: "bg-zinc-600 text-zinc-100", icon: "⊘", label: "Skipped" },
+  pending: {
+    icon: "○",
+    color: "text-zinc-400",
+    bg: "bg-zinc-900/40",
+    border: "border-zinc-700/50",
+    badge: "bg-zinc-700 text-zinc-300",
+  },
+  agent_working: {
+    icon: "⏳",
+    color: "text-blue-400",
+    bg: "bg-blue-900/20",
+    border: "border-blue-700/40",
+    badge: "bg-blue-600 text-blue-100 animate-pulse",
+  },
+  completed: {
+    icon: "✅",
+    color: "text-green-400",
+    bg: "bg-green-900/20",
+    border: "border-green-700/40",
+    badge: "bg-green-600 text-green-100",
+  },
+  awaiting_review: {
+    icon: "⏸️",
+    color: "text-amber-400",
+    bg: "bg-amber-900/30",
+    border: "border-amber-700/50",
+    badge: "bg-amber-600 text-amber-100",
+  },
+  approved: {
+    icon: "✓",
+    color: "text-green-400",
+    bg: "bg-green-900/20",
+    border: "border-green-700/40",
+    badge: "bg-green-600 text-green-100",
+  },
+  rejected: {
+    icon: "✕",
+    color: "text-red-400",
+    bg: "bg-red-900/20",
+    border: "border-red-700/40",
+    badge: "bg-red-600 text-red-100",
+  },
+  failed: {
+    icon: "❌",
+    color: "text-red-400",
+    bg: "bg-red-900/20",
+    border: "border-red-700/40",
+    badge: "bg-red-600 text-red-100",
+  },
+  skipped: {
+    icon: "⊘",
+    color: "text-zinc-400",
+    bg: "bg-zinc-900/20",
+    border: "border-zinc-700/40",
+    badge: "bg-zinc-600 text-zinc-100",
+  },
 };
+
+function formatDuration(startedAt?: string, completedAt?: string): string {
+  if (!startedAt || !completedAt) return "";
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completedAt).getTime();
+  const seconds = Math.floor((end - start) / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h`;
+}
+
+function parseContent(content?: string): { type: "json" | "text"; data: any } {
+  if (!content) return { type: "text", data: "" };
+  try {
+    const parsed = JSON.parse(content);
+    return { type: "json", data: parsed };
+  } catch {
+    return { type: "text", data: content };
+  }
+}
+
+function renderContent(content?: string, agentRole?: string, isInput: boolean = false): React.ReactNode {
+  const { type, data } = parseContent(content);
+
+  if (type === "json") {
+    // JSON display
+    if (Array.isArray(data)) {
+      return (
+        <div className="space-y-2">
+          {data.map((item, idx) => (
+            <div key={idx} className="text-xs text-istk-textMuted">
+              <span className="font-semibold text-istk-accent">{idx + 1}.</span> {JSON.stringify(item).substring(0, 100)}...
+            </div>
+          ))}
+        </div>
+      );
+    } else if (typeof data === "object") {
+      return <pre className="text-xs text-istk-textMuted overflow-x-auto">{JSON.stringify(data, null, 2).substring(0, 500)}...</pre>;
+    }
+  }
+
+  // Text/HTML display
+  if (typeof data === "string") {
+    // Check if it's HTML
+    if (data.includes("<") && data.includes(">")) {
+      return <div className="text-xs text-istk-textMuted whitespace-pre-wrap break-words">{data.substring(0, 300)}...</div>;
+    }
+    // Plain text
+    return <div className="text-xs text-istk-textMuted whitespace-pre-wrap break-words max-h-40 overflow-y-auto">{data}</div>;
+  }
+
+  return <div className="text-xs text-istk-textDim">No content</div>;
+}
 
 export default function StepCard({
   step,
-  totalSteps,
   onApprove,
   onReject,
-  isLoading = false,
+  feedbackText = "",
+  onFeedbackChange,
+  isSubmitting = false,
 }: StepCardProps) {
+  const [isExpanded, setIsExpanded] = useState(step.status === "awaiting_review" || step.status === "agent_working");
   const config = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.pending;
 
-  return (
-    <div className={cn("p-5 rounded-xl border transition-all duration-300", config.bg, config.border)}>
-      {/* Header: Step Number + Name + Status */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          {/* Step Number Circle */}
-          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm bg-zinc-900/60 border border-zinc-700/50 text-istk-text">
-            {step.stepNumber}
-          </div>
+  const duration = formatDuration(step.startedAt, step.completedAt);
+  const isCompletedOrApproved = step.status === "completed" || step.status === "approved";
+  const isAwaitingReview = step.status === "awaiting_review";
 
-          {/* Step Info */}
+  return (
+    <div className={cn("rounded-xl border transition-all", config.bg, config.border)}>
+      {/* Header — Always visible */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          "w-full p-4 flex items-start justify-between gap-3 hover:bg-white/[0.02] transition-colors",
+          isExpanded && "border-b",
+          config.border
+        )}
+      >
+        {/* Left: Icon + Info */}
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className={cn("text-xl shrink-0 mt-0.5", config.color)}>{config.icon}</div>
           <div className="min-w-0 flex-1">
-            <h4 className="font-bold text-istk-text mb-1">{step.name}</h4>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-istk-textMuted">Agent: <span className="font-mono text-istk-accent">{step.agentRole}</span></span>
+            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+              <h4 className="font-bold text-istk-text">Step {step.stepNumber}: {step.name}</h4>
               <span className={cn("px-2 py-0.5 rounded text-xs font-semibold", config.badge)}>
-                {config.icon} {config.label}
+                {step.status === "agent_working" ? "Working" : step.status}
               </span>
             </div>
+            <p className="text-xs text-istk-textMuted">
+              Agent: <span className="font-mono text-istk-accent">{step.agentRole}</span>
+              {duration && <span className="ml-2">• {duration}</span>}
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Thinking Lines (if working/completed) */}
-      {(step.thinkingLine1 || step.thinkingLine2) && (
-        <div className="mb-4 p-3 rounded-lg bg-zinc-800/30 border border-zinc-700/30">
-          <p className="text-xs text-istk-textMuted font-mono">
-            {step.thinkingLine1 && <div>{step.thinkingLine1}</div>}
-            {step.thinkingLine2 && <div>{step.thinkingLine2}</div>}
-          </p>
+        {/* Right: Expand toggle */}
+        <div className={cn("text-istk-textMuted transition-transform shrink-0", isExpanded && "rotate-180")}>
+          ▼
         </div>
-      )}
+      </button>
 
-      {/* Error Message (if failed) */}
-      {step.errorMessage && (
-        <div className="mb-4 p-3 rounded-lg bg-red-900/20 border border-red-700/30">
-          <p className="text-xs text-red-300 font-mono">{step.errorMessage}</p>
-        </div>
-      )}
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="p-4 space-y-4 border-t border-white/5">
+          {/* Thinking Lines */}
+          {(step.thinkingLine1 || step.thinkingLine2) && step.status === "agent_working" && (
+            <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-700/30">
+              <p className="text-xs text-blue-300 font-mono">
+                {step.thinkingLine1}
+                {step.thinkingLine1 && step.thinkingLine2 && <br />}
+                {step.thinkingLine2}
+              </p>
+            </div>
+          )}
 
-      {/* Output (if completed/approved) */}
-      {step.output && (
-        <div className="mb-4 p-4 rounded-lg bg-zinc-800/20 border border-zinc-700/30 max-h-60 overflow-y-auto">
-          <p className="text-xs text-istk-textMuted font-mono whitespace-pre-wrap break-words">
-            {step.output.substring(0, 500)}
-            {step.output.length > 500 && "..."}
-          </p>
-        </div>
-      )}
+          {/* Error Message */}
+          {step.errorMessage && (
+            <div className="p-3 rounded-lg bg-red-900/20 border border-red-700/30">
+              <p className="text-xs text-red-300 font-semibold mb-1">Error:</p>
+              <p className="text-xs text-red-200 font-mono">{step.errorMessage}</p>
+            </div>
+          )}
 
-      {/* Review Notes (if reviewed) */}
-      {step.reviewNotes && (
-        <div className="mb-4 p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
-          <p className="text-xs text-amber-300 mb-1 font-semibold">Review Notes:</p>
-          <p className="text-xs text-amber-200">{step.reviewNotes}</p>
-        </div>
-      )}
+          {/* Input Content (for review steps) */}
+          {isAwaitingReview && step.input && (
+            <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
+              <p className="text-xs font-semibold text-amber-300 mb-2">📄 Content to Review:</p>
+              <div className="text-xs text-amber-100 max-h-60 overflow-y-auto">{renderContent(step.input, step.agentRole, true)}</div>
+            </div>
+          )}
 
-      {/* Timestamps */}
-      <div className="flex items-center justify-between text-xs text-istk-textDim mb-4 pt-3 border-t border-zinc-700/30">
-        {step.startedAt && <span>Started: {new Date(step.startedAt).toLocaleTimeString()}</span>}
-        {step.completedAt && <span>Completed: {new Date(step.completedAt).toLocaleTimeString()}</span>}
-        {step.reviewedAt && <span>Reviewed: {new Date(step.reviewedAt).toLocaleTimeString()}</span>}
-      </div>
+          {/* Output Content */}
+          {step.output && !isAwaitingReview && (
+            <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-700/30">
+              <p className="text-xs font-semibold text-istk-textMuted mb-2">📋 Output:</p>
+              <div className="text-xs text-istk-textMuted max-h-60 overflow-y-auto">{renderContent(step.output, step.agentRole)}</div>
+            </div>
+          )}
 
-      {/* Review Gate Buttons (if awaiting_review) */}
-      {step.status === "awaiting_review" && (
-        <div className="flex gap-2 pt-3 border-t border-amber-700/30">
-          <button
-            onClick={onReject}
-            disabled={isLoading}
-            className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-red-600/20 text-red-300 border border-red-600/40 hover:bg-red-600/30 hover:border-red-600/60 transition-all disabled:opacity-50"
-          >
-            {isLoading ? "Processing..." : "Reject"}
-          </button>
-          <button
-            onClick={onApprove}
-            disabled={isLoading}
-            className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 hover:border-green-600/60 transition-all disabled:opacity-50"
-          >
-            {isLoading ? "Processing..." : "Approve"}
-          </button>
+          {/* Review Notes */}
+          {step.reviewNotes && (
+            <div className="p-3 rounded-lg bg-blue-900/10 border border-blue-700/30">
+              <p className="text-xs font-semibold text-blue-300 mb-1">💬 Review Notes:</p>
+              <p className="text-xs text-blue-200">{step.reviewNotes}</p>
+            </div>
+          )}
+
+          {/* Feedback Textarea (for awaiting_review) */}
+          {isAwaitingReview && (
+            <textarea
+              value={feedbackText}
+              onChange={(e) => onFeedbackChange?.(e.target.value)}
+              placeholder="Leave feedback for approval or rejection..."
+              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-istk-text placeholder-istk-textDim focus:outline-none focus:ring-2 focus:ring-istk-accent/50 resize-none h-20"
+            />
+          )}
+
+          {/* Timestamps */}
+          <div className="flex items-center justify-between text-xs text-istk-textDim pt-2 border-t border-white/5">
+            {step.startedAt && <span>Started: {new Date(step.startedAt).toLocaleTimeString()}</span>}
+            {step.completedAt && <span>Completed: {new Date(step.completedAt).toLocaleTimeString()}</span>}
+            {step.reviewedAt && <span>Reviewed: {new Date(step.reviewedAt).toLocaleTimeString()}</span>}
+          </div>
+
+          {/* Action Buttons (for awaiting_review) */}
+          {isAwaitingReview && (
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={onReject}
+                disabled={isSubmitting}
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-red-600/20 text-red-300 border border-red-600/40 hover:bg-red-600/30 transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? "Processing..." : "❌ Reject & Redo"}
+              </button>
+              <button
+                onClick={onApprove}
+                disabled={isSubmitting}
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? "Processing..." : "✅ Approve & Continue"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

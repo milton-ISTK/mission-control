@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 import StepCard from "@/components/workflows/StepCard";
@@ -35,12 +35,11 @@ function timeAgo(isoString: string): string {
 
 export default function WorkflowDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const workflowId = params.id as string;
 
+  const [feedbackText, setFeedbackText] = useState("");
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [reviewNotes, setReviewNotes] = useState("");
   const [pendingStepId, setPendingStepId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -78,18 +77,17 @@ export default function WorkflowDetailPage() {
 
   const title = `${contentTypeLabel}: ${workflow.selectedAngle}`;
   const statusBadge = statusBadgeStyles[workflow.status as keyof typeof statusBadgeStyles] || statusBadgeStyles.pending;
-
   const awaitingReviewStep = steps.find((s) => s.status === "awaiting_review");
 
   const handleApproveClick = (stepId: string) => {
     setPendingStepId(stepId);
-    setReviewNotes("");
+    setFeedbackText("");
     setApproveDialogOpen(true);
   };
 
   const handleRejectClick = (stepId: string) => {
     setPendingStepId(stepId);
-    setReviewNotes("");
+    setFeedbackText("");
     setRejectDialogOpen(true);
   };
 
@@ -100,11 +98,11 @@ export default function WorkflowDetailPage() {
     try {
       await approveStep({
         stepId: pendingStepId as any,
-        reviewNotes: reviewNotes || undefined,
+        reviewNotes: feedbackText || undefined,
       });
       setApproveDialogOpen(false);
       setPendingStepId(null);
-      setReviewNotes("");
+      setFeedbackText("");
     } catch (err) {
       console.error("Error approving step:", err);
       alert("Failed to approve step");
@@ -120,11 +118,11 @@ export default function WorkflowDetailPage() {
     try {
       await rejectStep({
         stepId: pendingStepId as any,
-        reviewNotes: reviewNotes || "Rejected by reviewer",
+        reviewNotes: feedbackText || "Rejected by reviewer",
       });
       setRejectDialogOpen(false);
       setPendingStepId(null);
-      setReviewNotes("");
+      setFeedbackText("");
     } catch (err) {
       console.error("Error rejecting step:", err);
       alert("Failed to reject step");
@@ -133,8 +131,11 @@ export default function WorkflowDetailPage() {
     }
   };
 
+  // Sort steps by stepNumber for display
+  const sortedSteps = [...steps].sort((a, b) => a.stepNumber - b.stepNumber);
+
   return (
-    <div className="p-8 space-y-6 max-w-6xl">
+    <div className="p-8 space-y-6 max-w-4xl">
       {/* Back Button */}
       <Link
         href="/workflows"
@@ -147,11 +148,11 @@ export default function WorkflowDetailPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold text-gradient text-glow mb-2">{title}</h1>
             <div className="flex items-center gap-3 flex-wrap">
               <div className={cn("px-3 py-1 rounded-lg text-sm font-semibold border", statusBadge)}>
-                {workflow.status === "paused_for_review" ? "Paused for Review" : workflow.status}
+                {workflow.status === "paused_for_review" ? "⏸️ Paused for Review" : workflow.status}
               </div>
               <div className="flex items-center gap-1 text-sm text-istk-textMuted">
                 <Clock className="w-4 h-4" />
@@ -161,103 +162,72 @@ export default function WorkflowDetailPage() {
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Progress Bar */}
         <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/50">
-          <p className="text-xs text-istk-textMuted mb-3 font-semibold">Step Progress</p>
+          <p className="text-xs text-istk-textMuted mb-3 font-semibold uppercase tracking-wider">Progress</p>
           <WorkflowProgress
             totalSteps={workflow.template?.steps?.length || 0}
             currentStep={workflow.currentStepNumber}
             status={workflow.status}
           />
+          <p className="text-xs text-istk-textMuted mt-3">
+            Step {workflow.currentStepNumber} of {workflow.template?.steps?.length || 0}
+          </p>
         </div>
       </div>
 
-      {/* Review Gate Alert (if paused) */}
+      {/* Pause Alert */}
       {workflow.status === "paused_for_review" && awaitingReviewStep && (
-        <div className="p-4 rounded-xl bg-amber-900/20 border border-amber-700/40">
-          <p className="text-sm font-semibold text-amber-300 mb-2">⏸️ Workflow paused for content review</p>
-          <p className="text-xs text-amber-200">Step {awaitingReviewStep.stepNumber}: {awaitingReviewStep.name} is awaiting your approval.</p>
+        <div className="p-4 rounded-xl bg-amber-900/30 border border-amber-700/50">
+          <p className="text-sm font-semibold text-amber-300 mb-2">⏸️ Workflow Paused</p>
+          <p className="text-xs text-amber-200">
+            Step {awaitingReviewStep.stepNumber} ({awaitingReviewStep.name}) is awaiting your review and approval.
+          </p>
         </div>
       )}
 
       {/* Steps */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-istk-text">Steps</h2>
+      <div className="space-y-3">
+        <h2 className="text-lg font-bold text-istk-text">Workflow Steps</h2>
 
-        {steps.map((step) => (
-          <StepCard
-            key={step._id}
-            step={step}
-            totalSteps={workflow.template?.steps?.length || 0}
-            onApprove={() => handleApproveClick(step._id)}
-            onReject={() => handleRejectClick(step._id)}
-            isLoading={isProcessing && pendingStepId === step._id}
-          />
-        ))}
-      </div>
-
-      {/* Approve Dialog */}
-      <div className="space-y-2">
-        <ConfirmDialog
-          isOpen={approveDialogOpen}
-          onClose={() => !isProcessing && setApproveDialogOpen(false)}
-          onConfirm={handleConfirmApprove}
-          title="Approve Step"
-          message="Are you sure you want to approve this content? The workflow will continue to the next step."
-          isDangerous={false}
-          isLoading={isProcessing}
-        />
-
-        {/* Review Notes Input (for approve) */}
-        {approveDialogOpen && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none" />
+        {sortedSteps.length === 0 ? (
+          <div className="text-sm text-istk-textMuted text-center py-8">No steps found</div>
+        ) : (
+          sortedSteps.map((step) => (
+            <StepCard
+              key={step._id}
+              step={step}
+              onApprove={() => handleApproveClick(step._id)}
+              onReject={() => handleRejectClick(step._id)}
+              feedbackText={pendingStepId === step._id ? feedbackText : ""}
+              onFeedbackChange={pendingStepId === step._id ? setFeedbackText : undefined}
+              isSubmitting={isProcessing && pendingStepId === step._id}
+            />
+          ))
         )}
       </div>
 
-      {/* Reject Dialog */}
-      <div className="space-y-2">
-        <ConfirmDialog
-          isOpen={rejectDialogOpen}
-          onClose={() => !isProcessing && setRejectDialogOpen(false)}
-          onConfirm={handleConfirmReject}
-          title="Reject Step"
-          message="This content will be rejected and sent back to the previous agent for revision. Enter feedback for the agent."
-          isDangerous={true}
-          isLoading={isProcessing}
-        />
-      </div>
+      {/* Approve Dialog */}
+      <ConfirmDialog
+        isOpen={approveDialogOpen}
+        onClose={() => !isProcessing && setApproveDialogOpen(false)}
+        onConfirm={handleConfirmApprove}
+        title="Approve Step"
+        message="Content approved. The workflow will advance to the next step."
+        isDangerous={false}
+        isLoading={isProcessing}
+      />
 
-      {/* Review Notes Input Field (show when reject dialog is open) */}
-      {rejectDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-zinc-900/50" onClick={() => !isProcessing && setRejectDialogOpen(false)} />
-          <div className="relative z-10 w-full max-w-md mx-4 p-6 rounded-xl bg-zinc-900 border border-zinc-700/50">
-            <h3 className="text-lg font-bold text-istk-text mb-3">Rejection Feedback</h3>
-            <textarea
-              value={reviewNotes}
-              onChange={(e) => setReviewNotes(e.target.value)}
-              placeholder="Explain why you're rejecting this content..."
-              className="w-full h-24 p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-istk-text text-sm placeholder-istk-textDim focus:outline-none focus:ring-2 focus:ring-istk-accent/50 resize-none"
-            />
-            <div className="flex gap-2 mt-4 justify-end">
-              <button
-                onClick={() => !isProcessing && setRejectDialogOpen(false)}
-                disabled={isProcessing}
-                className="px-3 py-2 rounded-lg text-sm font-medium text-istk-textMuted hover:text-istk-text hover:bg-zinc-800/50 transition-all disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmReject}
-                disabled={isProcessing || !reviewNotes.trim()}
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-red-600/20 text-red-300 border border-red-600/40 hover:bg-red-600/30 transition-all disabled:opacity-50"
-              >
-                {isProcessing ? "Rejecting..." : "Reject"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Reject Dialog */}
+      <ConfirmDialog
+        isOpen={rejectDialogOpen}
+        onClose={() => !isProcessing && setRejectDialogOpen(false)}
+        onConfirm={handleConfirmReject}
+        title="Reject Step"
+        message={`This content will be sent back for revision.\n\nFeedback: ${feedbackText || "(none)"}`}
+        isDangerous={true}
+        isLoading={isProcessing}
+      />
     </div>
   );
 }

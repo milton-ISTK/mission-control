@@ -57,6 +57,40 @@ def log_step(step_id: str, msg: str, level: str = "INFO"):
     log(f"[step:{short_id}] {msg}", level)
 
 # ============================================================
+# JSON PARSING (ROBUST)
+# ============================================================
+
+def extract_json_from_text(text: str):
+    """Extract JSON from LLM response that may contain extra text, markdown, etc."""
+    if not text or not isinstance(text, str):
+        raise ValueError(f"Invalid input: expected string, got {type(text)}")
+    
+    # Strip markdown code fences
+    text = re.sub(r'```json\s*', '', text)
+    text = re.sub(r'```\s*', '', text)
+    text = text.strip()
+    
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    
+    # Try to find JSON object or array in the text
+    for pattern in [
+        r'(\{[\s\S]*\})',  # Find JSON object
+        r'(\[[\s\S]*\])',  # Find JSON array
+    ]:
+        match = re.search(pattern, text)
+        if match:
+            try:
+                return json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+    
+    raise ValueError(f"Could not extract valid JSON from response: {text[:200]}...")
+
+# ============================================================
 # GRACEFUL SHUTDOWN
 # ============================================================
 
@@ -604,21 +638,17 @@ def execute_step(step: dict) -> None:
             log_step(step_id, f"⚠ Output truncated from {len(raw_output)} to {MAX_OUTPUT_CHARS}", "WARN")
             raw_output = raw_output[:MAX_OUTPUT_CHARS]
 
-        # Try to validate JSON; if it's not valid, wrap it
+        # Try to validate/extract JSON from LLM output
         output_to_store = raw_output
         try:
-            json.loads(raw_output)
-            # It's already valid JSON — use as-is
-        except json.JSONDecodeError:
-            # Try to extract JSON from the response
-            extracted = _extract_json_string(raw_output)
-            if extracted:
-                output_to_store = extracted
-            else:
-                # Wrap raw text in a JSON envelope
-                output_to_store = json.dumps({
-                    "result": raw_output,
-                    "metadata": {
+            extracted_obj = extract_json_from_text(raw_output)
+            # Valid JSON extracted — use it
+            output_to_store = json.dumps(extracted_obj) if isinstance(extracted_obj, (dict, list)) else raw_output
+        except ValueError:
+            # Not JSON or can't extract — wrap in JSON envelope
+            output_to_store = json.dumps({
+                "result": raw_output,
+                "metadata": {
                         "raw_response": True,
                         "provider": provider,
                         "model": model_id,
@@ -662,92 +692,6 @@ def execute_step(step: dict) -> None:
         log_step(step_id, traceback.format_exc()[:1000], "DEBUG")
         send_thinking(step_id, "❌ Failed", str(e)[:100])
         fail_step(step_id, error_msg)
-
-# ============================================================
-# JSON EXTRACTION HELPER
-# ============================================================
-
-def _extract_json_string(text: str) -> str | None:
-    """
-    Attempt to extract a JSON object or array from LLM response text.
-    Returns the JSON string if found, None otherwise.
-    """
-    if not text or not text.strip():
-        return None
-
-    raw = text.strip()
-
-    # Strategy 1: Direct parse
-    try:
-        json.loads(raw)
-        return raw
-    except json.JSONDecodeError:
-        pass
-
-    # Strategy 2: Extract from markdown code blocks
-    code_block_pat = re.compile(r'```(?:json|JSON)?\s*\n?(.*?)\n?\s*```', re.DOTALL)
-    for block in code_block_pat.findall(raw):
-        block = block.strip()
-        if block.startswith('{') or block.startswith('['):
-            try:
-                json.loads(block)
-                return block
-            except json.JSONDecodeError:
-                pass
-
-    # Strategy 3: Brace matching — find first top-level { ... }
-    first_brace = raw.find('{')
-    if first_brace != -1:
-        result = _match_braces(raw, first_brace, '{', '}')
-        if result:
-            return result
-
-    # Strategy 4: Bracket matching — find first top-level [ ... ]
-    first_bracket = raw.find('[')
-    if first_bracket != -1:
-        result = _match_braces(raw, first_bracket, '[', ']')
-        if result:
-            return result
-
-    return None
-
-def _match_braces(text: str, start: int, open_char: str, close_char: str) -> str | None:
-    """Match balanced braces/brackets starting at position start."""
-    depth = 0
-    in_string = False
-    escape_next = False
-
-    for i in range(start, len(text)):
-        c = text[i]
-        if escape_next:
-            escape_next = False
-            continue
-        if c == '\\' and in_string:
-            escape_next = True
-            continue
-        if c == '"' and not escape_next:
-            in_string = not in_string
-            continue
-        if in_string:
-            continue
-        if c == open_char:
-            depth += 1
-        elif c == close_char:
-            depth -= 1
-            if depth == 0:
-                candidate = text[start:i + 1]
-                try:
-                    json.loads(candidate)
-                    return candidate
-                except json.JSONDecodeError:
-                    # Try cleaning trailing commas
-                    cleaned = re.sub(r',\s*([}\]])', r'\1', candidate)
-                    try:
-                        json.loads(cleaned)
-                        return cleaned
-                    except json.JSONDecodeError:
-                        return None
-    return None
 
 # ============================================================
 # MAIN POLLING LOOP

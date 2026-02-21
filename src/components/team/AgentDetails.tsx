@@ -16,7 +16,7 @@ import {
   StickyNote,
 } from "lucide-react";
 import { useTasksByAssignee } from "@/hooks/useTasks";
-import { useSubagents, useDeleteSubagent } from "@/hooks/useAgents";
+import { useAgents, useSubagents, useDeleteSubagent } from "@/hooks/useAgents";
 import { useUpdateAgentStatus, useDeleteAgent, useUpdateAgent } from "@/hooks/useAgents";
 import Button from "@/components/common/Button";
 import Badge, { StatusBadge } from "@/components/common/Badge";
@@ -72,6 +72,9 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
     notes: ((agent?.notes ?? null) ?? "") as string,
     model: ((agent?.model ?? null) ?? "") as string,
     status: (agent?.status ?? "active") as "active" | "idle" | "offline",
+    agentType: ((agent?.agentType ?? null) ?? "agent") as string,
+    department: ((agent?.department ?? null) ?? "") as string,
+    parentAgentIds: ((agent?.parentAgentIds ?? null) ?? []) as any[],
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -86,14 +89,20 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
       notes: ((agent?.notes ?? null) ?? "") as string,
       model: ((agent?.model ?? null) ?? "") as string,
       status: (agent?.status ?? "active") as "active" | "idle" | "offline",
+      agentType: ((agent?.agentType ?? null) ?? "agent") as string,
+      department: ((agent?.department ?? null) ?? "") as string,
+      parentAgentIds: ((agent?.parentAgentIds ?? null) ?? []) as any[],
     });
-  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.model, agent?.status]);
+  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
 
   // Fetch tasks assigned to this agent
   const assignedTasks = useTasksByAssignee(agent.name as "Gregory" | "Milton");
 
   // Fetch subagents to show linked subagents
   const subagents = useSubagents();
+
+  // Fetch all agents for parent selection in edit form
+  const allAgents = useAgents();
 
   const updateStatus = useUpdateAgentStatus();
   const updateAgent = useUpdateAgent();
@@ -113,6 +122,14 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   const handleSaveEdit = async () => {
     setIsSaving(true);
     setSaveError("");
+    
+    // Validation: if subagent, must have at least one parent
+    if (editForm.agentType === "subagent" && (!editForm.parentAgentIds || editForm.parentAgentIds.length === 0)) {
+      setSaveError("Subagents must be assigned to at least one parent agent");
+      setIsSaving(false);
+      return;
+    }
+    
     try {
       await updateAgent({
         id: agent._id,
@@ -122,6 +139,9 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         notes: editForm.notes.trim() || undefined,
         model: editForm.model || undefined,
         status: editForm.status as "active" | "idle" | "offline",
+        agentType: editForm.agentType || undefined,
+        department: editForm.department || undefined,
+        parentAgentIds: editForm.parentAgentIds && editForm.parentAgentIds.length > 0 ? editForm.parentAgentIds : undefined,
       });
       setIsEditing(false);
     } catch (err) {
@@ -450,6 +470,92 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
             value={editForm.status}
             onChange={(e: any) => setEditForm({ ...editForm, status: e.target.value })}
           />
+
+          {/* ── Classification ── */}
+          <div className="border-t border-istk-border/10 pt-4 mt-4">
+            <p className="text-xs font-semibold text-istk-textDim uppercase tracking-wider mb-3">Classification</p>
+            
+            {/* Type Toggle */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-istk-text mb-2">Type</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditForm({ ...editForm, agentType: "agent", parentAgentIds: [] });
+                  }}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                    editForm.agentType === "agent"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-400 shadow-neu-sm"
+                      : "border-istk-border/20 text-istk-textMuted hover:text-istk-text hover:bg-istk-surfaceLight"
+                  }`}
+                >
+                  Agent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditForm({ ...editForm, agentType: "subagent" });
+                  }}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                    editForm.agentType === "subagent"
+                      ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-neu-sm"
+                      : "border-istk-border/20 text-istk-textMuted hover:text-istk-text hover:bg-istk-surfaceLight"
+                  }`}
+                >
+                  Subagent
+                </button>
+              </div>
+            </div>
+
+            {/* Department Dropdown */}
+            <Select
+              label="Department"
+              options={[
+                { value: "content_production", label: "Content Production" },
+                { value: "research", label: "Research" },
+                { value: "distribution", label: "Distribution" },
+                { value: "creative", label: "Creative" },
+              ]}
+              value={editForm.department}
+              onChange={(e: any) => setEditForm({ ...editForm, department: e.target.value })}
+            />
+          </div>
+
+          {/* ── Reporting Structure (Subagents Only) ── */}
+          {editForm.agentType === "subagent" && (
+            <div className="border-t border-istk-border/10 pt-4 mt-4">
+              <p className="text-xs font-semibold text-istk-textDim uppercase tracking-wider mb-3">Reports To</p>
+              <p className="text-xs text-istk-textMuted mb-2">Select one or more parent agents:</p>
+              <div className="flex flex-col gap-2">
+                {(allAgents ?? [])
+                  .filter((a) => (a.agentType ?? "agent") === "agent")
+                  .map((parentAgent) => (
+                    <label key={parentAgent._id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(editForm.parentAgentIds ?? []).includes(parentAgent._id)}
+                        onChange={(e) => {
+                          const ids = editForm.parentAgentIds ?? [];
+                          if (e.target.checked) {
+                            setEditForm({ ...editForm, parentAgentIds: [...ids, parentAgent._id] });
+                          } else {
+                            setEditForm({
+                              ...editForm,
+                              parentAgentIds: ids.filter((id) => id !== parentAgent._id),
+                            });
+                          }
+                        }}
+                        className="w-4 h-4 rounded cursor-pointer"
+                      />
+                      <span className="text-sm text-istk-text">
+                        {parentAgent.name} <span className="text-xs text-istk-textMuted">({parentAgent.department || "no dept"})</span>
+                      </span>
+                    </label>
+                  ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3 justify-end mt-2">
             <Button variant="ghost" onClick={() => setIsEditing(false)}>

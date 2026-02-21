@@ -24,6 +24,9 @@ interface Agent {
   recentTasks?: string[];
   isSubagent: boolean;
   createdAt: string;
+  agentType?: string;
+  department?: string;
+  parentAgentIds?: Id<"agents">[];
 }
 
 interface TeamGridProps {
@@ -107,6 +110,7 @@ export default function TeamGrid({ sortOption }: TeamGridProps) {
                   currentSelected?._id === agent._id ? null : agent
                 )
               }
+              allAgents={(agents as Agent[]) ?? []}
             />
           ))}
         </div>

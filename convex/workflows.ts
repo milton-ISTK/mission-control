@@ -2,9 +2,70 @@
  * ISTK Mission Control - Workflow Orchestration Engine
  * Queries & mutations for workflow templates, workflow instances, and workflow steps.
  * Phase 1: Schema + CRUD + advanceWorkflow state machine
+ * Phase 3: Workflow enforcement for agent hierarchy
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { QueryCtx } from "./_generated/server";
+
+// ============================================================
+// WORKFLOW ENFORCEMENT (Phase 3)
+// ============================================================
+
+/**
+ * Validate that an agent is allowed to work on a step in a specific workflow.
+ * - Top-level agents can work on any step
+ * - Subagents can only work if one of their parent agents is in the workflow template
+ */
+async function validateAgentForStep(
+  ctx: QueryCtx,
+  agentRole: string,
+  workflowId: string
+): Promise<boolean> {
+  // Find the agent with matching agentRole
+  const allAgents = await ctx.db.query("agents").collect();
+  const agent = allAgents.find((a) => a.agentRole === agentRole);
+
+  if (!agent) {
+    console.warn(`[workflow-enforce] Agent with role "${agentRole}" not found`);
+    return false; // No agent found
+  }
+
+  // If it's a top-level agent, always allowed
+  if ((agent.agentType ?? "agent") === "agent") {
+    return true;
+  }
+
+  // If it's a subagent, check if any of its parents are in this workflow template
+  const workflow = await ctx.db.query("workflows").collect().then((ws) => ws.find((w) => w._id.toString() === workflowId));
+  if (!workflow) {
+    console.warn(`[workflow-enforce] Workflow "${workflowId}" not found`);
+    return false;
+  }
+
+  const template = await ctx.db.get(workflow.templateId);
+  if (!template) {
+    console.warn(`[workflow-enforce] Workflow template not found`);
+    return false;
+  }
+
+  // Check if any parent agent has a role that appears in this workflow template
+  const parentIds = agent.parentAgentIds ?? [];
+  for (const parentId of parentIds) {
+    const parent = await ctx.db.get(parentId);
+    if (parent && parent.agentRole) {
+      const parentInWorkflow = template.steps.some((s) => s.agentRole === parent.agentRole);
+      if (parentInWorkflow) {
+        return true; // Allowed — parent is in this workflow
+      }
+    }
+  }
+
+  console.warn(
+    `[workflow-enforce] Subagent "${agent.name}" (role: ${agentRole}) is not bound to any agent in workflow template "${template.name}"`
+  );
+  return false;
+}
 
 // ============================================================
 // QUERIES
@@ -228,6 +289,12 @@ export const createWorkflow = mutation({
       const templateStep = template.steps.find((ts) => ts.stepNumber === stepNum);
       if (!templateStep) continue;
 
+      // Validate agent hierarchy (Phase 3)
+      const isAllowed = await validateAgentForStep(ctx, templateStep.agentRole, workflowId.toString());
+      if (!isAllowed) {
+        console.warn(`[workflow-create] Agent role "${templateStep.agentRole}" not allowed in this workflow; creating step anyway`);
+      }
+
       await ctx.db.insert("workflowSteps", {
         workflowId,
         stepNumber: stepNum,
@@ -379,6 +446,12 @@ export const advanceWorkflow = mutation({
     for (const stepNum of Array.from(batchStepNumbers)) {
       const templateStep = template.steps.find((ts) => ts.stepNumber === stepNum);
       if (!templateStep) continue;
+
+      // Validate agent hierarchy (Phase 3)
+      const isAllowed = await validateAgentForStep(ctx, templateStep.agentRole, args.workflowId.toString());
+      if (!isAllowed) {
+        console.warn(`[workflow-advance] Agent role "${templateStep.agentRole}" not allowed in this workflow; creating step anyway`);
+      }
 
       await ctx.db.insert("workflowSteps", {
         workflowId: args.workflowId,

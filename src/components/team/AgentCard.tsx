@@ -19,12 +19,16 @@ interface Agent {
   recentTasks?: string[];
   isSubagent: boolean;
   createdAt: string;
+  agentType?: string;
+  department?: string;
+  parentAgentIds?: Id<"agents">[];
 }
 
 interface AgentCardProps {
   agent: Agent;
   isSelected: boolean;
   onClick: () => void;
+  allAgents?: Agent[];
 }
 
 const statusConfig = {
@@ -40,10 +44,15 @@ function getAvatarDisplay(avatar?: string, name?: string) {
   return "🔮";
 }
 
-export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps) {
+export default function AgentCard({ agent, isSelected, onClick, allAgents = [] }: AgentCardProps) {
   const status = statusConfig[agent.status];
   const avatarEmoji = getAvatarDisplay(agent.avatar, agent.name);
   const isAgent = !agent.isSubagent;
+  
+  // Get parent agent names for subagents
+  const parentNames = (agent.parentAgentIds ?? [])
+    .map((parentId) => allAgents.find((a) => a._id === parentId)?.name)
+    .filter((name): name is string => name !== undefined);
 
   // Colour-coded borders: agents = amber/orange, subagents = cyan/blue
   const borderColor = isAgent
@@ -113,6 +122,21 @@ export default function AgentCard({ agent, isSelected, onClick }: AgentCardProps
             <Cpu className="w-3 h-3" />
             <span className="truncate max-w-[100px]">{agent.model}</span>
           </div>
+        )}
+      </div>
+
+      {/* Department + Reports To */}
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        {agent.department && (
+          <span className="text-[10px] text-istk-textMuted capitalize">
+            {agent.department.replace(/_/g, " ")}
+          </span>
+        )}
+        {!agent.isSubagent && agent.department && <span className="text-[10px] text-istk-textDim">·</span>}
+        {agent.isSubagent && parentNames.length > 0 && (
+          <span className="text-[10px] text-istk-textMuted">
+            Reports to: {parentNames.join(", ")}
+          </span>
         )}
       </div>
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Users, Bot, ArrowUpDown } from "lucide-react";
+import { Plus, Users, Bot, ArrowUpDown, LayoutGrid, Network } from "lucide-react";
 import TeamGrid from "@/components/team/TeamGrid";
 import SubagentList from "@/components/team/SubagentList";
+import OrgChart from "@/components/team/OrgChart";
 import CreateAgentModal from "@/components/team/CreateAgentModal";
 import Button from "@/components/common/Button";
 import { useAgents, useSubagents } from "@/hooks/useAgents";
@@ -31,6 +32,7 @@ export default function TeamPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createCategory, setCreateCategory] = useState<"agent" | "subagent">("agent");
   const [activeTab, setActiveTab] = useState<"agents" | "subagents">("agents");
+  const [viewMode, setViewMode] = useState<"list" | "orgchart">("list");
   const [sortOption, setSortOption] = useState<SortOption>("status-active");
   const agents = useAgents();
   const subagents = useSubagents();
@@ -74,7 +76,7 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Tab Switcher + Sort Dropdown */}
+      {/* Tab Switcher + Controls */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-1 bg-istk-bg rounded-xl p-1 shadow-neu-inset-sm w-fit">
           <button
@@ -101,26 +103,63 @@ export default function TeamPage() {
           </button>
         </div>
 
-        {/* Sort Dropdown */}
-        <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-4 h-4 text-istk-textDim" />
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value as SortOption)}
-            className="glass-input text-xs appearance-none cursor-pointer pr-8 py-1.5 pl-3 rounded-lg"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* View Toggle + Sort (Agents tab only) */}
+        {activeTab === "agents" && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 bg-istk-bg rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 rounded text-sm transition-all ${
+                  viewMode === "list"
+                    ? "bg-istk-accent text-white"
+                    : "text-istk-textMuted hover:text-istk-text"
+                }`}
+                title="List View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("orgchart")}
+                className={`p-2 rounded text-sm transition-all ${
+                  viewMode === "orgchart"
+                    ? "bg-istk-accent text-white"
+                    : "text-istk-textMuted hover:text-istk-text"
+                }`}
+                title="Org Chart"
+              >
+                <Network className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sort Dropdown (List view only) */}
+            {viewMode === "list" && (
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4 text-istk-textDim" />
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as SortOption)}
+                  className="glass-input text-xs appearance-none cursor-pointer pr-8 py-1.5 pl-3 rounded-lg"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content */}
       {activeTab === "agents" ? (
-        <TeamGrid sortOption={sortOption} />
+        viewMode === "list" ? (
+          <TeamGrid sortOption={sortOption} />
+        ) : (
+          <OrgChart agents={agents} />
+        )
       ) : (
         <SubagentList sortOption={sortOption} />
       )}

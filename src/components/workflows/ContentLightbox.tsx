@@ -50,17 +50,17 @@ export default function ContentLightbox({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-start justify-center py-10">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-zinc-900/90 backdrop-blur-sm"
+        className="fixed inset-0 bg-zinc-900/90 backdrop-blur-sm -z-10"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-3xl max-h-[90vh] mx-4 flex flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-4 border-b border-zinc-200 bg-zinc-50">
+      <div className="relative z-10 w-full max-w-3xl max-h-[85vh] mx-4 flex flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
+        {/* Header (sticky at top) */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 border-b border-zinc-200 bg-white">
           <h2 className="text-xl font-bold text-zinc-900">{title}</h2>
           <button
             onClick={onClose}
@@ -70,7 +70,7 @@ export default function ContentLightbox({
           </button>
         </div>
 
-        {/* Content */}
+        {/* Content (scrollable) */}
         <div className="flex-1 overflow-y-auto px-12 py-8 bg-white">
           <div className="max-w-2xl mx-auto">
             {mode === "html" ? (
@@ -159,9 +159,9 @@ export default function ContentLightbox({
           </div>
         </div>
 
-        {/* Footer (Action Buttons) */}
+        {/* Footer (sticky at bottom with action buttons) */}
         {children && (
-          <div className="px-8 py-4 border-t border-zinc-200 bg-zinc-50 flex items-center justify-end gap-3">
+          <div className="sticky bottom-0 bg-white px-8 py-4 border-t border-zinc-200 flex items-center justify-end gap-3">
             {children}
           </div>
         )}

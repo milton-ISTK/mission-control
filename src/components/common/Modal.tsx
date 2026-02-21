@@ -40,10 +40,10 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
   };
 
   return (
-    <div className="modal-overlay animate-fade-in" onClick={onClose}>
+    <div className="modal-overlay animate-fade-in overflow-y-auto flex items-start justify-center py-10" onClick={onClose}>
       <div
         className={cn(
-          "w-full mx-4 animate-scale-in rounded-2xl p-6 backdrop-blur-xl",
+          "w-full mx-4 animate-scale-in rounded-2xl backdrop-blur-xl max-h-[85vh] overflow-y-auto flex flex-col",
           sizes[size]
         )}
         style={{
@@ -60,7 +60,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-center justify-between mb-6">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-white/5">
             <h2
               className="text-xl font-bold text-istk-text"
               style={{ textShadow: "0 0 15px rgba(255,107,0,0.15)" }}
@@ -75,7 +75,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
             </button>
           </div>
         )}
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
       </div>
     </div>
   );

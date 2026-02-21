@@ -575,7 +575,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
             </div>
           )}
 
-          <div className="flex gap-3 justify-end mt-2">
+          <div className="sticky bottom-0 bg-black/40 -mx-6 -mb-6 px-6 py-4 border-t border-white/5 flex gap-3 justify-end mt-6">
             <Button variant="ghost" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
@@ -600,7 +600,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
               Are you sure you want to delete <strong>{agent.name}</strong>? This action cannot be undone.
             </p>
           </div>
-          <div className="flex gap-3 justify-end">
+          <div className="sticky bottom-0 bg-black/40 -mx-6 -mb-6 px-6 py-4 border-t border-white/5 flex gap-3 justify-end mt-6">
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
               Cancel
             </Button>

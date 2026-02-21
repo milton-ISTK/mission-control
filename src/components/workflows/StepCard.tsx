@@ -177,6 +177,29 @@ export default function StepCard({
       .replace(/\\(?![n"u])/g, ''); // Remove stray backslashes
   };
 
+  // Helper: recursively parse value if it's a JSON string
+  const tryParseJsonString = (value: any): any => {
+    if (typeof value !== "string" || !value.startsWith("{")) {
+      return value;
+    }
+    try {
+      const inner = JSON.parse(value);
+      // Check if the inner object has content fields
+      if (typeof inner === "object" && inner !== null) {
+        const content =
+          inner.revisedContent ||
+          inner.content ||
+          inner.result?.revisedContent ||
+          inner.result?.content;
+        if (content) return content;
+        return inner;
+      }
+      return inner;
+    } catch {
+      return value; // Not JSON, keep as-is
+    }
+  };
+
   // Extract blog content from output OR input (for review steps)
   const extractBlogContent = (): string => {
     // For review steps (awaiting_review), content is in input field
@@ -185,7 +208,7 @@ export default function StepCard({
 
     // Keep parsing until we get to actual content (handle double-wrapped JSON)
     let data = source;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       try {
         const parsed = JSON.parse(data);
         if (typeof parsed === "string") {
@@ -194,7 +217,7 @@ export default function StepCard({
         }
         // It's an object — look for content fields
         // Check direct fields, nested output/result, and daemon's assemble_step_input keys
-        data =
+        let value =
           parsed.revisedContent ||
           parsed.content ||
           parsed.output?.revisedContent ||
@@ -213,6 +236,11 @@ export default function StepCard({
           parsed.sentimentOutput?.result?.content ||
           parsed.text ||
           JSON.stringify(parsed);
+
+        // If the value is itself a JSON string, parse it again
+        value = tryParseJsonString(value);
+
+        data = value;
         break;
       } catch {
         break; // Not JSON, we have the raw content

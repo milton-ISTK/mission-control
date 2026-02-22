@@ -82,6 +82,22 @@ export const getAgentHierarchy = query({
 });
 
 /** Get agents by department */
+/** Get all agents with their LLM config (for diagnostics) */
+export const getAllAgentsWithLLMConfig = query({
+  handler: async (ctx) => {
+    const agents = await ctx.db.query("agents").collect();
+    return agents.map((a) => ({
+      _id: a._id,
+      name: a.name,
+      agentRole: a.agentRole,
+      modelId: a.modelId || "NOT_SET",
+      provider: a.provider || "NOT_SET",
+      status: a.status,
+      agentType: a.agentType,
+    }));
+  },
+});
+
 export const getAgentsByDepartment = query({
   args: { department: v.string() },
   handler: async (ctx, args) => {
@@ -186,6 +202,7 @@ export const updateAgent = mutation({
     notes: v.optional(v.string()),
     systemPrompt: v.optional(v.string()),
     model: v.optional(v.string()),
+    provider: v.optional(v.string()),               // LLM provider ("anthropic", "openai", "minimax", etc.)
     status: v.optional(v.union(v.literal("active"), v.literal("idle"), v.literal("offline"))),
     agentType: v.optional(v.string()),              // "agent" | "subagent"
     parentAgentIds: v.optional(v.array(v.id("agents"))), // Parent agents for subagents
@@ -213,6 +230,33 @@ export const deleteAgent = mutation({
   },
 });
 
+/** Update agent LLM configuration (modelId + auto-detect provider) */
+export const updateAgentLLMConfig = mutation({
+  args: {
+    id: v.id("agents"),
+    modelId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const provider = getProviderForModel(args.modelId);
+    await ctx.db.patch(args.id, {
+      modelId: args.modelId,
+      provider: provider,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
+/** Map LLM model IDs to their providers */
+function getProviderForModel(model: string): string {
+  if (model.startsWith("claude-")) return "anthropic";
+  if (model.startsWith("gpt-") || model.startsWith("o1-") || model.startsWith("o3-") || model.startsWith("o4-")) return "openai";
+  if (model.startsWith("gemini-")) return "google";
+  if (model.startsWith("llama-")) return "meta";
+  if (model.startsWith("MiniMax-")) return "minimax";
+  if (model.startsWith("grok-")) return "grok";
+  return "anthropic"; // default fallback
+}
+
 /** Seed agent hierarchy (force-update all, create missing, delete unknown) */
 export const seedAgentHierarchy = mutation({
   handler: async (ctx) => {
@@ -228,7 +272,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: boolean;
         parentNames: string[];
         defaultRole: string;
-        model: string;
+        modelId: string;
       }
     > = {
       // AGENTS (4)
@@ -238,7 +282,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: false,
         parentNames: [],
         defaultRole: "Long-Form Content Writer",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       Copywriter: {
         agentType: "agent",
@@ -246,7 +290,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: false,
         parentNames: [],
         defaultRole: "Social Media Copywriter",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       "Social Publisher": {
         agentType: "agent",
@@ -254,7 +298,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: false,
         parentNames: [],
         defaultRole: "Multi-Platform Publisher",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       "Research Enhancer": {
         agentType: "agent",
@@ -262,7 +306,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: false,
         parentNames: [],
         defaultRole: "Research Enhancement Specialist",
-        model: "claude-opus-4-5-20251101",
+        modelId: "claude-opus-4-5-20251101",
       },
       // SUBAGENTS (6)
       "Sentiment Scraper": {
@@ -271,7 +315,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: true,
         parentNames: ["Blog Writer"],
         defaultRole: "Market Sentiment Analyst",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       "News Scraper": {
         agentType: "subagent",
@@ -279,7 +323,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: true,
         parentNames: ["Blog Writer"],
         defaultRole: "News & Data Aggregator",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       Humanizer: {
         agentType: "subagent",
@@ -287,7 +331,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: true,
         parentNames: ["Blog Writer", "Copywriter"],
         defaultRole: "Content Humanization Specialist",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       "HTML Builder": {
         agentType: "subagent",
@@ -295,7 +339,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: true,
         parentNames: ["Blog Writer"],
         defaultRole: "HTML/CSS Production Specialist",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       "Headline Generator": {
         agentType: "subagent",
@@ -303,7 +347,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: true,
         parentNames: ["Copywriter", "Social Publisher"],
         defaultRole: "Headlines & Hooks Specialist",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
       "Image Maker": {
         agentType: "subagent",
@@ -311,7 +355,7 @@ export const seedAgentHierarchy = mutation({
         isSubagent: true,
         parentNames: ["Social Publisher"],
         defaultRole: "Visual Content Creator",
-        model: "claude-haiku-4-5-20251001",
+        modelId: "claude-haiku-4-5-20251001",
       },
     };
 
@@ -335,7 +379,8 @@ export const seedAgentHierarchy = mutation({
         await ctx.db.insert("agents", {
           name,
           role: spec.defaultRole,
-          model: spec.model,
+          modelId: spec.modelId,
+          provider: getProviderForModel(spec.modelId),
           status: "idle",
           isSubagent: spec.isSubagent,
           agentType: spec.agentType,
@@ -365,7 +410,8 @@ export const seedAgentHierarchy = mutation({
         agentType: spec.agentType,
         department: spec.department,
         isSubagent: spec.isSubagent,
-        model: spec.model,
+        modelId: spec.modelId,
+        provider: getProviderForModel(spec.modelId),
         role: spec.defaultRole,
         parentAgentIds: parentIds.length > 0 ? parentIds : [],
         updatedAt: now,

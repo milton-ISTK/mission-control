@@ -541,6 +541,18 @@ export const advanceWorkflow = mutation({
       const isReviewGate = templateStep.requiresApproval && templateStep.agentRole === "none";
       const initialStatus = isReviewGate ? "awaiting_review" : "pending";
 
+      // Guard: Check if this step already exists (prevent duplicates from race conditions)
+      const existingStep = await ctx.db
+        .query("workflowSteps")
+        .withIndex("by_workflowId", (q) => q.eq("workflowId", args.workflowId))
+        .filter((q) => q.eq(q.field("stepNumber"), stepNum))
+        .first();
+
+      if (existingStep) {
+        console.log(`[workflow-advance] Step ${stepNum} already exists for workflow ${args.workflowId}, skipping duplicate creation`);
+        continue; // Skip — step already exists
+      }
+
       // Update workflow status to paused_for_review if this is a review gate
       if (isReviewGate) {
         await ctx.db.patch(args.workflowId, {
@@ -644,20 +656,30 @@ export const rejectStep = mutation({
     const templateStep = template.steps.find((ts) => ts.stepNumber === step.stepNumber);
     if (!templateStep) throw new Error("Template step not found");
 
-    // Create a new workflowStep with same stepNumber for retry (status: pending)
-    // The daemon will pick it up again and the agent can incorporate Gregory's feedback
-    await ctx.db.insert("workflowSteps", {
-      workflowId: step.workflowId,
-      stepNumber: step.stepNumber,
-      name: templateStep.name,
-      agentRole: templateStep.agentRole,
-      status: "pending",
-      input: step.input, // Keep the same input; Gregory's feedback is in reviewNotes
-      requiresApproval: templateStep.requiresApproval,
-      timeoutMinutes: templateStep.timeoutMinutes,
-      createdAt: now,
-      updatedAt: now,
-    });
+    // Guard: Check if a pending retry already exists for this step (prevent duplicate retries)
+    const existingRetry = await ctx.db
+      .query("workflowSteps")
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+      .filter((q) => q.eq(q.field("stepNumber"), step.stepNumber))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .first();
+
+    if (!existingRetry) {
+      // Create a new workflowStep with same stepNumber for retry (status: pending)
+      // The daemon will pick it up again and the agent can incorporate Gregory's feedback
+      await ctx.db.insert("workflowSteps", {
+        workflowId: step.workflowId,
+        stepNumber: step.stepNumber,
+        name: templateStep.name,
+        agentRole: templateStep.agentRole,
+        status: "pending",
+        input: step.input, // Keep the same input; Gregory's feedback is in reviewNotes
+        requiresApproval: templateStep.requiresApproval,
+        timeoutMinutes: templateStep.timeoutMinutes,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     // Set workflow back to "active" (running) so it can pick up the retry step
     await ctx.db.patch(step.workflowId, {
@@ -779,45 +801,54 @@ export const approveStepFromUI = mutation({
         }
       }
 
-      // Wrap input with author info, publish date, and selected image URL if available
-      let finalInput = inputForNextStep;
-      try {
-        const parsed = JSON.parse(inputForNextStep || "{}");
-        const enriched: any = { ...parsed, publish_date: publishDate };
-        if (authorInfo) {
-          enriched.author = authorInfo;
-        }
-        if (selectedImageUrl) {
-          enriched.selectedImageUrl = selectedImageUrl;
-        }
-        finalInput = JSON.stringify(enriched);
-      } catch {
-        // If not JSON, wrap in object
-        const enriched: any = {
-          output: inputForNextStep,
-          publish_date: publishDate,
-        };
-        if (authorInfo) {
-          enriched.author = authorInfo;
-        }
-        if (selectedImageUrl) {
-          enriched.selectedImageUrl = selectedImageUrl;
-        }
-        finalInput = JSON.stringify(enriched);
-      }
+      // Guard: Check if next step already exists (prevent duplicates)
+      const nextStepExists = await ctx.db
+        .query("workflowSteps")
+        .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+        .filter((q) => q.eq(q.field("stepNumber"), nextTemplateStep.stepNumber))
+        .first();
 
-      await ctx.db.insert("workflowSteps", {
-        workflowId: step.workflowId,
-        stepNumber: nextTemplateStep.stepNumber,
-        name: nextTemplateStep.name,
-        agentRole: nextTemplateStep.agentRole,
-        status: "pending",
-        input: finalInput,
-        requiresApproval: nextTemplateStep.requiresApproval,
-        timeoutMinutes: nextTemplateStep.timeoutMinutes,
-        createdAt: now,
-        updatedAt: now,
-      });
+      if (!nextStepExists) {
+        // Wrap input with author info, publish date, and selected image URL if available
+        let finalInput = inputForNextStep;
+        try {
+          const parsed = JSON.parse(inputForNextStep || "{}");
+          const enriched: any = { ...parsed, publish_date: publishDate };
+          if (authorInfo) {
+            enriched.author = authorInfo;
+          }
+          if (selectedImageUrl) {
+            enriched.selectedImageUrl = selectedImageUrl;
+          }
+          finalInput = JSON.stringify(enriched);
+        } catch {
+          // If not JSON, wrap in object
+          const enriched: any = {
+            output: inputForNextStep,
+            publish_date: publishDate,
+          };
+          if (authorInfo) {
+            enriched.author = authorInfo;
+          }
+          if (selectedImageUrl) {
+            enriched.selectedImageUrl = selectedImageUrl;
+          }
+          finalInput = JSON.stringify(enriched);
+        }
+
+        await ctx.db.insert("workflowSteps", {
+          workflowId: step.workflowId,
+          stepNumber: nextTemplateStep.stepNumber,
+          name: nextTemplateStep.name,
+          agentRole: nextTemplateStep.agentRole,
+          status: "pending",
+          input: finalInput,
+          requiresApproval: nextTemplateStep.requiresApproval,
+          timeoutMinutes: nextTemplateStep.timeoutMinutes,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
 
       // Update workflow currentStepNumber
       await ctx.db.patch(step.workflowId, {

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Bot, Shield, AlertTriangle } from "lucide-react";
 import { useCreateSubagent } from "@/hooks/useAgents";
 import Modal from "@/components/common/Modal";
@@ -11,7 +13,6 @@ import {
   DEFAULT_MODEL,
   getModelGroups,
   findModel,
-  getStoredApiKey,
   getProviderDisplayName,
 } from "@/lib/llm-models";
 
@@ -63,26 +64,16 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
 
   const selectedModel = findModel(form.llm);
 
-  // Check API key availability whenever model changes
-  const checkApiKey = useCallback(() => {
-    if (!selectedModel) {
-      setApiKeyAvailable(false);
-      return;
-    }
-    const key = getStoredApiKey(selectedModel.provider);
-    setApiKeyAvailable(key.length > 0);
-  }, [selectedModel]);
-
+  // Query Convex for API key availability (replaces localStorage check)
+  const apiKeyRecord = useQuery(
+    selectedModel ? api.contentPipeline.getApiKey : null,
+    selectedModel ? { provider: selectedModel.provider } : "skip"
+  );
+  
+  // Update apiKeyAvailable based on query result
   useEffect(() => {
-    checkApiKey();
-  }, [checkApiKey]);
-
-  // Re-check when window regains focus
-  useEffect(() => {
-    const onFocus = () => checkApiKey();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [checkApiKey]);
+    setApiKeyAvailable(apiKeyRecord?.keyPlaintext ? apiKeyRecord.keyPlaintext.trim().length > 0 : false);
+  }, [apiKeyRecord]);
 
   const providerDisplayName = selectedModel
     ? getProviderDisplayName(selectedModel.provider)

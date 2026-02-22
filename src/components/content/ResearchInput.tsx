@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
   Search,
@@ -16,7 +16,6 @@ import {
   DEFAULT_MODEL,
   getModelGroups,
   findModel,
-  getStoredApiKey,
   getProviderDisplayName,
 } from "@/lib/llm-models";
 
@@ -24,32 +23,18 @@ export default function ResearchInput() {
   const [topic, setTopic] = useState("");
   const [llmModel, setLlmModel] = useState(DEFAULT_MODEL);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [apiKeyAvailable, setApiKeyAvailable] = useState(true);
   const createResearch = useMutation(api.contentPipeline.createResearch);
 
   const selectedModel = findModel(llmModel);
   const groups = getModelGroups();
 
-  // Re-check API key availability whenever the selected model changes
-  const checkApiKey = useCallback(() => {
-    if (!selectedModel) {
-      setApiKeyAvailable(false);
-      return;
-    }
-    const key = getStoredApiKey(selectedModel.provider);
-    setApiKeyAvailable(key.length > 0);
-  }, [selectedModel]);
-
-  useEffect(() => {
-    checkApiKey();
-  }, [checkApiKey]);
-
-  // Also re-check when window regains focus (user may have just saved keys in Settings)
-  useEffect(() => {
-    const onFocus = () => checkApiKey();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [checkApiKey]);
+  // Query Convex for API key availability (replaces localStorage check)
+  const apiKeyRecord = useQuery(
+    selectedModel ? api.contentPipeline.getApiKey : null,
+    selectedModel ? { provider: selectedModel.provider } : "skip"
+  );
+  
+  const apiKeyAvailable = apiKeyRecord?.keyPlaintext ? apiKeyRecord.keyPlaintext.trim().length > 0 : false;
 
   const canSubmit = topic.trim().length > 0 && apiKeyAvailable && !isSubmitting;
 

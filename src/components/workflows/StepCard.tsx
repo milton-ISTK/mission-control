@@ -29,6 +29,8 @@ interface StepCardProps {
   onReject?: () => void;
   feedbackText?: string;
   onFeedbackChange?: (text: string) => void;
+  selectedHeadlineIndex?: number | null;
+  onHeadlineSelect?: (index: number) => void;
   isSubmitting?: boolean;
 }
 
@@ -153,6 +155,8 @@ export default function StepCard({
   onReject,
   feedbackText = "",
   onFeedbackChange,
+  selectedHeadlineIndex = null,
+  onHeadlineSelect,
   isSubmitting = false,
 }: StepCardProps) {
   const [isExpanded, setIsExpanded] = useState(step.status === "awaiting_review" || step.status === "agent_working");
@@ -330,6 +334,26 @@ export default function StepCard({
     });
   };
 
+  // Parse headline_generator output to extract headline options
+  const extractHeadlineOptions = (): Array<{
+    headline: string;
+    subtitle?: string;
+    hookLine?: string;
+    style?: string;
+    engagementScore?: number;
+  }> => {
+    if (!step.output) return [];
+    try {
+      const parsed = JSON.parse(step.output);
+      if (parsed.headlines && Array.isArray(parsed.headlines)) {
+        return parsed.headlines;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  };
+
   // Detect if previous step is html_builder
   const previousStep = allSteps ? allSteps.find((s) => s.stepNumber === step.stepNumber - 1) : null;
   const previousStepIsHtmlBuilder = previousStep?.agentRole === "html_builder";
@@ -371,6 +395,70 @@ export default function StepCard({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="p-4 space-y-4 border-t border-white/5">
+          {/* Headline Picker (for headline_generator awaiting review) */}
+          {step.agentRole === "headline_generator" && isAwaitingReview && (() => {
+            const headlines = extractHeadlineOptions();
+            return (
+              <div>
+                <p className="text-xs font-semibold text-istk-text mb-3">📰 Select a headline option:</p>
+                <div className="grid grid-cols-1 gap-3">
+                  {headlines.map((option, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => onHeadlineSelect?.(idx)}
+                      className={cn(
+                        "p-4 rounded-lg text-left transition-all border-2",
+                        selectedHeadlineIndex === idx
+                          ? "border-istk-accent bg-istk-accent/10 shadow-lg shadow-istk-accent/20"
+                          : "border-zinc-700/50 bg-zinc-900/30 hover:border-istk-accent/50"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={cn(
+                            "w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center",
+                            selectedHeadlineIndex === idx
+                              ? "border-istk-accent bg-istk-accent"
+                              : "border-zinc-600"
+                          )}
+                        >
+                          {selectedHeadlineIndex === idx && (
+                            <span className="text-xs font-bold text-black">✓</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-istk-text text-sm mb-1">
+                            {option.headline}
+                          </h3>
+                          {option.subtitle && (
+                            <p className="text-xs text-istk-textMuted mb-2">
+                              {option.subtitle}
+                            </p>
+                          )}
+                          {option.hookLine && (
+                            <p className="text-xs italic text-istk-textDim">
+                              "{option.hookLine}"
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 mt-2 text-xs text-istk-textMuted">
+                            {option.style && (
+                              <span className="px-2 py-1 rounded bg-zinc-800/50">
+                                {option.style}
+                              </span>
+                            )}
+                            {option.engagementScore !== undefined && (
+                              <span>⭐ {option.engagementScore}/10</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Thinking Lines */}
           {(step.thinkingLine1 || step.thinkingLine2) && step.status === "agent_working" && (
             <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-700/30">

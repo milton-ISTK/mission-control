@@ -518,30 +518,63 @@ export default function ResearchCard({ research }: { research: Research }) {
                       {research.suggestedAngles.map((angle, idx) => (
                         <div
                           key={idx}
-                          className="p-3 rounded-lg transition-colors cursor-pointer"
+                          className="p-4 rounded-lg transition-all cursor-pointer border-2"
                           style={{
-                            background: "rgba(255,107,0,0.03)",
-                            border: "1px solid rgba(255,107,0,0.08)",
+                            background: "rgba(255,107,0,0.04)",
+                            borderColor: "rgba(255,107,0,0.12)",
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(255,107,0,0.25)";
-                            e.currentTarget.style.boxShadow = "0 0 8px rgba(255,107,0,0.08)";
+                            e.currentTarget.style.borderColor = "rgba(255,107,0,0.35)";
+                            e.currentTarget.style.boxShadow = "0 0 12px rgba(255,107,0,0.15)";
+                            e.currentTarget.style.background = "rgba(255,107,0,0.08)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(255,107,0,0.08)";
+                            e.currentTarget.style.borderColor = "rgba(255,107,0,0.12)";
                             e.currentTarget.style.boxShadow = "none";
+                            e.currentTarget.style.background = "rgba(255,107,0,0.04)";
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedSuggestedAngle(angle);
                           }}
                         >
-                          <p className="font-medium text-istk-text text-sm">{angle.title}</p>
-                          <p className="text-xs text-istk-textMuted mt-1">{angle.description}</p>
-                          <div className="flex items-center justify-between mt-2 text-xs text-istk-textDim">
-                            <span>🎯 {angle.targetAudience}</span>
-                            <span className="italic">{angle.tone}</span>
+                          {/* Title */}
+                          <p className="font-bold text-istk-text text-sm mb-2">{angle.title}</p>
+                          
+                          {/* Description */}
+                          <p className="text-xs text-istk-textMuted mb-2">{angle.description}</p>
+                          
+                          {/* Hook Line (italic orange quotes) */}
+                          <p className="text-xs italic mb-3" style={{ color: "rgb(255,107,0)" }}>
+                            "{angle.hookLine}"
+                          </p>
+                          
+                          {/* Tags: Target Audience & Tone */}
+                          <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <span
+                              className="px-2 py-1 rounded-full"
+                              style={{
+                                background: "rgba(0,217,255,0.12)",
+                                color: "rgb(0,217,255)",
+                                border: "1px solid rgba(0,217,255,0.25)",
+                              }}
+                            >
+                              🎯 {angle.targetAudience}
+                            </span>
+                            <span
+                              className="px-2 py-1 rounded-full"
+                              style={{
+                                background: "rgba(178,75,243,0.12)",
+                                color: "rgb(178,75,243)",
+                                border: "1px solid rgba(178,75,243,0.25)",
+                              }}
+                            >
+                              {angle.tone}
+                            </span>
                           </div>
+                          
+                          {/* Click indicator */}
+                          <p className="text-[10px] text-istk-textDim mt-2 text-right">Click to select</p>
                         </div>
                       ))}
                     </div>

@@ -201,6 +201,7 @@ export default defineSchema({
       description: v.optional(v.string()),
       agentRole: v.string(),
       requiresApproval: v.boolean(),
+      approvalPrompt: v.optional(v.string()), // Custom message shown during approval review
       timeoutMinutes: v.number(),
       parallelWith: v.optional(v.array(v.number())),
     })),
@@ -261,6 +262,7 @@ export default defineSchema({
     thinkingLine1: v.optional(v.string()),  // Live thinking feed line 1
     thinkingLine2: v.optional(v.string()),  // Live thinking feed line 2
     requiresApproval: v.boolean(),
+    approvalPrompt: v.optional(v.string()), // Custom prompt shown to user during approval
     reviewNotes: v.optional(v.string()),
     selectedOption: v.optional(v.string()),
     reviewedAt: v.optional(v.string()),

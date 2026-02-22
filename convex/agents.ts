@@ -246,6 +246,51 @@ export const updateAgentLLMConfig = mutation({
   },
 });
 
+/** Update Image Maker agent with new systemPrompt for 3-image generation */
+export const updateImageMakerPrompt = mutation({
+  handler: async (ctx) => {
+    const imageMaker = await ctx.db
+      .query("agents")
+      .filter((q) => q.eq(q.field("agentRole"), "image_maker"))
+      .first();
+    
+    if (!imageMaker) {
+      throw new Error("Image Maker agent not found");
+    }
+
+    const newPrompt = `You are an art director for IntelliStake Technologies. Given a headline and article topic, generate exactly 3 image prompts.
+
+Each prompt must specify the ISTK house art style:
+- Graphic novel illustration
+- Heavy black ink lines in the style of Todd McFarlane
+- Limited color palette: orange #F97316 and black with minimal white highlights
+- Dramatic composition
+- Dark moody atmosphere
+- Hand-drawn crosshatching and detailed inking
+
+Each prompt should interpret the headline visually in a different way:
+- Prompt 1: Wide establishing shot or scene showing the big picture
+- Prompt 2: Close-up detail or symbolic image with specific focus
+- Prompt 3: Abstract or conceptual interpretation of the theme
+
+Return ONLY valid JSON array with 3 objects. Each object must have these exact fields:
+{
+  "prompt": "full detailed image generation prompt with all ISTK style requirements",
+  "composition": "wide|closeup|abstract",
+  "description": "what the image shows in 1-2 sentences"
+}
+
+No markdown, no code blocks, no explanations. Just the JSON array.`;
+
+    await ctx.db.patch(imageMaker._id, {
+      systemPrompt: newPrompt,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { success: true, agentId: imageMaker._id };
+  },
+});
+
 /** Map LLM model IDs to their providers */
 function getProviderForModel(model: string): string {
   if (model.startsWith("claude-")) return "anthropic";

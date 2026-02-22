@@ -557,6 +557,7 @@ export const advanceWorkflow = mutation({
         status: initialStatus,
         input: combinedInput,
         requiresApproval: templateStep.requiresApproval,
+        approvalPrompt: templateStep.approvalPrompt,
         timeoutMinutes: templateStep.timeoutMinutes,
         createdAt: now,
         updatedAt: now,

@@ -240,10 +240,10 @@ export default function WorkflowDetailPage() {
               onReject={() => handleRejectClick(step._id)}
               feedbackText={feedbackText}
               onFeedbackChange={setFeedbackText}
-              selectedHeadlineIndex={pendingStepId === step._id ? selectedHeadlineIndex : null}
-              onHeadlineSelect={pendingStepId === step._id ? setSelectedHeadlineIndex : undefined}
-              selectedImageIndex={pendingStepId === step._id ? selectedImageIndex : null}
-              onImageSelect={pendingStepId === step._id ? setSelectedImageIndex : undefined}
+              selectedHeadlineIndex={selectedHeadlineIndex}
+              onHeadlineSelect={setSelectedHeadlineIndex}
+              selectedImageIndex={selectedImageIndex}
+              onImageSelect={setSelectedImageIndex}
               onSaveEditedContent={handleSaveEditedContent}
               isSubmitting={isProcessing && pendingStepId === step._id}
             />

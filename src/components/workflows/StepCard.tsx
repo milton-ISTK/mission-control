@@ -12,6 +12,7 @@ interface WorkflowStep {
   status: string;
   input?: string;
   output?: string;
+  outputOptions?: string[];
   errorMessage?: string;
   thinkingLine1?: string;
   thinkingLine2?: string;
@@ -220,22 +221,38 @@ export default function StepCard({
   };
 
   // Extract images from input (for Image Review step)
-  const extractImages = (): Array<{ prompt: string; imageUrl: string; composition: string; description: string }> => {
-    let source = step.input;
-    if (!source) return [];
-
-    try {
-      const data = JSON.parse(source);
-      if (Array.isArray(data)) {
-        return data.filter(
-          (item) =>
-            item.prompt && item.imageUrl && item.composition && item.description
-        );
+  const extractImages = (): Array<{ name?: string; prompt: string; imageUrl?: string; url?: string; composition?: string; description: string }> => {
+    const images: any[] = [];
+    
+    // First priority: outputOptions (array of JSON strings)
+    if (step.outputOptions && Array.isArray(step.outputOptions)) {
+      for (const optStr of step.outputOptions) {
+        try {
+          const opt = JSON.parse(optStr);
+          images.push(opt);
+        } catch {
+          // Skip invalid JSON
+        }
       }
-    } catch {
-      // Not JSON, skip
     }
-    return [];
+    
+    // Fallback: try to parse input as array of images
+    if (images.length === 0 && step.input) {
+      try {
+        const data = JSON.parse(step.input);
+        if (Array.isArray(data)) {
+          images.push(...data);
+        }
+      } catch {
+        // Not JSON, skip
+      }
+    }
+    
+    // Filter to only valid image objects (must have a URL field and description/name)
+    return images.filter(
+      (item) =>
+        (item.url || item.imageUrl) && (item.description || item.name || item.composition)
+    );
   };
 
   // Extract blog content from output OR input (for review steps)
@@ -631,8 +648,10 @@ export default function StepCard({
                 <div className="space-y-2">
                   {images.map((image, idx) => {
                     const isSelected = selectedImageIndex === idx;
-                    const imageName = image.composition || `Image ${idx + 1}`;
-                    const imagePrompt = image.description || "";
+                    // Support multiple field names for flexibility
+                    const imageName = image.name || image.composition || `Image ${idx + 1}`;
+                    const imagePrompt = image.prompt || image.description || "";
+                    const imageUrl = image.url || image.imageUrl;
                     
                     return (
                       <button
@@ -683,8 +702,8 @@ export default function StepCard({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (image.imageUrl) {
-                              window.open(image.imageUrl, "_blank");
+                            if (imageUrl) {
+                              window.open(imageUrl, "_blank");
                             }
                           }}
                           className={cn(

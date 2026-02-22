@@ -259,6 +259,7 @@ export default defineSchema({
     ),
     input: v.optional(v.string()),          // JSON string — input data from previous step
     output: v.optional(v.string()),         // JSON string — output data from this step
+    outputOptions: v.optional(v.array(v.string())), // Array of JSON strings — selectable options for review (images, headlines, etc)
     thinkingLine1: v.optional(v.string()),  // Live thinking feed line 1
     thinkingLine2: v.optional(v.string()),  // Live thinking feed line 2
     requiresApproval: v.boolean(),

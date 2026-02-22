@@ -1108,4 +1108,56 @@ http.route({
   }),
 });
 
+// ---- GET /api/storage/upload-url ----
+// Generate a short-lived upload URL for daemon to upload images
+http.route({
+  path: "/api/storage/upload-url",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    try {
+      const uploadUrl = await ctx.storage.generateUploadUrl();
+      return new Response(
+        JSON.stringify({ uploadUrl }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- GET /api/storage/url?storageId=xxx ----
+// Get permanent serving URL for a stored file
+http.route({
+  path: "/api/storage/url",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const url = new URL(request.url);
+      const storageId = url.searchParams.get("storageId");
+      
+      if (!storageId) {
+        return new Response("Missing storageId parameter", { status: 400 });
+      }
+      
+      const fileUrl = await ctx.storage.getUrl(storageId as any);
+      
+      return new Response(
+        JSON.stringify({ url: fileUrl }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;

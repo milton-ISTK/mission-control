@@ -563,15 +563,28 @@ export const advanceWorkflow = mutation({
 
       // Special handling: For Image Review step, pass ONLY the image_maker output, not all parallel steps
       let stepInput = combinedInput;
+      let outputOptions: string[] | undefined = undefined;
+      
       if (templateStep.name === "Image Review" && prevBatchOutputs.length > 1) {
         const imageMakerStep = prevBatchOutputs.find((s) => s.agentRole === "image_maker");
         if (imageMakerStep?.output) {
           // Pass only the image_maker output as a direct array (for extractImages to parse)
           stepInput = imageMakerStep.output;
+          
+          // Also populate outputOptions with individual image JSON strings
+          try {
+            const imageOutput = JSON.parse(imageMakerStep.output);
+            const images = Array.isArray(imageOutput) ? imageOutput : [];
+            if (images.length > 0) {
+              outputOptions = images.map((img: any) => JSON.stringify(img));
+            }
+          } catch (e) {
+            console.error("[workflow-advance] Failed to parse image_maker output for outputOptions:", e);
+          }
         }
       }
 
-      await ctx.db.insert("workflowSteps", {
+      const stepRecord: any = {
         workflowId: args.workflowId,
         stepNumber: stepNum,
         name: templateStep.name,
@@ -583,7 +596,14 @@ export const advanceWorkflow = mutation({
         timeoutMinutes: templateStep.timeoutMinutes,
         createdAt: now,
         updatedAt: now,
-      });
+      };
+
+      // Add outputOptions if present (for review gate steps with options)
+      if (outputOptions) {
+        stepRecord.outputOptions = outputOptions;
+      }
+
+      await ctx.db.insert("workflowSteps", stepRecord);
     }
 
     // Update workflow currentStepNumber to the highest in the new batch

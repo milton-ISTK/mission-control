@@ -485,7 +485,7 @@ export default function StepCard({
     })).filter((img) => img.url);
   };
 
-  // Parse headline_generator output to extract headline options
+  // Parse headline_generator output to extract headline options (flexible)
   const extractHeadlineOptions = (): Array<{
     headline: string;
     subtitle?: string;
@@ -494,22 +494,56 @@ export default function StepCard({
     engagementScore?: number;
   }> => {
     if (!step.output) {
-      console.log("[DEBUG] No step.output for headline extraction");
+      console.log("[StepCard] No step.output for headline extraction");
       return [];
     }
-    try {
-      const parsed = JSON.parse(step.output);
-      console.log("[DEBUG] Parsed headline output:", { parsed, hasHeadlines: !!parsed.headlines });
-      if (parsed.headlines && Array.isArray(parsed.headlines)) {
-        console.log("[DEBUG] Found headlines array with", parsed.headlines.length, "items");
-        return parsed.headlines;
+
+    let data: any = step.output;
+    
+    // Try to parse JSON (may be wrapped multiple times)
+    for (let i = 0; i < 3; i++) {
+      if (typeof data !== 'string') break;
+      try {
+        data = JSON.parse(data);
+      } catch {
+        break;
       }
-      console.log("[DEBUG] No headlines array in parsed output, returning empty");
-      return [];
-    } catch (e) {
-      console.log("[DEBUG] Failed to parse headline output:", e);
-      return [];
     }
+
+    console.log("[StepCard] Extracted headline data type:", typeof data, "is array?", Array.isArray(data));
+
+    // Case 1: Direct array of headline objects
+    if (Array.isArray(data) && data.length > 0 && data[0]?.headline) {
+      console.log("[StepCard] Found direct array of headlines, count:", data.length);
+      return data;
+    }
+
+    // Case 2: Object with headlines array
+    if (typeof data === 'object' && data !== null && data.headlines && Array.isArray(data.headlines) && data.headlines.length > 0) {
+      console.log("[StepCard] Found headlines in .headlines property, count:", data.headlines.length);
+      return data.headlines;
+    }
+
+    // Case 3: Object with output.headlines
+    if (typeof data === 'object' && data !== null && data.output?.headlines && Array.isArray(data.output.headlines)) {
+      console.log("[StepCard] Found headlines in .output.headlines");
+      return data.output.headlines;
+    }
+
+    // Case 4: Object with result property containing headlines
+    if (typeof data === 'object' && data !== null && data.result?.headlines && Array.isArray(data.result.headlines)) {
+      console.log("[StepCard] Found headlines in .result.headlines");
+      return data.result.headlines;
+    }
+
+    // Case 5: Direct array of objects with headline field
+    if (Array.isArray(data)) {
+      console.log("[StepCard] Trying direct array even though no headline field detected");
+      return data;
+    }
+
+    console.log("[StepCard] Could not extract headlines from data. Data keys:", typeof data === 'object' && data !== null ? Object.keys(data) : 'N/A');
+    return [];
   };
 
   // Detect if previous step is html_builder
@@ -560,6 +594,20 @@ export default function StepCard({
           {/* Headline Picker (for headline_generator awaiting review) */}
           {step.agentRole === "headline_generator" && isAwaitingReview && (() => {
             const headlines = extractHeadlineOptions();
+            
+            // Debug: if no headlines, show what we got
+            if (headlines.length === 0) {
+              return (
+                <div className="p-3 rounded-lg bg-red-900/20 border border-red-700/30">
+                  <p className="text-xs text-red-300 font-semibold mb-2">⚠️ No headlines extracted</p>
+                  <p className="text-xs text-red-200 mb-2">Raw step.output:</p>
+                  <pre className="text-xs text-red-100 bg-red-950/30 p-2 rounded overflow-x-auto max-h-40">
+                    {step.output?.substring(0, 500)}
+                  </pre>
+                </div>
+              );
+            }
+            
             return (
               <div>
                 <p className="text-xs font-semibold text-istk-text mb-3">📰 Select a headline option:</p>

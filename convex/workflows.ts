@@ -252,14 +252,23 @@ export const createWorkflow = mutation({
     const nowIso = new Date().toISOString();
 
     // Find active template for this content type
-    const template = await ctx.db
+    // If multiple exist (e.g., during migration), use the most recently created one
+    const templates = await ctx.db
       .query("workflowTemplates")
       .withIndex("by_contentType", (q) => q.eq("contentType", args.contentType))
-      .first();
-
-    if (!template) {
+      .collect();
+    
+    const activeTemplates = templates.filter((t) => t.isActive !== false);
+    if (activeTemplates.length === 0) {
       throw new Error(`No active workflow template found for contentType: ${args.contentType}`);
     }
+    
+    // Sort by createdAt descending to get the newest one
+    const template = activeTemplates.sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return bTime - aTime;
+    })[0];
 
     // Get source research data for initial input
     const research = await ctx.db.get(args.sourceResearchId);

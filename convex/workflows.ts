@@ -1025,6 +1025,18 @@ export const completeStep = mutation({
 /**
  * Delete all workflow templates (cleanup for re-seeding)
  */
+export const deleteTemplateById = mutation({
+  args: {
+    templateId: v.id("workflowTemplates"),
+  },
+  handler: async (ctx, args) => {
+    const template = await ctx.db.get(args.templateId);
+    if (!template) throw new Error("Template not found");
+    await ctx.db.delete(args.templateId);
+    return { deleted: true, id: args.templateId };
+  },
+});
+
 export const deleteAllTemplates = mutation({
   args: {},
   handler: async (ctx) => {

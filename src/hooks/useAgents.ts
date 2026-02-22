@@ -36,6 +36,10 @@ export function useDeleteAgent() {
   return useMutation(api.agents.deleteAgent);
 }
 
+export function useUpdateAgentLLMConfig() {
+  return useMutation(api.agents.updateAgentLLMConfig);
+}
+
 // Subagent hooks
 export function useSubagents() {
   return useQuery(api.subagents.listSubagents);

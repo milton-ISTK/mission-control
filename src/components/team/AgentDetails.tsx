@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useTasksByAssignee } from "@/hooks/useTasks";
 import { useAgents, useSubagents, useDeleteSubagent } from "@/hooks/useAgents";
-import { useUpdateAgentStatus, useDeleteAgent, useUpdateAgent } from "@/hooks/useAgents";
+import { useUpdateAgentStatus, useDeleteAgent, useUpdateAgent, useUpdateAgentLLMConfig } from "@/hooks/useAgents";
 import Button from "@/components/common/Button";
 import Badge, { StatusBadge } from "@/components/common/Badge";
 import Modal from "@/components/common/Modal";
@@ -75,7 +75,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
     description: ((agent?.description ?? null) ?? "") as string,
     notes: ((agent?.notes ?? null) ?? "") as string,
     systemPrompt: ((agent?.systemPrompt ?? null) ?? "") as string,
-    model: ((agent?.model ?? null) ?? "") as string,
+    model: ((agent as any)?.modelId ?? ((agent as any)?.model ?? null) ?? "") as string,
     status: (agent?.status ?? "active") as "active" | "idle" | "offline",
     agentType: ((agent?.agentType ?? null) ?? "agent") as string,
     department: ((agent?.department ?? null) ?? "") as string,
@@ -93,13 +93,13 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
       description: ((agent?.description ?? null) ?? "") as string,
       notes: ((agent?.notes ?? null) ?? "") as string,
       systemPrompt: ((agent?.systemPrompt ?? null) ?? "") as string,
-      model: ((agent?.model ?? null) ?? "") as string,
+      model: ((agent as any)?.modelId ?? ((agent as any)?.model ?? null) ?? "") as string,
       status: (agent?.status ?? "active") as "active" | "idle" | "offline",
       agentType: ((agent?.agentType ?? null) ?? "agent") as string,
       department: ((agent?.department ?? null) ?? "") as string,
       parentAgentIds: ((agent?.parentAgentIds ?? null) ?? []) as any[],
     });
-  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.systemPrompt, agent?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
+  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.systemPrompt, (agent as any)?.modelId, (agent as any)?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
 
   // Fetch tasks assigned to this agent
   const assignedTasks = useTasksByAssignee(agent.name as "Gregory" | "Milton");
@@ -112,6 +112,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
 
   const updateStatus = useUpdateAgentStatus();
   const updateAgent = useUpdateAgent();
+  const updateLLMConfig = useUpdateAgentLLMConfig();
   const deleteAgent = useDeleteAgent();
 
   const status = statusConfig[agent.status];
@@ -137,6 +138,16 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
     }
     
     try {
+      // If model changed, update LLM config separately (auto-detects provider and sets modelId)
+      const agentModelId = (agent as any)?.modelId;
+      if (editForm.model && editForm.model !== agentModelId) {
+        await updateLLMConfig({
+          id: agent._id,
+          modelId: editForm.model,
+        });
+      }
+      
+      // Update all other fields
       await updateAgent({
         id: agent._id,
         name: editForm.name.trim() || undefined,
@@ -144,7 +155,6 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         description: editForm.description.trim() || undefined,
         notes: editForm.notes.trim() || undefined,
         systemPrompt: editForm.systemPrompt.trim() || undefined,
-        model: editForm.model || undefined,
         status: editForm.status as "active" | "idle" | "offline",
         agentType: editForm.agentType || undefined,
         department: editForm.department || undefined,

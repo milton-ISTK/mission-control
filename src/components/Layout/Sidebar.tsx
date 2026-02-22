@@ -26,7 +26,6 @@ const navItems = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/memories", label: "Memories", icon: Brain },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/subagents", label: "Subagents", icon: Bot },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

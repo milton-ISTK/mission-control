@@ -620,45 +620,85 @@ export default function StepCard({
             </div>
           )}
 
-          {/* Image Picker (for Image Review step) */}
+          {/* Image Review UI (redesigned list layout) */}
           {isAwaitingReview && step.name === "Image Review" && (() => {
             const images = extractImages();
             return images.length > 0 ? (
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-istk-text mb-2">Select your preferred image:</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {images.map((image, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={cn(
-                        "relative cursor-pointer rounded-lg overflow-hidden transition-all",
-                        selectedImageIndex === idx
-                          ? "ring-2 ring-istk-accent"
-                          : "ring-1 ring-zinc-700 hover:ring-istk-accent/50"
-                      )}
-                    >
-                      {/* Image */}
-                      <img
-                        src={image.imageUrl}
-                        alt={image.composition}
-                        className="w-full aspect-square object-cover"
-                      />
-                      
-                      {/* Overlay with info */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
-                        <p className="text-xs font-semibold text-istk-accent capitalize">{image.composition}</p>
-                        <p className="text-[10px] text-istk-textMuted line-clamp-2">{image.description}</p>
-                      </div>
-                      
-                      {/* Selection indicator */}
-                      {selectedImageIndex === idx && (
-                        <div className="absolute top-1 right-1 w-6 h-6 rounded-full bg-istk-accent flex items-center justify-center">
-                          <span className="text-xs font-bold text-black">✓</span>
+                <p className="text-sm font-semibold text-istk-text mb-4">
+                  🖼️ Select your preferred image for the blog hero:
+                </p>
+                <div className="space-y-2">
+                  {images.map((image, idx) => {
+                    const isSelected = selectedImageIndex === idx;
+                    const imageName = image.composition || `Image ${idx + 1}`;
+                    const imagePrompt = image.description || "";
+                    
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedImageIndex(idx)}
+                        className={cn(
+                          "w-full flex items-center gap-4 p-4 rounded-lg transition-all duration-200 text-left",
+                          isSelected
+                            ? "border-2 border-istk-accent bg-istk-accent/10 shadow-lg shadow-istk-accent/20"
+                            : "border border-zinc-700/50 bg-zinc-900/30 hover:border-istk-accent/50 hover:bg-zinc-900/50"
+                        )}
+                      >
+                        {/* Radio-style selection indicator */}
+                        <div className="flex-shrink-0">
+                          <div
+                            className={cn(
+                              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                              isSelected
+                                ? "border-istk-accent bg-istk-accent"
+                                : "border-zinc-600 bg-zinc-800"
+                            )}
+                          >
+                            {isSelected && (
+                              <span className="text-xs font-bold text-black">✓</span>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Image name and prompt preview */}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={cn(
+                              "font-medium text-sm transition-colors",
+                              isSelected ? "text-istk-accent" : "text-istk-text"
+                            )}
+                          >
+                            {imageName}
+                          </p>
+                          {imagePrompt && (
+                            <p className="text-xs text-istk-textMuted line-clamp-1 mt-1">
+                              {imagePrompt.substring(0, 120)}
+                              {imagePrompt.length > 120 ? "..." : ""}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* View button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (image.imageUrl) {
+                              window.open(image.imageUrl, "_blank");
+                            }
+                          }}
+                          className={cn(
+                            "px-3 py-2 text-xs font-medium rounded transition-colors flex-shrink-0",
+                            isSelected
+                              ? "bg-istk-accent/20 text-istk-accent hover:bg-istk-accent/30"
+                              : "bg-zinc-700 text-istk-textMuted hover:bg-zinc-600 hover:text-istk-text"
+                          )}
+                        >
+                          👁 View
+                        </button>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : null;
@@ -681,9 +721,18 @@ export default function StepCard({
             {step.reviewedAt && <span>Reviewed: {new Date(step.reviewedAt).toLocaleTimeString()}</span>}
           </div>
 
+          {/* Helper text for image review */}
+          {isAwaitingReview && step.name === "Image Review" && selectedImageIndex === null && (
+            <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-700/30 mt-3">
+              <p className="text-xs text-amber-300">
+                👆 Select an image above to enable approval
+              </p>
+            </div>
+          )}
+
           {/* Action Buttons (for awaiting_review) */}
           {isAwaitingReview && (
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-4">
               <button
                 onClick={onReject}
                 disabled={isSubmitting}
@@ -693,8 +742,16 @@ export default function StepCard({
               </button>
               <button
                 onClick={onApprove}
-                disabled={isSubmitting}
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 transition-all disabled:opacity-50"
+                disabled={
+                  isSubmitting ||
+                  (step.name === "Image Review" && selectedImageIndex === null)
+                }
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
+                  step.name === "Image Review" && selectedImageIndex === null
+                    ? "bg-zinc-700/50 text-zinc-600 border border-zinc-700 cursor-not-allowed"
+                    : "bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 cursor-pointer"
+                )}
               >
                 {isSubmitting ? "Processing..." : "✅ Approve & Continue"}
               </button>

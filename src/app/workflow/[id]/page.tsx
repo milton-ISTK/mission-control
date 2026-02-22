@@ -101,15 +101,21 @@ export default function WorkflowDetailPage() {
   const handleConfirmApprove = async () => {
     if (!pendingStepId) return;
 
+    console.log("[DEBUG APPROVE] pendingStepId:", pendingStepId, "selectedHeadlineIndex:", selectedHeadlineIndex, "selectedImageIndex:", selectedImageIndex);
+
     setIsProcessing(true);
     try {
       // Determine which selection to pass: headline or image
       let selectedOption: number | undefined;
       if (selectedHeadlineIndex !== null) {
+        console.log("[DEBUG APPROVE] Using headline index:", selectedHeadlineIndex);
         selectedOption = selectedHeadlineIndex;
       } else if (selectedImageIndex !== null) {
+        console.log("[DEBUG APPROVE] Using image index:", selectedImageIndex);
         selectedOption = selectedImageIndex;
       }
+
+      console.log("[DEBUG APPROVE] Final selectedOption:", selectedOption);
 
       await approveStep({
         stepId: pendingStepId as any,

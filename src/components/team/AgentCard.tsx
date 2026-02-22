@@ -12,6 +12,8 @@ interface Agent {
   description?: string;
   notes?: string;
   model?: string;
+  modelId?: string;
+  provider?: string;
   avatar?: string;
   status: "active" | "idle" | "offline";
   lastActive?: string;
@@ -117,10 +119,15 @@ export default function AgentCard({ agent, isSelected, onClick, allAgents = [] }
           <span className={cn("status-dot", status.dot)} />
           <span className="text-[11px] text-istk-textMuted">{status.label}</span>
         </div>
-        {agent.model && (
+        {(agent.modelId || agent.model) && (
           <div className="flex items-center gap-1 text-[10px] text-istk-textDim">
             <Cpu className="w-3 h-3" />
-            <span className="truncate max-w-[100px]">{agent.model}</span>
+            <span className="truncate max-w-[120px]" title={agent.modelId || agent.model}>
+              {agent.modelId || agent.model}
+            </span>
+            {agent.provider && (
+              <span className="text-[9px] text-istk-textMuted ml-1">({agent.provider})</span>
+            )}
           </div>
         )}
       </div>

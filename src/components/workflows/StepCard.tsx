@@ -214,51 +214,72 @@ export default function StepCard({
     }
     if (!source) return "";
 
+    // DEBUG: Log raw source
+    console.log("[StepCard extractBlogContent] Raw source length:", source.length);
+    console.log("[StepCard extractBlogContent] First 300 chars:", source.substring(0, 300));
+
     // Keep parsing until we get to actual content (handle double-wrapped JSON)
     let data = source;
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
+      console.log(`[StepCard] Parse iteration ${i}, data type:`, typeof data, data.length || "N/A");
       try {
         const parsed = JSON.parse(data);
         if (typeof parsed === "string") {
+          console.log(`[StepCard] Iteration ${i}: Found JSON string, unwrapping...`);
           data = parsed; // It was a JSON-encoded string, unwrap it
           continue;
         }
+        
         // It's an object — look for content fields
-        // Check direct fields, nested output/result, and daemon's assemble_step_input keys
+        // Check ALL possible nested paths for blog content
         let value =
+          // Direct fields
           parsed.revisedContent ||
           parsed.content ||
+          parsed.blogContent ||
+          parsed.text ||
+          // Nested under "output"
           parsed.output?.revisedContent ||
           parsed.output?.content ||
-          parsed.output?.result?.revisedContent ||
-          parsed.output?.result?.content ||
+          parsed.output?.blogContent ||
+          // Nested under "result"
           parsed.result?.revisedContent ||
           parsed.result?.content ||
+          parsed.result?.blogContent ||
+          parsed.result?.output?.revisedContent ||
+          parsed.result?.output?.content ||
+          // Humanizer output
           parsed.humanizedOutput?.revisedContent ||
           parsed.humanizedOutput?.content ||
           parsed.humanizedOutput?.result?.content ||
           parsed.humanizedOutput?.result?.revisedContent ||
+          // Blog writer output
           parsed.blogOutput?.content ||
           parsed.blogOutput?.result?.content ||
+          parsed.blogOutput?.revisedContent ||
+          // Sentiment/News output
           parsed.sentimentOutput?.content ||
           parsed.sentimentOutput?.result?.content ||
-          parsed.text ||
+          // Fallback: JSON stringify
           JSON.stringify(parsed);
+
+        console.log(`[StepCard] Found content field at iteration ${i}, length: ${typeof value === 'string' ? value.length : 'N/A'}`);
 
         // If the value is itself a JSON string, parse it again
         value = tryParseJsonString(value);
 
         data = value;
         break;
-      } catch {
+      } catch (e) {
+        console.log(`[StepCard] Iteration ${i}: Not valid JSON, stopping parse loop. Error:`, e instanceof Error ? e.message : String(e));
         break; // Not JSON, we have the raw content
       }
     }
 
     // Clean escape sequences and return
-    return cleanEscapes(
-      typeof data === "string" ? data : JSON.stringify(data, null, 2)
-    );
+    const finalContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    console.log("[StepCard] Final extracted content length:", finalContent.length);
+    return cleanEscapes(finalContent);
   };
 
   // Extract HTML content from a step's output

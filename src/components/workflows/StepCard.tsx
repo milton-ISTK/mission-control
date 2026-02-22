@@ -31,6 +31,8 @@ interface StepCardProps {
   onFeedbackChange?: (text: string) => void;
   selectedHeadlineIndex?: number | null;
   onHeadlineSelect?: (index: number) => void;
+  selectedImageIndex?: number | null;
+  onImageSelect?: (index: number) => void;
   onSaveEditedContent?: (stepId: string, editedContent: string) => Promise<void>;
   isSubmitting?: boolean;
 }
@@ -158,6 +160,8 @@ export default function StepCard({
   onFeedbackChange,
   selectedHeadlineIndex = null,
   onHeadlineSelect,
+  selectedImageIndex: externalSelectedImageIndex = null,
+  onImageSelect,
   onSaveEditedContent,
   isSubmitting = false,
 }: StepCardProps) {
@@ -165,7 +169,11 @@ export default function StepCard({
   const [showLightbox, setShowLightbox] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [internalSelectedImageIndex, setInternalSelectedImageIndex] = useState<number | null>(null);
+  
+  // Use external selection if provided (from parent), otherwise use internal state
+  const selectedImageIndex = externalSelectedImageIndex ?? internalSelectedImageIndex;
+  const setSelectedImageIndex = onImageSelect ?? setInternalSelectedImageIndex;
   const config = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.pending;
 
   const duration = formatDuration(step.startedAt, step.completedAt);

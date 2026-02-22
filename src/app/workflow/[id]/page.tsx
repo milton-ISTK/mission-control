@@ -39,6 +39,7 @@ export default function WorkflowDetailPage() {
 
   const [feedbackText, setFeedbackText] = useState("");
   const [selectedHeadlineIndex, setSelectedHeadlineIndex] = useState<number | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [pendingStepId, setPendingStepId] = useState<string | null>(null);
@@ -102,15 +103,24 @@ export default function WorkflowDetailPage() {
 
     setIsProcessing(true);
     try {
+      // Determine which selection to pass: headline or image
+      let selectedOption: number | undefined;
+      if (selectedHeadlineIndex !== null) {
+        selectedOption = selectedHeadlineIndex;
+      } else if (selectedImageIndex !== null) {
+        selectedOption = selectedImageIndex;
+      }
+
       await approveStep({
         stepId: pendingStepId as any,
         reviewNotes: feedbackText || undefined,
-        selectedOption: selectedHeadlineIndex !== null ? selectedHeadlineIndex : undefined,
+        selectedOption,
       });
       setApproveDialogOpen(false);
       setPendingStepId(null);
       setFeedbackText("");
       setSelectedHeadlineIndex(null);
+      setSelectedImageIndex(null);
     } catch (err) {
       console.error("Error approving step:", err);
       alert("Failed to approve step");
@@ -226,6 +236,8 @@ export default function WorkflowDetailPage() {
               onFeedbackChange={setFeedbackText}
               selectedHeadlineIndex={pendingStepId === step._id ? selectedHeadlineIndex : null}
               onHeadlineSelect={pendingStepId === step._id ? setSelectedHeadlineIndex : undefined}
+              selectedImageIndex={pendingStepId === step._id ? selectedImageIndex : null}
+              onImageSelect={pendingStepId === step._id ? setSelectedImageIndex : undefined}
               onSaveEditedContent={handleSaveEditedContent}
               isSubmitting={isProcessing && pendingStepId === step._id}
             />

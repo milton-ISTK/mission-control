@@ -198,6 +198,34 @@ export const rejectResearch = mutation({
   },
 });
 
+/** Duplicate research with different model (for side-by-side comparison) */
+export const duplicateResearchWithDifferentModel = mutation({
+  args: {
+    id: v.id("contentResearch"),
+    llmModel: v.string(),
+    llmProvider: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Fetch original research to get the topic
+    const original = await ctx.db.get(args.id);
+    if (!original) {
+      throw new Error("Original research not found");
+    }
+
+    const now = new Date().toISOString();
+    // Create new research entry with same topic but different model
+    return await ctx.db.insert("contentResearch", {
+      topic: original.topic,
+      status: "pending",
+      requestedBy: original.requestedBy ?? "Gregory",
+      llmModel: args.llmModel,
+      llmProvider: args.llmProvider,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 /** Submit generated content */
 export const submitContent = mutation({
   args: {

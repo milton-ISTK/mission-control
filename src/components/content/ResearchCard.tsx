@@ -29,11 +29,18 @@ import {
   Lightbulb,
   RotateCcw,
   Ban,
+  Brain,
 } from "lucide-react";
 import Badge from "@/components/common/Badge";
 import TypewriterEffect from "@/components/content/TypewriterEffect";
 import CreateTaskModal from "@/components/content/CreateTaskModal";
 import { cn, formatRelative } from "@/lib/utils";
+import {
+  LLM_MODELS,
+  DEFAULT_MODEL,
+  getModelGroups,
+  findModel,
+} from "@/lib/llm-models";
 
 type Research = Doc<"contentResearch">;
 
@@ -101,6 +108,9 @@ export default function ResearchCard({ research }: { research: Research }) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [showContent, setShowContent] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showModelDialog, setShowModelDialog] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(research.llmModel || DEFAULT_MODEL);
+  const [isRerunning, setIsRerunning] = useState(false);
 
   const approveResearch = useMutation(api.contentPipeline.approveResearch);
   const rejectResearch = useMutation(api.contentPipeline.rejectResearch);
@@ -108,6 +118,12 @@ export default function ResearchCard({ research }: { research: Research }) {
   const declineResearch = useMutation(api.contentPipeline.declineResearch);
   const retryResearch = useMutation(api.contentPipeline.retryResearch);
   const deleteResearch = useMutation(api.contentPipeline.deleteResearch);
+  const duplicateResearchWithDifferentModel = useMutation(
+    api.contentPipeline.duplicateResearchWithDifferentModel
+  );
+
+  const groups = getModelGroups();
+  const selectedModelObj = findModel(selectedModel);
 
   const sentiment = research.sentiment
     ? sentimentConfig[research.sentiment as keyof typeof sentimentConfig]
@@ -144,6 +160,25 @@ export default function ResearchCard({ research }: { research: Research }) {
       console.error("Failed to reject research:", err);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleTryDifferentModel = async () => {
+    if (!selectedModelObj) return;
+    setIsRerunning(true);
+    try {
+      await duplicateResearchWithDifferentModel({
+        id: research._id,
+        llmModel: selectedModel,
+        llmProvider: selectedModelObj.provider,
+      });
+      setShowModelDialog(false);
+      // Reset selected model to current for next use
+      setSelectedModel(research.llmModel || DEFAULT_MODEL);
+    } catch (err) {
+      console.error("Failed to duplicate research with different model:", err);
+    } finally {
+      setIsRerunning(false);
     }
   };
 
@@ -585,17 +620,17 @@ export default function ResearchCard({ research }: { research: Research }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleReject();
+                        setShowModelDialog(true);
                       }}
-                      disabled={actionLoading !== null}
+                      disabled={actionLoading !== null || isRerunning}
                       className="glass-button flex items-center gap-2 text-sm text-istk-textMuted hover:text-istk-warning disabled:opacity-50"
                     >
-                      {actionLoading === "reject" ? (
+                      {isRerunning ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <RotateCcw className="w-4 h-4" />
                       )}
-                      Try Different Angle
+                      Try Different Model
                     </button>
                     <button
                       onClick={(e) => {
@@ -875,6 +910,118 @@ export default function ResearchCard({ research }: { research: Research }) {
         selectedAngle={selectedSuggestedAngle}
         researchId={research._id}
       />
+
+      {/* Model Selection Dialog */}
+      {showModelDialog && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isRerunning) {
+              setShowModelDialog(false);
+            }
+          }}
+        >
+          <div
+            className="glass-panel max-w-md w-full max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4 sticky top-0 bg-gradient-to-b from-[#0a0a0e] via-[#0a0a0e] to-transparent pb-4">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{
+                  background: "rgba(0,217,255,0.08)",
+                  border: "1px solid rgba(0,217,255,0.18)",
+                }}
+              >
+                <Brain className="w-5 h-5 text-istk-cyan" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-istk-text">
+                  Re-run with Different Model
+                </h3>
+                <p className="text-xs text-istk-textDim">
+                  Keep the original, compare results side-by-side
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              {/* Model Selector */}
+              <div className="relative">
+                <label className="text-xs font-semibold text-istk-textDim uppercase tracking-wider mb-2 block">
+                  Select LLM Model
+                </label>
+                <div className="absolute left-3 top-[42px] pointer-events-none">
+                  <Brain className="w-4 h-4 text-istk-cyan opacity-60" />
+                </div>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={isRerunning}
+                  className="glass-input pl-9 pr-8 text-sm appearance-none cursor-pointer w-full"
+                >
+                  {groups.map((group) => (
+                    <optgroup key={group} label={group}>
+                      {LLM_MODELS.filter((m) => m.group === group).map(
+                        (m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.displayName}
+                            {m.id === research.llmModel ? " (current)" : ""}
+                          </option>
+                        )
+                      )}
+                    </optgroup>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-[50px] pointer-events-none">
+                  <ChevronDown className="w-4 h-4 text-istk-textDim" />
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div
+                className="px-4 py-3 rounded-lg text-sm"
+                style={{
+                  background: "rgba(0,217,255,0.04)",
+                  border: "1px solid rgba(0,217,255,0.12)",
+                }}
+              >
+                <p className="text-istk-textMuted">
+                  A new research entry will be created with your topic "{research.topic}" using the selected model. The original research will remain unchanged.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleTryDifferentModel}
+                  disabled={isRerunning || selectedModel === research.llmModel}
+                  className="glass-button-accent flex items-center gap-2 text-sm flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isRerunning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Re-run Research
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowModelDialog(false)}
+                  disabled={isRerunning}
+                  className="glass-button flex items-center gap-2 text-sm px-4 disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

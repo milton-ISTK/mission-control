@@ -1160,4 +1160,123 @@ http.route({
   }),
 });
 
+// ---- POST /api/admin/update-blog-template ----
+// Update Blog Post workflow template with new 10-step structure
+http.route({
+  path: "/api/admin/update-blog-template",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const newSteps = [
+        {
+          stepNumber: 1,
+          name: "Sentiment Scraping",
+          description: "Scrape social media for sentiment on the selected angle",
+          agentRole: "sentiment_scraper",
+          requiresApproval: false,
+          timeoutMinutes: 5,
+          parallelWith: [2],
+        },
+        {
+          stepNumber: 2,
+          name: "News & Knowledge Scraping",
+          description: "Search for existing articles and compile knowledge brief",
+          agentRole: "news_scraper",
+          requiresApproval: false,
+          timeoutMinutes: 5,
+          parallelWith: [1],
+        },
+        {
+          stepNumber: 3,
+          name: "Headline Generation",
+          description: "Generate 5 headline + subtitle options",
+          agentRole: "headline_generator",
+          requiresApproval: true,
+          approvalPrompt: "Pick your favourite headline and copy angle from the 5 options.",
+          timeoutMinutes: 5,
+        },
+        {
+          stepNumber: 4,
+          name: "Blog Writing",
+          description: "Write full blog post draft using research, sentiment, news, and selected headline",
+          agentRole: "blog_writer",
+          requiresApproval: false,
+          timeoutMinutes: 15,
+        },
+        {
+          stepNumber: 5,
+          name: "Content Review",
+          description: "Review and edit the blog post draft before image generation",
+          agentRole: "none",
+          requiresApproval: true,
+          approvalPrompt: "Review the blog post draft. You can approve, reject with feedback, or edit directly. Images will be generated AFTER you approve this.",
+          timeoutMinutes: 0,
+        },
+        {
+          stepNumber: 6,
+          name: "Image Generation",
+          description: "Generate 3 hero images based on approved blog content",
+          agentRole: "image_maker",
+          requiresApproval: false,
+          timeoutMinutes: 10,
+        },
+        {
+          stepNumber: 7,
+          name: "Image Review",
+          description: "Select your preferred hero image",
+          agentRole: "none",
+          requiresApproval: true,
+          approvalPrompt: "Select your preferred image from the 3 options",
+          timeoutMinutes: 0,
+        },
+        {
+          stepNumber: 8,
+          name: "HTML Page Build",
+          description: "Build styled HTML blog page from approved content and selected image",
+          agentRole: "html_builder",
+          requiresApproval: false,
+          timeoutMinutes: 10,
+        },
+        {
+          stepNumber: 9,
+          name: "Design Review",
+          description: "Review the final HTML page design",
+          agentRole: "none",
+          requiresApproval: true,
+          approvalPrompt: "Review the HTML blog page. Preview it and approve for publishing or reject for changes.",
+          timeoutMinutes: 0,
+        },
+        {
+          stepNumber: 10,
+          name: "Publish",
+          description: "Deploy the blog page to hosting",
+          agentRole: "html_builder",
+          requiresApproval: false,
+          timeoutMinutes: 5,
+        },
+      ];
+
+      const result = await ctx.runMutation(api.workflows.updateTemplateSteps, {
+        templateName: "Blog Post",
+        steps: newSteps as any,
+      });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          message: "Blog Post template updated to 10-step structure with Content Review",
+          result,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;

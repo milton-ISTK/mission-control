@@ -1162,6 +1162,40 @@ export const deleteAllTemplates = mutation({
 });
 
 /**
+ * Update a workflow template's steps by name
+ */
+export const updateTemplateSteps = mutation({
+  args: {
+    templateName: v.string(),
+    steps: v.array(v.object({
+      stepNumber: v.number(),
+      name: v.string(),
+      description: v.optional(v.string()),
+      agentRole: v.string(),
+      requiresApproval: v.boolean(),
+      approvalPrompt: v.optional(v.string()),
+      timeoutMinutes: v.number(),
+      parallelWith: v.optional(v.array(v.number())),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const template = await ctx.db
+      .query("workflowTemplates")
+      .filter((q) => q.eq(q.field("name"), args.templateName))
+      .first();
+
+    if (!template) throw new Error(`Template "${args.templateName}" not found`);
+
+    await ctx.db.patch(template._id, {
+      steps: args.steps,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { updated: true, templateId: template._id, stepCount: args.steps.length };
+  },
+});
+
+/**
  * Delete a workflow and all its associated steps and linked task
  */
 export const deleteWorkflow = mutation({

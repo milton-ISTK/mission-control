@@ -1049,4 +1049,63 @@ http.route({
   }),
 });
 
+// ---- GET /api/admin/agent-llm-config ----
+// Diagnostic: List all agents with their modelId and provider
+http.route({
+  path: "/api/admin/agent-llm-config",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    try {
+      const agents = await ctx.runQuery(api.agents.getAllAgentsWithLLMConfig, {});
+      const issues = agents.filter(
+        (a) => a.provider === "NOT_SET" || a.modelId === "NOT_SET"
+      );
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          total: agents.length,
+          configured: agents.length - issues.length,
+          problemCount: issues.length,
+          agents,
+          problemAgents: issues,
+          note: `${issues.length} agents missing provider/modelId config. Run POST /api/admin/seed-agent-hierarchy to fix.`,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/admin/seed-agent-hierarchy ----
+// Re-seed agent hierarchy with correct modelId and provider for each agent
+http.route({
+  path: "/api/admin/seed-agent-hierarchy",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const result = await ctx.runMutation(api.agents.seedAgentHierarchy, {});
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          message: "Agent hierarchy re-seeded with correct LLM config",
+          result,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;

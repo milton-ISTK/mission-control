@@ -198,6 +198,7 @@ export const updateAgent = mutation({
     id: v.id("agents"),
     name: v.optional(v.string()),
     role: v.optional(v.string()),
+    avatar: v.optional(v.string()),                 // Emoji icon for agent
     description: v.optional(v.string()),
     notes: v.optional(v.string()),
     systemPrompt: v.optional(v.string()),

@@ -38,6 +38,22 @@ interface StepCardProps {
   isSubmitting?: boolean;
 }
 
+// Default emoji icons for agents (maps agentRole to emoji)
+const AGENT_EMOJIS: Record<string, string> = {
+  research_enhancer: "🔬",
+  sentiment_scraper: "📊",
+  news_scraper: "📰",
+  blog_writer: "✍️",
+  humanizer: "🧑",
+  html_builder: "🏗️",
+  headline_generator: "💡",
+  image_maker: "🎨",
+  copywriter: "📝",
+  social_publisher: "📢",
+  publisher: "📢",
+  "none": "✓️", // Review gates
+};
+
 const statusConfig = {
   pending: {
     icon: "○",
@@ -453,7 +469,11 @@ export default function StepCard({
               </span>
             </div>
             <p className="text-xs text-istk-textMuted">
-              Agent: <span className="font-mono text-istk-accent">{step.agentRole}</span>
+              Agent: 
+              <span className="font-mono text-istk-accent ml-1">
+                {AGENT_EMOJIS[step.agentRole] && <span className="mr-1">{AGENT_EMOJIS[step.agentRole]}</span>}
+                {step.agentRole}
+              </span>
               {duration && <span className="ml-2">• {duration}</span>}
             </p>
           </div>

@@ -22,6 +22,7 @@ import Button from "@/components/common/Button";
 import Badge, { StatusBadge } from "@/components/common/Badge";
 import Modal from "@/components/common/Modal";
 import { Input, Select, Textarea } from "@/components/common/Input";
+import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { cn, formatRelative, formatDate } from "@/lib/utils";
 import { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -72,6 +73,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
   const [editForm, setEditForm] = useState({
     name: (agent?.name ?? "") as string,
     role: (agent?.role ?? "") as string,
+    avatar: ((agent?.avatar ?? null) ?? "") as string,
     description: ((agent?.description ?? null) ?? "") as string,
     notes: ((agent?.notes ?? null) ?? "") as string,
     systemPrompt: ((agent?.systemPrompt ?? null) ?? "") as string,
@@ -90,6 +92,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
     setEditForm({
       name: (agent?.name ?? "") as string,
       role: (agent?.role ?? "") as string,
+      avatar: ((agent?.avatar ?? null) ?? "") as string,
       description: ((agent?.description ?? null) ?? "") as string,
       notes: ((agent?.notes ?? null) ?? "") as string,
       systemPrompt: ((agent?.systemPrompt ?? null) ?? "") as string,
@@ -99,7 +102,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
       department: ((agent?.department ?? null) ?? "") as string,
       parentAgentIds: ((agent?.parentAgentIds ?? null) ?? []) as any[],
     });
-  }, [agent?._id, agent?.name, agent?.role, agent?.description, agent?.notes, agent?.systemPrompt, (agent as any)?.modelId, (agent as any)?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
+  }, [agent?._id, agent?.name, agent?.role, agent?.avatar, agent?.description, agent?.notes, agent?.systemPrompt, (agent as any)?.modelId, (agent as any)?.model, agent?.status, agent?.agentType, agent?.department, agent?.parentAgentIds]);
 
   // Fetch tasks assigned to this agent
   const assignedTasks = useTasksByAssignee(agent.name as "Gregory" | "Milton");
@@ -152,6 +155,7 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
         id: agent._id,
         name: editForm.name.trim() || undefined,
         role: editForm.role.trim() || undefined,
+        avatar: editForm.avatar || undefined,
         description: editForm.description.trim() || undefined,
         notes: editForm.notes.trim() || undefined,
         systemPrompt: editForm.systemPrompt.trim() || undefined,
@@ -424,12 +428,25 @@ export default function AgentDetails({ agent, onClose }: AgentDetailsProps) {
               <p className="text-sm text-red-400">{saveError}</p>
             </div>
           )}
-          {/* Name */}
-          <Input
-            label="Name"
-            value={editForm.name}
-            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-          />
+          {/* Icon + Name */}
+          <div className="flex items-end gap-4">
+            <div>
+              <label className="block text-sm font-medium text-istk-text mb-2">
+                Icon
+              </label>
+              <EmojiPicker
+                value={editForm.avatar}
+                onChange={(emoji) => setEditForm({ ...editForm, avatar: emoji })}
+              />
+            </div>
+            <div className="flex-1">
+              <Input
+                label="Name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+          </div>
 
           {/* Role / Title */}
           <Input

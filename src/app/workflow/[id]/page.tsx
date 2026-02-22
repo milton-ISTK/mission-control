@@ -50,6 +50,7 @@ export default function WorkflowDetailPage() {
 
   const approveStep = useMutation(api.workflows.approveStepFromUI);
   const rejectStep = useMutation(api.workflows.rejectStepFromUI);
+  const updateStepOutput = useMutation(api.workflows.updateStepOutput);
 
   if (workflow === undefined || steps === undefined || templates === undefined) {
     return (
@@ -138,6 +139,20 @@ export default function WorkflowDetailPage() {
     }
   };
 
+  const handleSaveEditedContent = async (stepId: string, editedContent: string) => {
+    try {
+      // Save the edited content to the step output
+      await updateStepOutput({
+        stepId: stepId as any,
+        output: editedContent,
+      });
+      // Content is saved, lightbox will close and trigger approve in StepCard
+    } catch (err) {
+      console.error("Error saving edited content:", err);
+      throw err; // Re-throw so StepCard can handle the error
+    }
+  };
+
   // Sort steps by stepNumber for display
   const sortedSteps = [...steps].sort((a, b) => a.stepNumber - b.stepNumber);
 
@@ -211,6 +226,7 @@ export default function WorkflowDetailPage() {
               onFeedbackChange={setFeedbackText}
               selectedHeadlineIndex={pendingStepId === step._id ? selectedHeadlineIndex : null}
               onHeadlineSelect={pendingStepId === step._id ? setSelectedHeadlineIndex : undefined}
+              onSaveEditedContent={handleSaveEditedContent}
               isSubmitting={isProcessing && pendingStepId === step._id}
             />
           ))

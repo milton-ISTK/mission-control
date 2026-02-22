@@ -10,8 +10,10 @@ interface ContentLightboxProps {
   onClose: () => void;
   title: string;
   content: string; // HTML or plain text
-  mode: "html" | "plain"; // How to render content
+  mode: "html" | "plain" | "edit"; // How to render content
   children?: React.ReactNode; // Slot for action buttons (e.g., Approve/Reject)
+  onSave?: (editedContent: string) => Promise<void>; // For edit mode
+  isSaving?: boolean; // Loading state for save button
 }
 
 export default function ContentLightbox({
@@ -21,12 +23,20 @@ export default function ContentLightbox({
   content,
   mode,
   children,
+  onSave,
+  isSaving = false,
 }: ContentLightboxProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [editedContent, setEditedContent] = useState(content);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Update editedContent when content prop changes
+  useEffect(() => {
+    setEditedContent(content);
+  }, [content]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -69,7 +79,14 @@ export default function ContentLightbox({
         {/* Content (scrollable) */}
         <div className="flex-1 overflow-y-auto px-12 py-8 bg-white">
           <div className="max-w-2xl mx-auto">
-            {mode === "html" ? (
+            {mode === "edit" ? (
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full h-full min-h-[500px] p-4 border border-zinc-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-istk-accent resize-none"
+                placeholder="Edit your content here..."
+              />
+            ) : mode === "html" ? (
               <ReactMarkdown
                 className="prose prose-sm max-w-none"
                 components={{
@@ -156,9 +173,28 @@ export default function ContentLightbox({
         </div>
 
         {/* Footer (sticky at bottom with action buttons) */}
-        {children && (
+        {(children || mode === "edit") && (
           <div className="sticky bottom-0 bg-white px-8 py-4 border-t border-zinc-200 flex items-center justify-end gap-3">
-            {children}
+            {mode === "edit" ? (
+              <>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-200 text-zinc-800 hover:bg-zinc-300 transition-all disabled:opacity-50"
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onSave?.(editedContent)}
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-istk-accent text-white hover:bg-orange-600 transition-all disabled:opacity-50"
+                >
+                  {isSaving ? "Saving..." : "💾 Save & Approve"}
+                </button>
+              </>
+            ) : (
+              children
+            )}
           </div>
         )}
       </div>

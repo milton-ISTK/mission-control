@@ -31,6 +31,7 @@ interface StepCardProps {
   onFeedbackChange?: (text: string) => void;
   selectedHeadlineIndex?: number | null;
   onHeadlineSelect?: (index: number) => void;
+  onSaveEditedContent?: (stepId: string, editedContent: string) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -157,10 +158,13 @@ export default function StepCard({
   onFeedbackChange,
   selectedHeadlineIndex = null,
   onHeadlineSelect,
+  onSaveEditedContent,
   isSubmitting = false,
 }: StepCardProps) {
   const [isExpanded, setIsExpanded] = useState(step.status === "awaiting_review" || step.status === "agent_working");
   const [showLightbox, setShowLightbox] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const config = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.pending;
 
   const duration = formatDuration(step.startedAt, step.completedAt);
@@ -334,6 +338,23 @@ export default function StepCard({
     });
   };
 
+  const handleSaveEditedContent = async (editedContent: string) => {
+    if (!onSaveEditedContent) return;
+    setIsSaving(true);
+    try {
+      await onSaveEditedContent(step._id, editedContent);
+      setEditMode(false);
+      setShowLightbox(false);
+      // Auto-approve after saving
+      onApprove?.();
+    } catch (err) {
+      console.error("Failed to save edited content:", err);
+      alert("Failed to save edited content");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Parse headline_generator output to extract headline options
   const extractHeadlineOptions = (): Array<{
     headline: string;
@@ -491,12 +512,28 @@ export default function StepCard({
                     🌐 Preview HTML Page
                   </button>
                 ) : isBlogContentStep ? (
-                  <button
-                    onClick={() => setShowLightbox(true)}
-                    className="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-600/40 hover:bg-amber-600/30 transition-all"
-                  >
-                    📖 Read Content
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditMode(false);
+                        setShowLightbox(true);
+                      }}
+                      className="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-600/40 hover:bg-amber-600/30 transition-all"
+                    >
+                      📖 Read Content
+                    </button>
+                    {previousStepIsHtmlBuilder === false && step.stepNumber > 1 && (
+                      <button
+                        onClick={() => {
+                          setEditMode(true);
+                          setShowLightbox(true);
+                        }}
+                        className="text-xs px-2 py-1 rounded bg-orange-600/20 text-orange-300 border border-orange-600/40 hover:bg-orange-600/30 transition-all"
+                      >
+                        ✏️ Edit Content
+                      </button>
+                    )}
+                  </div>
                 ) : null}
               </div>
               <div className="text-xs text-amber-100 max-h-60 overflow-y-auto">{renderContent(step.input, step.agentRole, true)}</div>
@@ -588,9 +625,11 @@ export default function StepCard({
       <ContentLightbox
         isOpen={showLightbox}
         onClose={() => setShowLightbox(false)}
-        title={isBlogContentStep ? "📖 Blog Content" : "Content"}
+        title={editMode ? "✏️ Edit Blog Content" : isBlogContentStep ? "📖 Blog Content" : "Content"}
         content={isBlogContentStep ? extractBlogContent() : ""}
-        mode="html"
+        mode={editMode ? "edit" : "html"}
+        onSave={editMode ? handleSaveEditedContent : undefined}
+        isSaving={isSaving}
         children={
           isAwaitingReview ? (
             <div className="flex gap-2 w-full">

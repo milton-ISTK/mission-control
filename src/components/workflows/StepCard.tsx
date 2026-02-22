@@ -391,14 +391,21 @@ export default function StepCard({
     style?: string;
     engagementScore?: number;
   }> => {
-    if (!step.output) return [];
+    if (!step.output) {
+      console.log("[DEBUG] No step.output for headline extraction");
+      return [];
+    }
     try {
       const parsed = JSON.parse(step.output);
+      console.log("[DEBUG] Parsed headline output:", { parsed, hasHeadlines: !!parsed.headlines });
       if (parsed.headlines && Array.isArray(parsed.headlines)) {
+        console.log("[DEBUG] Found headlines array with", parsed.headlines.length, "items");
         return parsed.headlines;
       }
+      console.log("[DEBUG] No headlines array in parsed output, returning empty");
       return [];
-    } catch {
+    } catch (e) {
+      console.log("[DEBUG] Failed to parse headline output:", e);
       return [];
     }
   };
@@ -454,7 +461,10 @@ export default function StepCard({
                   {headlines.map((option, idx) => (
                     <button
                       key={idx}
-                      onClick={() => onHeadlineSelect?.(idx)}
+                      onClick={() => {
+                        console.log("[DEBUG] Headline clicked - index:", idx, "option:", option);
+                        onHeadlineSelect?.(idx);
+                      }}
                       className={cn(
                         "p-4 rounded-lg text-left transition-all border-2",
                         selectedHeadlineIndex === idx

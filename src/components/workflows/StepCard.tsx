@@ -524,19 +524,25 @@ export default function StepCard({
       return data.headlines;
     }
 
-    // Case 3: Object with output.headlines
+    // Case 3: Object with metadata.headlines
+    if (typeof data === 'object' && data !== null && data.metadata?.headlines && Array.isArray(data.metadata.headlines) && data.metadata.headlines.length > 0) {
+      console.log("[StepCard] Found headlines in .metadata.headlines, count:", data.metadata.headlines.length);
+      return data.metadata.headlines;
+    }
+
+    // Case 4: Object with output.headlines
     if (typeof data === 'object' && data !== null && data.output?.headlines && Array.isArray(data.output.headlines)) {
       console.log("[StepCard] Found headlines in .output.headlines");
       return data.output.headlines;
     }
 
-    // Case 4: Object with result property containing headlines
+    // Case 5: Object with result property containing headlines
     if (typeof data === 'object' && data !== null && data.result?.headlines && Array.isArray(data.result.headlines)) {
       console.log("[StepCard] Found headlines in .result.headlines");
       return data.result.headlines;
     }
 
-    // Case 5: Direct array of objects with headline field
+    // Case 6: Direct array of objects with headline field
     if (Array.isArray(data)) {
       console.log("[StepCard] Trying direct array even though no headline field detected");
       return data;

@@ -435,6 +435,56 @@ export default function StepCard({
     }
   };
 
+  // Check if this is an image review step (case-insensitive)
+  const isImageReview = step.name?.toLowerCase().includes('image review');
+
+  // Parse images from step data with flexible field detection
+  const extractImageReviewImages = (): Array<{ name: string; prompt: string; url: string }> => {
+    let images: Array<any> = [];
+    
+    // Try each field in order: output, input
+    for (const field of [step.output, step.input]) {
+      if (!field || typeof field !== 'string') continue;
+      
+      try {
+        const parsed = JSON.parse(field);
+        
+        // Direct array of image objects
+        if (Array.isArray(parsed) && parsed[0]?.url) {
+          images = parsed;
+          break;
+        }
+        
+        // Object with images array
+        if (parsed.images?.length) {
+          images = parsed.images;
+          break;
+        }
+        
+        // Nested output field
+        if (typeof parsed.output === 'string') {
+          const inner = JSON.parse(parsed.output);
+          if (Array.isArray(inner) && inner[0]?.url) {
+            images = inner;
+            break;
+          }
+          if (inner.images?.length) {
+            images = inner.images;
+            break;
+          }
+        }
+      } catch {
+        // Continue to next field
+      }
+    }
+    
+    return images.map((img) => ({
+      name: img.name || img.composition || `Image`,
+      prompt: img.prompt || img.description || '',
+      url: img.url || img.imageUrl || '',
+    })).filter((img) => img.url);
+  };
+
   // Parse headline_generator output to extract headline options
   const extractHeadlineOptions = (): Array<{
     headline: string;
@@ -593,8 +643,8 @@ export default function StepCard({
             </div>
           )}
 
-          {/* Input Content (for review steps) */}
-          {isAwaitingReview && step.input && (
+          {/* Input Content (for review steps) — Skip if image review */}
+          {isAwaitingReview && step.input && !isImageReview && (
             <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-amber-300">📄 Content to Review:</p>
@@ -676,90 +726,59 @@ export default function StepCard({
             </div>
           )}
 
-          {/* Image Review UI (redesigned list layout) */}
-          {isAwaitingReview && step.name === "Image Review" && (() => {
-            const images = extractImages();
-            return images.length > 0 ? (
+          {/* Image Review UI (flexible detection + improved parsing) */}
+          {isAwaitingReview && isImageReview && (() => {
+            const images = extractImageReviewImages();
+            if (images.length === 0) {
+              return <div className="text-xs text-istk-textMuted">No images found in step output.</div>;
+            }
+            return (
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-istk-text mb-4">
-                  🖼️ Select your preferred image for the blog hero:
-                </p>
-                <div className="space-y-2">
-                  {images.map((image, idx) => {
-                    const isSelected = selectedImageIndex === idx;
-                    // Support multiple field names for flexibility
-                    const imageName = image.name || image.composition || `Image ${idx + 1}`;
-                    const imagePrompt = image.prompt || image.description || "";
-                    const imageUrl = image.url || image.imageUrl;
-                    
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedImageIndex(idx)}
-                        className={cn(
-                          "w-full flex items-center gap-4 p-4 rounded-lg transition-all duration-200 text-left",
-                          isSelected
-                            ? "border-2 border-istk-accent bg-istk-accent/10 shadow-lg shadow-istk-accent/20"
-                            : "border border-zinc-700/50 bg-zinc-900/30 hover:border-istk-accent/50 hover:bg-zinc-900/50"
-                        )}
-                      >
-                        {/* Radio-style selection indicator */}
-                        <div className="flex-shrink-0">
-                          <div
-                            className={cn(
-                              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
-                              isSelected
-                                ? "border-istk-accent bg-istk-accent"
-                                : "border-zinc-600 bg-zinc-800"
-                            )}
-                          >
-                            {isSelected && (
-                              <span className="text-xs font-bold text-black">✓</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Image name and prompt preview */}
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={cn(
-                              "font-medium text-sm transition-colors",
-                              isSelected ? "text-istk-accent" : "text-istk-text"
-                            )}
-                          >
-                            {imageName}
-                          </p>
-                          {imagePrompt && (
-                            <p className="text-xs text-istk-textMuted line-clamp-1 mt-1">
-                              {imagePrompt.substring(0, 120)}
-                              {imagePrompt.length > 120 ? "..." : ""}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* View button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (imageUrl) {
-                              window.open(imageUrl, "_blank");
-                            }
-                          }}
-                          className={cn(
-                            "px-3 py-2 text-xs font-medium rounded transition-colors flex-shrink-0",
-                            isSelected
-                              ? "bg-istk-accent/20 text-istk-accent hover:bg-istk-accent/30"
-                              : "bg-zinc-700 text-istk-textMuted hover:bg-zinc-600 hover:text-istk-text"
-                          )}
-                        >
-                          👁 View
-                        </button>
-                      </button>
-                    );
-                  })}
-                </div>
+                <p className="text-sm text-gray-400">🎨 Select your preferred hero image ({images.length} options)</p>
+                {images.map((img, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedImageIndex(i)}
+                    className={`rounded-lg border-2 p-3 cursor-pointer transition-all flex items-start gap-4 ${
+                      selectedImageIndex === i
+                        ? 'border-orange-500 bg-orange-500/10'
+                        : 'border-gray-700 bg-gray-800/50 hover:border-gray-500'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 mt-1 flex-shrink-0 flex items-center justify-center ${
+                        selectedImageIndex === i ? 'border-orange-500 bg-orange-500' : 'border-gray-600'
+                      }`}
+                    >
+                      {selectedImageIndex === i && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                    <img
+                      src={img.url}
+                      alt={img.name}
+                      className="w-24 h-16 rounded object-cover flex-shrink-0 bg-gray-900"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-white capitalize">{img.name}</h4>
+                      <p className="text-xs text-gray-400 mt-1 line-clamp-2">{img.prompt}</p>
+                    </div>
+                    <a
+                      href={img.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-700 text-gray-200 hover:bg-gray-600 flex-shrink-0"
+                    >
+                      👁 View
+                    </a>
+                  </div>
+                ))}
+                {selectedImageIndex === null && (
+                  <div className="text-sm text-amber-400/70 bg-amber-400/10 rounded-lg px-3 py-2">
+                    👆 Select an image above to enable approval
+                  </div>
+                )}
               </div>
-            ) : null;
+            );
           })()}
 
           {/* Feedback Textarea (for awaiting_review, non-image steps) */}
@@ -784,15 +803,6 @@ export default function StepCard({
             {step.reviewedAt && <span>Reviewed: {new Date(step.reviewedAt).toLocaleTimeString()}</span>}
           </div>
 
-          {/* Helper text for image review */}
-          {isAwaitingReview && step.name === "Image Review" && selectedImageIndex === null && (
-            <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-700/30 mt-3">
-              <p className="text-xs text-amber-300">
-                👆 Select an image above to enable approval
-              </p>
-            </div>
-          )}
-
           {/* Action Buttons (for awaiting_review) */}
           {isAwaitingReview && (
             <div className="flex gap-2 pt-4">
@@ -804,14 +814,22 @@ export default function StepCard({
                 {isSubmitting ? "Processing..." : "❌ Reject & Redo"}
               </button>
               <button
-                onClick={onApprove}
+                onClick={() => {
+                  // For image review steps, pass selectedImageIndex as selectedOption
+                  if (isImageReview && selectedImageIndex !== null) {
+                    // Wrap the approve with selectedOption if image review
+                    const originalOnApprove = onApprove;
+                    // TODO: Pass selectedOption to parent (it should be handled via onImageSelect callback)
+                  }
+                  onApprove?.();
+                }}
                 disabled={
                   isSubmitting ||
-                  (step.name === "Image Review" && selectedImageIndex === null)
+                  (isImageReview && selectedImageIndex === null)
                 }
                 className={cn(
                   "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
-                  step.name === "Image Review" && selectedImageIndex === null
+                  isImageReview && selectedImageIndex === null
                     ? "bg-zinc-700/50 text-zinc-600 border border-zinc-700 cursor-not-allowed"
                     : "bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 cursor-pointer"
                 )}

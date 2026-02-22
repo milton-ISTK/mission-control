@@ -643,8 +643,8 @@ export default function StepCard({
             </div>
           )}
 
-          {/* Input Content (for review steps) — Skip if image review */}
-          {isAwaitingReview && step.input && !isImageReview && (
+          {/* Input Content (for review steps) — Skip if image review or headline picker */}
+          {isAwaitingReview && step.input && !isImageReview && step.agentRole !== "headline_generator" && (
             <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-amber-300">📄 Content to Review:</p>
@@ -782,7 +782,7 @@ export default function StepCard({
           })()}
 
           {/* Feedback Textarea (for awaiting_review, non-image steps) */}
-          {isAwaitingReview && step.name !== "Image Review" && (
+          {isAwaitingReview && step.name?.toLowerCase().includes("content review") && (
             <div>
               <label className="block text-xs font-semibold text-istk-text mb-2">
                 ✏️ Revision Instructions for the Writer

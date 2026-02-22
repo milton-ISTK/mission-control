@@ -561,13 +561,23 @@ export const advanceWorkflow = mutation({
         });
       }
 
+      // Special handling: For Image Review step, pass ONLY the image_maker output, not all parallel steps
+      let stepInput = combinedInput;
+      if (templateStep.name === "Image Review" && prevBatchOutputs.length > 1) {
+        const imageMakerStep = prevBatchOutputs.find((s) => s.agentRole === "image_maker");
+        if (imageMakerStep?.output) {
+          // Pass only the image_maker output as a direct array (for extractImages to parse)
+          stepInput = imageMakerStep.output;
+        }
+      }
+
       await ctx.db.insert("workflowSteps", {
         workflowId: args.workflowId,
         stepNumber: stepNum,
         name: templateStep.name,
         agentRole: templateStep.agentRole,
         status: initialStatus,
-        input: combinedInput,
+        input: stepInput,
         requiresApproval: templateStep.requiresApproval,
         approvalPrompt: templateStep.approvalPrompt,
         timeoutMinutes: templateStep.timeoutMinutes,

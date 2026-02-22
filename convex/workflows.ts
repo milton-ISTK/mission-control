@@ -863,21 +863,47 @@ export const approveStepFromUI = mutation({
         // Wrap input with author info, publish date, and selected image URL if available
         let finalInput = inputForNextStep;
         
-        // Special case: For HTML Builder, include blog content
+        // Special case: For HTML Builder, merge blog content with existing context
         if (nextTemplateStep.agentRole === "html_builder") {
-          const enriched: any = {
-            publish_date: publishDate,
-          };
-          if (blogContent) {
-            enriched.blogOutput = blogContent; // Blog content from Step 4
+          try {
+            const parsed = JSON.parse(inputForNextStep || "{}");
+            const enriched: any = { ...parsed, publish_date: publishDate };
+            
+            // Add blog content from Step 4 (critical!)
+            if (blogContent) {
+              enriched.blogOutput = blogContent; // Blog content from Step 4
+            }
+            
+            // Add selected image from Step 7
+            if (selectedImageUrl) {
+              enriched.selectedImageUrl = selectedImageUrl;
+            }
+            
+            // Add author info
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            
+            finalInput = JSON.stringify(enriched);
+          } catch {
+            // Fallback if inputForNextStep isn't JSON
+            const enriched: any = {
+              publish_date: publishDate,
+            };
+            if (inputForNextStep) {
+              enriched.previousStepOutput = inputForNextStep;
+            }
+            if (blogContent) {
+              enriched.blogOutput = blogContent;
+            }
+            if (selectedImageUrl) {
+              enriched.selectedImageUrl = selectedImageUrl;
+            }
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            finalInput = JSON.stringify(enriched);
           }
-          if (selectedImageUrl) {
-            enriched.selectedImageUrl = selectedImageUrl;
-          }
-          if (authorInfo) {
-            enriched.author = authorInfo;
-          }
-          finalInput = JSON.stringify(enriched);
         } else {
           try {
             const parsed = JSON.parse(inputForNextStep || "{}");

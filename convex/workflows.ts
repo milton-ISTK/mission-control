@@ -497,11 +497,19 @@ export const advanceWorkflow = mutation({
       }
     }
 
+    // Format current date as "February 23, 2026"
+    const publishDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
     let combinedInput: string | undefined;
     if (prevBatchOutputs.length === 1) {
       // Single previous step — wrap in dict so daemon always gets a dict
       combinedInput = JSON.stringify({
         output: prevBatchOutputs[0].output,
+        publish_date: publishDate,
         ...(authorInfo && { author: authorInfo }),
       });
     } else if (prevBatchOutputs.length > 1) {
@@ -513,6 +521,7 @@ export const advanceWorkflow = mutation({
           agentRole: s.agentRole,
           output: s.output,
         })),
+        publish_date: publishDate,
         ...(authorInfo && { author: authorInfo }),
       });
     }
@@ -736,7 +745,14 @@ export const approveStepFromUI = mutation({
         }
       }
 
-      // Wrap input with author info if available
+      // Format current date as "February 23, 2026"
+      const publishDate = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      // Wrap input with author info and publish date if available
       let finalInput = inputForNextStep;
       if (authorInfo) {
         try {
@@ -744,12 +760,28 @@ export const approveStepFromUI = mutation({
           finalInput = JSON.stringify({
             ...parsed,
             author: authorInfo,
+            publish_date: publishDate,
           });
         } catch {
           // If not JSON, wrap in object
           finalInput = JSON.stringify({
             output: inputForNextStep,
             author: authorInfo,
+            publish_date: publishDate,
+          });
+        }
+      } else {
+        // Even if no author, add publish_date
+        try {
+          const parsed = JSON.parse(inputForNextStep || "{}");
+          finalInput = JSON.stringify({
+            ...parsed,
+            publish_date: publishDate,
+          });
+        } catch {
+          finalInput = JSON.stringify({
+            output: inputForNextStep,
+            publish_date: publishDate,
           });
         }
       }

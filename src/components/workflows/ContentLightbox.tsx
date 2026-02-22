@@ -83,7 +83,7 @@ export default function ContentLightbox({
               <textarea
                 value={editedContent}
                 onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full h-full min-h-[500px] p-4 border border-zinc-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-istk-accent resize-none"
+                className="w-full h-full min-h-[500px] p-4 border border-zinc-300 rounded-lg font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-istk-accent resize-none"
                 placeholder="Edit your content here..."
               />
             ) : mode === "html" ? (

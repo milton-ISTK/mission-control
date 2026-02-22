@@ -29,12 +29,20 @@ export default function ResearchInput() {
   const groups = getModelGroups();
 
   // Query Convex for API key availability (replaces localStorage check)
-  const apiKeyRecord = useQuery(
-    selectedModel ? api.contentPipeline.getApiKey : null,
-    selectedModel ? { provider: selectedModel.provider } : "skip"
-  );
+  // Always query with the current provider; defaults to anthropic if no model selected yet
+  const currentProvider = selectedModel?.provider ?? "anthropic";
+  const apiKeyRecord = useQuery(api.contentPipeline.getApiKey, { provider: currentProvider });
   
-  const apiKeyAvailable = apiKeyRecord?.keyPlaintext ? apiKeyRecord.keyPlaintext.trim().length > 0 : false;
+  // Debug: Log the query result whenever it changes
+  useEffect(() => {
+    console.log(`[ResearchInput] Query for provider="${currentProvider}":`, {
+      apiKeyRecord: apiKeyRecord ? { ...apiKeyRecord, keyPlaintext: apiKeyRecord.keyPlaintext.substring(0, 20) + "..." } : null,
+      isAvailable: apiKeyRecord?.keyPlaintext?.trim().length ? true : false,
+    });
+  }, [apiKeyRecord, currentProvider]);
+  
+  // apiKeyRecord is undefined while loading; null or missing when not found
+  const apiKeyAvailable = selectedModel && apiKeyRecord?.keyPlaintext ? apiKeyRecord.keyPlaintext.trim().length > 0 : false;
 
   const canSubmit = topic.trim().length > 0 && apiKeyAvailable && !isSubmitting;
 

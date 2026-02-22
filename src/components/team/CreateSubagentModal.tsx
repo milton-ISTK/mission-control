@@ -65,15 +65,14 @@ export default function CreateSubagentModal({ isOpen, onClose }: CreateSubagentM
   const selectedModel = findModel(form.llm);
 
   // Query Convex for API key availability (replaces localStorage check)
-  const apiKeyRecord = useQuery(
-    selectedModel ? api.contentPipeline.getApiKey : null,
-    selectedModel ? { provider: selectedModel.provider } : "skip"
-  );
+  // Always query with the current model's provider; defaults to anthropic if no model selected yet
+  const currentProvider = selectedModel?.provider ?? "anthropic";
+  const apiKeyRecord = useQuery(api.contentPipeline.getApiKey, { provider: currentProvider });
   
   // Update apiKeyAvailable based on query result
   useEffect(() => {
-    setApiKeyAvailable(apiKeyRecord?.keyPlaintext ? apiKeyRecord.keyPlaintext.trim().length > 0 : false);
-  }, [apiKeyRecord]);
+    setApiKeyAvailable(selectedModel && apiKeyRecord?.keyPlaintext ? apiKeyRecord.keyPlaintext.trim().length > 0 : false);
+  }, [apiKeyRecord, selectedModel]);
 
   const providerDisplayName = selectedModel
     ? getProviderDisplayName(selectedModel.provider)

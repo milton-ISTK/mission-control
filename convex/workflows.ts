@@ -805,29 +805,50 @@ export const approveStepFromUI = mutation({
         day: "numeric",
       });
 
-      // Special handling for HTML Builder: include selected image URL from Step 6 (Image Review)
+      // Special handling for HTML Builder: include blog content + selected image URL
       let selectedImageUrl: string | undefined;
+      let blogContent: string | undefined;
       if (nextTemplateStep.agentRole === "html_builder") {
         try {
-          // Find Step 6 (Image Review) in this workflow
+          // Fetch all workflow steps once
           const allSteps = await ctx.db
             .query("workflowSteps")
             .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
             .collect();
           
-          const imageReviewStep = allSteps.find((s) => s.stepNumber === 6 && s.name === "Image Review");
-          if (imageReviewStep && imageReviewStep.selectedOption && imageReviewStep.input) {
-            // Parse the 3 images from Step 6's input
-            const imageIndex = parseInt(imageReviewStep.selectedOption);
-            const images = JSON.parse(imageReviewStep.input);
-            
-            // Extract the selected image
-            if (Array.isArray(images) && images[imageIndex]) {
-              selectedImageUrl = images[imageIndex].imageUrl;
+          // 1. Get blog content from Step 4 (blog_writer)
+          const blogWriterStep = allSteps.find((s) => s.stepNumber === 4 && s.agentRole === "blog_writer");
+          if (blogWriterStep && blogWriterStep.output) {
+            try {
+              const blogData = JSON.parse(blogWriterStep.output);
+              // Try multiple fields where blog content might be stored
+              blogContent = 
+                blogData.content || 
+                blogData.revisedContent || 
+                blogData.blogContent || 
+                blogData.output || 
+                blogData.result || 
+                (typeof blogData === 'string' ? blogData : undefined);
+            } catch {
+              blogContent = blogWriterStep.output; // Raw text fallback
+            }
+          }
+          
+          // 2. Get selected image from Step 7 (Image Review)
+          const imageReviewStep = allSteps.find((s) => s.stepNumber === 7 && s.name === "Image Review");
+          if (imageReviewStep && imageReviewStep.selectedOption !== null && imageReviewStep.selectedOption !== undefined && imageReviewStep.output) {
+            try {
+              const imageIndex = parseInt(imageReviewStep.selectedOption as string);
+              const images = JSON.parse(imageReviewStep.output);
+              if (Array.isArray(images) && images[imageIndex]?.url) {
+                selectedImageUrl = images[imageIndex].url;
+              }
+            } catch {
+              // If parsing fails, continue without image URL
             }
           }
         } catch {
-          // If anything fails, continue without image URL (daemon will handle gracefully)
+          // If anything fails, continue without image or blog content (daemon will handle gracefully)
         }
       }
 
@@ -841,29 +862,47 @@ export const approveStepFromUI = mutation({
       if (!nextStepExists) {
         // Wrap input with author info, publish date, and selected image URL if available
         let finalInput = inputForNextStep;
-        try {
-          const parsed = JSON.parse(inputForNextStep || "{}");
-          const enriched: any = { ...parsed, publish_date: publishDate };
-          if (authorInfo) {
-            enriched.author = authorInfo;
-          }
-          if (selectedImageUrl) {
-            enriched.selectedImageUrl = selectedImageUrl;
-          }
-          finalInput = JSON.stringify(enriched);
-        } catch {
-          // If not JSON, wrap in object
+        
+        // Special case: For HTML Builder, include blog content
+        if (nextTemplateStep.agentRole === "html_builder") {
           const enriched: any = {
-            output: inputForNextStep,
             publish_date: publishDate,
           };
-          if (authorInfo) {
-            enriched.author = authorInfo;
+          if (blogContent) {
+            enriched.blogOutput = blogContent; // Blog content from Step 4
           }
           if (selectedImageUrl) {
             enriched.selectedImageUrl = selectedImageUrl;
           }
+          if (authorInfo) {
+            enriched.author = authorInfo;
+          }
           finalInput = JSON.stringify(enriched);
+        } else {
+          try {
+            const parsed = JSON.parse(inputForNextStep || "{}");
+            const enriched: any = { ...parsed, publish_date: publishDate };
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            if (selectedImageUrl) {
+              enriched.selectedImageUrl = selectedImageUrl;
+            }
+            finalInput = JSON.stringify(enriched);
+          } catch {
+            // If not JSON, wrap in object
+            const enriched: any = {
+              output: inputForNextStep,
+              publish_date: publishDate,
+            };
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            if (selectedImageUrl) {
+              enriched.selectedImageUrl = selectedImageUrl;
+            }
+            finalInput = JSON.stringify(enriched);
+          }
         }
 
         await ctx.db.insert("workflowSteps", {

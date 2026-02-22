@@ -94,7 +94,6 @@ export default function WorkflowDetailPage() {
 
   const handleRejectClick = (stepId: string) => {
     setPendingStepId(stepId);
-    setFeedbackText("");
     setRejectDialogOpen(true);
   };
 

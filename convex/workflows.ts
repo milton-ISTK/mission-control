@@ -805,9 +805,49 @@ export const approveStepFromUI = mutation({
         day: "numeric",
       });
 
+      // Special handling: Extract selected headline for blog_writer step
+      let selectedHeadline: any = undefined;
+      if (nextTemplateStep.agentRole === "blog_writer") {
+        try {
+          // Fetch all workflow steps
+          const allSteps = await ctx.db
+            .query("workflowSteps")
+            .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+            .collect();
+          
+          // Find Step 3 (headline_generator)
+          const headlineStep = allSteps.find((s) => s.stepNumber === 3 && s.agentRole === "headline_generator");
+          if (headlineStep && headlineStep.selectedOption !== null && headlineStep.selectedOption !== undefined && headlineStep.output) {
+            try {
+              const headlineIndex = parseInt(headlineStep.selectedOption as string);
+              const headlines = JSON.parse(headlineStep.output);
+              
+              // Handle both direct array and {metadata: {headlines: [...]}} format
+              let headlinesArray: any[] = [];
+              if (Array.isArray(headlines)) {
+                headlinesArray = headlines;
+              } else if (headlines?.metadata?.headlines) {
+                headlinesArray = headlines.metadata.headlines;
+              } else if (headlines?.headlines) {
+                headlinesArray = headlines.headlines;
+              }
+              
+              if (headlinesArray.length > headlineIndex) {
+                selectedHeadline = headlinesArray[headlineIndex];
+              }
+            } catch (e) {
+              console.error("[workflow-advance] Failed to extract selected headline:", e);
+            }
+          }
+        } catch (e) {
+          console.error("[workflow-advance] Failed to fetch steps for headline extraction:", e);
+        }
+      }
+
       // Special handling for HTML Builder: include blog content + selected image URL
       let selectedImageUrl: string | undefined;
       let blogContent: string | undefined;
+      let blogSources: any[] = [];
       if (nextTemplateStep.agentRole === "html_builder") {
         try {
           // Fetch all workflow steps once
@@ -829,7 +869,19 @@ export const approveStepFromUI = mutation({
                 blogData.output || 
                 blogData.result || 
                 (typeof blogData === 'string' ? blogData : undefined);
-            } catch {
+              
+              // Also extract title and sources
+              if (blogData.title) {
+                // Include title in blogContent by prepending it
+                blogContent = `# ${blogData.title}\n\n${blogContent}`;
+              }
+              
+              // Extract sources array
+              if (blogData.sources && Array.isArray(blogData.sources)) {
+                blogSources = blogData.sources;
+              }
+            } catch (e) {
+              console.error("[workflow-advance] Failed to parse blog_writer output:", e);
               blogContent = blogWriterStep.output; // Raw text fallback
             }
           }
@@ -863,15 +915,49 @@ export const approveStepFromUI = mutation({
         // Wrap input with author info, publish date, and selected image URL if available
         let finalInput = inputForNextStep;
         
+        // Special case: For blog_writer, include selected headline from Step 3
+        if (nextTemplateStep.agentRole === "blog_writer" && selectedHeadline) {
+          try {
+            const parsed = JSON.parse(inputForNextStep || "{}");
+            const enriched: any = { ...parsed, publish_date: publishDate };
+            
+            // Add selected headline for blog_writer to use as article title
+            enriched.selectedHeadline = selectedHeadline;
+            
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            
+            finalInput = JSON.stringify(enriched);
+          } catch {
+            // Fallback if input isn't JSON
+            const enriched: any = {
+              publish_date: publishDate,
+              selectedHeadline: selectedHeadline,
+            };
+            if (inputForNextStep) {
+              enriched.previousStepOutput = inputForNextStep;
+            }
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            finalInput = JSON.stringify(enriched);
+          }
+        }
         // Special case: For HTML Builder, merge blog content with existing context
-        if (nextTemplateStep.agentRole === "html_builder") {
+        else if (nextTemplateStep.agentRole === "html_builder") {
           try {
             const parsed = JSON.parse(inputForNextStep || "{}");
             const enriched: any = { ...parsed, publish_date: publishDate };
             
             // Add blog content from Step 4 (critical!)
             if (blogContent) {
-              enriched.blogOutput = blogContent; // Blog content from Step 4
+              enriched.blogOutput = blogContent; // Blog content from Step 4 (with title prepended)
+            }
+            
+            // Add sources from blog_writer
+            if (blogSources && blogSources.length > 0) {
+              enriched.sources = blogSources;
             }
             
             // Add selected image from Step 7
@@ -895,6 +981,9 @@ export const approveStepFromUI = mutation({
             }
             if (blogContent) {
               enriched.blogOutput = blogContent;
+            }
+            if (blogSources && blogSources.length > 0) {
+              enriched.sources = blogSources;
             }
             if (selectedImageUrl) {
               enriched.selectedImageUrl = selectedImageUrl;

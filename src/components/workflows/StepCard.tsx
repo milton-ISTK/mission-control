@@ -165,6 +165,7 @@ export default function StepCard({
   const [showLightbox, setShowLightbox] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const config = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.pending;
 
   const duration = formatDuration(step.startedAt, step.completedAt);
@@ -208,6 +209,25 @@ export default function StepCard({
     } catch {
       return value; // Not JSON, keep as-is
     }
+  };
+
+  // Extract images from input (for Image Review step)
+  const extractImages = (): Array<{ prompt: string; imageUrl: string; composition: string; description: string }> => {
+    let source = step.input;
+    if (!source) return [];
+
+    try {
+      const data = JSON.parse(source);
+      if (Array.isArray(data)) {
+        return data.filter(
+          (item) =>
+            item.prompt && item.imageUrl && item.composition && item.description
+        );
+      }
+    } catch {
+      // Not JSON, skip
+    }
+    return [];
   };
 
   // Extract blog content from output OR input (for review steps)
@@ -582,8 +602,52 @@ export default function StepCard({
             </div>
           )}
 
-          {/* Feedback Textarea (for awaiting_review) */}
-          {isAwaitingReview && (
+          {/* Image Picker (for Image Review step) */}
+          {isAwaitingReview && step.name === "Image Review" && (() => {
+            const images = extractImages();
+            return images.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-istk-text mb-2">Select your preferred image:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((image, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={cn(
+                        "relative cursor-pointer rounded-lg overflow-hidden transition-all",
+                        selectedImageIndex === idx
+                          ? "ring-2 ring-istk-accent"
+                          : "ring-1 ring-zinc-700 hover:ring-istk-accent/50"
+                      )}
+                    >
+                      {/* Image */}
+                      <img
+                        src={image.imageUrl}
+                        alt={image.composition}
+                        className="w-full aspect-square object-cover"
+                      />
+                      
+                      {/* Overlay with info */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2">
+                        <p className="text-xs font-semibold text-istk-accent capitalize">{image.composition}</p>
+                        <p className="text-[10px] text-istk-textMuted line-clamp-2">{image.description}</p>
+                      </div>
+                      
+                      {/* Selection indicator */}
+                      {selectedImageIndex === idx && (
+                        <div className="absolute top-1 right-1 w-6 h-6 rounded-full bg-istk-accent flex items-center justify-center">
+                          <span className="text-xs font-bold text-black">✓</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })()}
+
+          {/* Feedback Textarea (for awaiting_review, non-image steps) */}
+          {isAwaitingReview && step.name !== "Image Review" && (
             <textarea
               value={feedbackText}
               onChange={(e) => onFeedbackChange?.(e.target.value)}

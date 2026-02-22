@@ -764,12 +764,17 @@ export default function StepCard({
 
           {/* Feedback Textarea (for awaiting_review, non-image steps) */}
           {isAwaitingReview && step.name !== "Image Review" && (
-            <textarea
-              value={feedbackText}
-              onChange={(e) => onFeedbackChange?.(e.target.value)}
-              placeholder="Leave feedback for approval or rejection..."
-              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-istk-text placeholder-istk-textDim focus:outline-none focus:ring-2 focus:ring-istk-accent/50 resize-none h-20"
-            />
+            <div>
+              <label className="block text-xs font-semibold text-istk-text mb-2">
+                ✏️ Revision Instructions for the Writer
+              </label>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => onFeedbackChange?.(e.target.value)}
+                placeholder="e.g. Include the DREC tokenization volume ($5M). Add this source: https://... Shorter intro. More emphasis on regulatory comparison."
+                className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-istk-text placeholder-istk-textDim focus:outline-none focus:ring-2 focus:ring-istk-accent/50 resize-none min-h-[120px]"
+              />
+            </div>
           )}
 
           {/* Timestamps */}

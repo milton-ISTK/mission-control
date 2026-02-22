@@ -11,6 +11,8 @@ interface ConfirmDialogProps {
   message: string;
   isDangerous?: boolean;
   isLoading?: boolean;
+  confirmText?: string;
+  confirmClassName?: string;
 }
 
 export default function ConfirmDialog({
@@ -21,6 +23,8 @@ export default function ConfirmDialog({
   message,
   isDangerous = false,
   isLoading = false,
+  confirmText,
+  confirmClassName,
 }: ConfirmDialogProps) {
   // No scroll lock needed - background scrolls freely, modal stays centered with fixed positioning
 
@@ -59,15 +63,16 @@ export default function ConfirmDialog({
             disabled={isLoading}
             className={cn(
               "px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-300 disabled:opacity-50 flex items-center gap-2",
-              isDangerous
-                ? "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30 hover:border-red-500/60"
-                : "bg-istk-accent/20 text-istk-accent border-istk-accent/40 hover:bg-istk-accent/30 hover:border-istk-accent/60"
+              confirmClassName ||
+                (isDangerous
+                  ? "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30 hover:border-red-500/60"
+                  : "bg-istk-accent/20 text-istk-accent border-istk-accent/40 hover:bg-istk-accent/30 hover:border-istk-accent/60")
             )}
           >
             {isLoading && (
               <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             )}
-            {isDangerous ? "Delete" : "Confirm"}
+            {confirmText || (isDangerous ? "Delete" : "Confirm")}
           </button>
         </div>
       </div>

@@ -267,9 +267,11 @@ export default function WorkflowDetailPage() {
         isOpen={rejectDialogOpen}
         onClose={() => !isProcessing && setRejectDialogOpen(false)}
         onConfirm={handleConfirmReject}
-        title="Reject Step"
-        message={`This content will be sent back for revision.\n\nFeedback: ${feedbackText || "(none)"}`}
-        isDangerous={true}
+        title="Reject & Request Rewrite"
+        message={`This content will be sent back for revision with your feedback.\n\nRevision Instructions:\n${feedbackText || "(none)"}`}
+        isDangerous={false}
+        confirmText="🔄 Reject & Redo"
+        confirmClassName="bg-orange-600/20 text-orange-300 border-orange-600/40 hover:bg-orange-600/30 hover:border-orange-600/60"
         isLoading={isProcessing}
       />
     </div>

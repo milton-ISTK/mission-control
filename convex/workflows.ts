@@ -945,17 +945,13 @@ export const rejectStepFromUI = mutation({
     const prevStep = allSteps.find((s) => s.stepNumber === prevStepNum && s.status === "completed");
 
     // 4. Create a new workflowStep to retry the previous agent's work
-    // Include Gregory's rejection feedback in the input or in a note
-    const retryInput = prevStep
-      ? JSON.stringify({
-          ...JSON.parse(prevStep.input || "{}"),
-          _rejectionFeedback: args.reviewNotes,
-          _retryCount: (JSON.parse(prevStep.input || "{}"))._retryCount ? (JSON.parse(prevStep.input || "{}"))._retryCount + 1 : 1,
-        })
-      : JSON.stringify({
-          _rejectionFeedback: args.reviewNotes,
-          _retryCount: 1,
-        });
+    // Include Gregory's rejection feedback as revisionNotes for the agent to use as a rewrite brief
+    const prevInputObj = prevStep ? JSON.parse(prevStep.input || "{}") : {};
+    const retryInput = JSON.stringify({
+      ...prevInputObj,
+      revisionNotes: args.reviewNotes, // This is the key field the daemon reads for rewrites
+      _retryCount: (prevInputObj._retryCount || 0) + 1,
+    });
 
     await ctx.db.insert("workflowSteps", {
       workflowId: step.workflowId,

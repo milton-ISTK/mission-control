@@ -237,7 +237,7 @@ export default function StepCard({
   };
 
   // Extract images from input (for Image Review step)
-  const extractImages = (): Array<{ name?: string; prompt: string; imageUrl?: string; url?: string; composition?: string; description: string }> => {
+  const extractImages = (): Array<{ name?: string; prompt?: string; url?: string; imageUrl?: string; storageId?: string; mimeType?: string; composition?: string; description?: string }> => {
     const images: any[] = [];
     
     // First priority: outputOptions (array of JSON strings)
@@ -252,23 +252,42 @@ export default function StepCard({
       }
     }
     
-    // Fallback: try to parse input as array of images
+    // Second: try to parse input as array of images
     if (images.length === 0 && step.input) {
       try {
         const data = JSON.parse(step.input);
-        if (Array.isArray(data)) {
+        // Case 1: raw array of image objects
+        if (Array.isArray(data) && data.length > 0) {
           images.push(...data);
+        }
+        // Case 2: object with "images" key
+        else if (data.images && Array.isArray(data.images)) {
+          images.push(...data.images);
         }
       } catch {
         // Not JSON, skip
       }
     }
     
-    // Filter to only valid image objects (must have a URL field and description/name)
-    return images.filter(
-      (item) =>
-        (item.url || item.imageUrl) && (item.description || item.name || item.composition)
-    );
+    // Third: try output as array of images
+    if (images.length === 0 && step.output) {
+      try {
+        const data = JSON.parse(step.output);
+        // Case 1: raw array
+        if (Array.isArray(data)) {
+          images.push(...data);
+        }
+        // Case 2: object with "images" key
+        else if (data.images && Array.isArray(data.images)) {
+          images.push(...data.images);
+        }
+      } catch {
+        // Not JSON, skip
+      }
+    }
+    
+    // Filter to only valid image objects (must have a URL field)
+    return images.filter((item) => item && (item.url || item.imageUrl));
   };
 
   // Extract blog content from output OR input (for review steps)

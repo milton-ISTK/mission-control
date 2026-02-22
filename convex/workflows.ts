@@ -753,38 +753,57 @@ export const approveStepFromUI = mutation({
         day: "numeric",
       });
 
-      // Wrap input with author info and publish date if available
+      // Special handling for HTML Builder: include selected image URL from Step 6 (Image Review)
+      let selectedImageUrl: string | undefined;
+      if (nextTemplateStep.agentRole === "html_builder") {
+        try {
+          // Find Step 6 (Image Review) in this workflow
+          const allSteps = await ctx.db
+            .query("workflowSteps")
+            .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+            .collect();
+          
+          const imageReviewStep = allSteps.find((s) => s.stepNumber === 6 && s.name === "Image Review");
+          if (imageReviewStep && imageReviewStep.selectedOption && imageReviewStep.input) {
+            // Parse the 3 images from Step 6's input
+            const imageIndex = parseInt(imageReviewStep.selectedOption);
+            const images = JSON.parse(imageReviewStep.input);
+            
+            // Extract the selected image
+            if (Array.isArray(images) && images[imageIndex]) {
+              selectedImageUrl = images[imageIndex].imageUrl;
+            }
+          }
+        } catch {
+          // If anything fails, continue without image URL (daemon will handle gracefully)
+        }
+      }
+
+      // Wrap input with author info, publish date, and selected image URL if available
       let finalInput = inputForNextStep;
-      if (authorInfo) {
-        try {
-          const parsed = JSON.parse(inputForNextStep || "{}");
-          finalInput = JSON.stringify({
-            ...parsed,
-            author: authorInfo,
-            publish_date: publishDate,
-          });
-        } catch {
-          // If not JSON, wrap in object
-          finalInput = JSON.stringify({
-            output: inputForNextStep,
-            author: authorInfo,
-            publish_date: publishDate,
-          });
+      try {
+        const parsed = JSON.parse(inputForNextStep || "{}");
+        const enriched: any = { ...parsed, publish_date: publishDate };
+        if (authorInfo) {
+          enriched.author = authorInfo;
         }
-      } else {
-        // Even if no author, add publish_date
-        try {
-          const parsed = JSON.parse(inputForNextStep || "{}");
-          finalInput = JSON.stringify({
-            ...parsed,
-            publish_date: publishDate,
-          });
-        } catch {
-          finalInput = JSON.stringify({
-            output: inputForNextStep,
-            publish_date: publishDate,
-          });
+        if (selectedImageUrl) {
+          enriched.selectedImageUrl = selectedImageUrl;
         }
+        finalInput = JSON.stringify(enriched);
+      } catch {
+        // If not JSON, wrap in object
+        const enriched: any = {
+          output: inputForNextStep,
+          publish_date: publishDate,
+        };
+        if (authorInfo) {
+          enriched.author = authorInfo;
+        }
+        if (selectedImageUrl) {
+          enriched.selectedImageUrl = selectedImageUrl;
+        }
+        finalInput = JSON.stringify(enriched);
       }
 
       await ctx.db.insert("workflowSteps", {

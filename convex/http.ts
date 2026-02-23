@@ -1108,6 +1108,32 @@ http.route({
   }),
 });
 
+// ---- POST /api/admin/set-agent-systemprompts ----
+// Set systemPrompts for critical workflow agents
+http.route({
+  path: "/api/admin/set-agent-systemprompts",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const result = await ctx.runMutation(api.agents.setAgentSystemPrompts, {});
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          message: "Agent systemPrompts updated",
+          result,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ---- GET /api/storage/upload-url ----
 // Generate a short-lived upload URL for daemon to upload images
 http.route({

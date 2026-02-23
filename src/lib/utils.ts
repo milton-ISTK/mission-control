@@ -56,3 +56,4 @@ export const eventTypeColors: Record<string, string> = {
   deadline: "border-istk-danger bg-istk-danger/10 text-istk-danger",
   oneshot: "border-istk-success bg-istk-success/10 text-istk-success",
 };
+// Convex rebuild trigger: Mon 23 Feb 2026 10:09:46 GMT

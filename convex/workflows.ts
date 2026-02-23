@@ -549,8 +549,14 @@ export const advanceWorkflow = mutation({
         .first();
 
       if (existingStep) {
-        console.log(`[workflow-advance] Step ${stepNum} already exists for workflow ${args.workflowId}, skipping duplicate creation`);
-        continue; // Skip — step already exists
+        if (existingStep.status === "rejected") {
+          // Rejected step from a previous review — delete it so we can re-create fresh
+          console.log(`[workflow-advance] Step ${stepNum} was rejected, deleting to re-create for workflow ${args.workflowId}`);
+          await ctx.db.delete(existingStep._id);
+        } else {
+          console.log(`[workflow-advance] Step ${stepNum} already exists (status=${existingStep.status}) for workflow ${args.workflowId}, skipping duplicate creation`);
+          continue; // Skip — step already exists
+        }
       }
 
       // Update workflow status to paused_for_review if this is a review gate
@@ -561,26 +567,68 @@ export const advanceWorkflow = mutation({
         });
       }
 
-      // Special handling: For Image Review step, pass ONLY the image_maker output, not all parallel steps
       let stepInput = combinedInput;
       let outputOptions: string[] | undefined = undefined;
-      
-      if (templateStep.name === "Image Review" && prevBatchOutputs.length > 1) {
-        const imageMakerStep = prevBatchOutputs.find((s) => s.agentRole === "image_maker");
-        if (imageMakerStep?.output) {
-          // Pass only the image_maker output as a direct array (for extractImages to parse)
-          stepInput = imageMakerStep.output;
-          
-          // Also populate outputOptions with individual image JSON strings
-          try {
-            const imageOutput = JSON.parse(imageMakerStep.output);
-            const images = Array.isArray(imageOutput) ? imageOutput : [];
-            if (images.length > 0) {
-              outputOptions = images.map((img: any) => JSON.stringify(img));
+
+      // Special handling for Content Review (Step 6): Extract blogOutput and imageUrls from parallel steps
+      if (templateStep.name === "Content Review" && prevBatchOutputs.length > 1) {
+        try {
+          let blogContent = "";
+          let blogSources: any[] = [];
+          let imageUrls: any[] = [];
+
+          // Find blog_writer output (Step 4)
+          const blogStep = prevBatchOutputs.find((s) => s.agentRole === "blog_writer");
+          if (blogStep?.output) {
+            try {
+              const blogData = JSON.parse(blogStep.output);
+              blogContent = blogData.content || blogData.revisedContent || blogData.blogContent || blogData.output || blogStep.output;
+              if (blogData.title) {
+                blogContent = `# ${blogData.title}\n\n${blogContent}`;
+              }
+              blogSources = blogData.sources || [];
+            } catch {
+              blogContent = blogStep.output;
             }
-          } catch (e) {
-            console.error("[workflow-advance] Failed to parse image_maker output for outputOptions:", e);
           }
+
+          // Find image_maker output (Step 5)
+          const imageStep = prevBatchOutputs.find((s) => s.agentRole === "image_maker");
+          if (imageStep?.output) {
+            try {
+              const images = JSON.parse(imageStep.output);
+              if (Array.isArray(images)) {
+                imageUrls = images.map((img: any) => ({
+                  url: img.url || "",
+                  placement: img.placement || "",
+                  description: img.description || img.name || "",
+                }));
+              }
+            } catch {
+              // If parsing fails, continue without images
+            }
+          }
+
+          // Merge extracted data into input for Content Review
+          const reviewInput: any = {
+            blogOutput: blogContent,
+            publish_date: publishDate,
+          };
+          if (blogSources.length > 0) {
+            reviewInput.sources = blogSources;
+          }
+          if (imageUrls.length > 0) {
+            reviewInput.imageUrls = imageUrls;
+          }
+          if (authorInfo) {
+            reviewInput.author = authorInfo;
+          }
+
+          stepInput = JSON.stringify(reviewInput);
+          console.log(`[workflow-advance] Content Review input prepared with blogOutput + ${imageUrls.length} images`);
+        } catch (e) {
+          console.error("[workflow-advance] Failed to prepare Content Review input:", e);
+          // Fall back to combinedInput if something goes wrong
         }
       }
 
@@ -846,8 +894,8 @@ export const approveStepFromUI = mutation({
         }
       }
 
-      // Special handling for HTML Builder: include blog content + selected image URL
-      let selectedImageUrl: string | undefined;
+      // Special handling for HTML Builder: include blog content + ALL image URLs from Step 5
+      let imageUrls: any[] = [];
       let blogContent: string | undefined;
       let blogSources: any[] = [];
       if (nextTemplateStep.agentRole === "html_builder") {
@@ -863,7 +911,6 @@ export const approveStepFromUI = mutation({
           if (blogWriterStep && blogWriterStep.output) {
             try {
               const blogData = JSON.parse(blogWriterStep.output);
-              // Try multiple fields where blog content might be stored
               blogContent = 
                 blogData.content || 
                 blogData.revisedContent || 
@@ -872,37 +919,55 @@ export const approveStepFromUI = mutation({
                 blogData.result || 
                 (typeof blogData === 'string' ? blogData : undefined);
               
-              // Also extract title and sources
               if (blogData.title) {
-                // Include title in blogContent by prepending it
                 blogContent = `# ${blogData.title}\n\n${blogContent}`;
               }
               
-              // Extract sources array
               if (blogData.sources && Array.isArray(blogData.sources)) {
                 blogSources = blogData.sources;
               }
             } catch (e) {
               console.error("[workflow-advance] Failed to parse blog_writer output:", e);
-              blogContent = blogWriterStep.output; // Raw text fallback
+              blogContent = blogWriterStep.output;
             }
           }
           
-          // 2. Get selected image from Step 7 (Image Review)
-          const imageReviewStep = allSteps.find((s) => s.stepNumber === 7 && s.name === "Image Review");
-          if (imageReviewStep && imageReviewStep.selectedOption !== null && imageReviewStep.selectedOption !== undefined && imageReviewStep.output) {
+          // 2. Get ALL images from Step 5 (image_maker) — no more Image Review step
+          const imageMakerStep = allSteps.find((s) => s.stepNumber === 5 && s.agentRole === "image_maker");
+          if (imageMakerStep && imageMakerStep.output) {
             try {
-              const imageIndex = parseInt(imageReviewStep.selectedOption as string);
-              const images = JSON.parse(imageReviewStep.output);
-              if (Array.isArray(images) && images[imageIndex]?.url) {
-                selectedImageUrl = images[imageIndex].url;
+              const images = JSON.parse(imageMakerStep.output);
+              if (Array.isArray(images)) {
+                imageUrls = images.map((img: any) => ({
+                  url: img.url || "",
+                  placement: img.placement || "",
+                  description: img.description || img.name || "",
+                }));
               }
-            } catch {
-              // If parsing fails, continue without image URL
+            } catch (e) {
+              console.error("[workflow-advance] Failed to parse image_maker output:", e);
             }
           }
         } catch {
-          // If anything fails, continue without image or blog content (daemon will handle gracefully)
+          // If anything fails, continue without images or blog content
+        }
+      }
+
+      // Special handling for blog_writer: include newsOutput from Step 2
+      let newsOutput: string | undefined;
+      if (nextTemplateStep.agentRole === "blog_writer" || nextTemplateStep.agentRole === "image_maker") {
+        try {
+          const allSteps = await ctx.db
+            .query("workflowSteps")
+            .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+            .collect();
+          
+          const newsStep = allSteps.find((s) => s.stepNumber === 2 && s.agentRole === "news_scraper");
+          if (newsStep && newsStep.output) {
+            newsOutput = newsStep.output;
+          }
+        } catch {
+          // Non-fatal
         }
       }
 
@@ -930,6 +995,11 @@ export const approveStepFromUI = mutation({
               enriched.author = authorInfo;
             }
             
+            // Add newsOutput so blog_writer has real source URLs
+            if (newsOutput) {
+              enriched.newsOutput = newsOutput;
+            }
+            
             finalInput = JSON.stringify(enriched);
           } catch {
             // Fallback if input isn't JSON
@@ -942,6 +1012,9 @@ export const approveStepFromUI = mutation({
             }
             if (authorInfo) {
               enriched.author = authorInfo;
+            }
+            if (newsOutput) {
+              enriched.newsOutput = newsOutput;
             }
             finalInput = JSON.stringify(enriched);
           }
@@ -958,6 +1031,9 @@ export const approveStepFromUI = mutation({
             if (authorInfo) {
               enriched.author = authorInfo;
             }
+            if (newsOutput) {
+              enriched.newsOutput = newsOutput;
+            }
             
             finalInput = JSON.stringify(enriched);
           } catch {
@@ -972,6 +1048,9 @@ export const approveStepFromUI = mutation({
             if (authorInfo) {
               enriched.author = authorInfo;
             }
+            if (newsOutput) {
+              enriched.newsOutput = newsOutput;
+            }
             finalInput = JSON.stringify(enriched);
           }
         }
@@ -983,7 +1062,7 @@ export const approveStepFromUI = mutation({
             
             // Add blog content from Step 4 (critical!)
             if (blogContent) {
-              enriched.blogOutput = blogContent; // Blog content from Step 4 (with title prepended)
+              enriched.blogOutput = blogContent;
             }
             
             // Add sources from blog_writer
@@ -991,9 +1070,9 @@ export const approveStepFromUI = mutation({
               enriched.sources = blogSources;
             }
             
-            // Add selected image from Step 7
-            if (selectedImageUrl) {
-              enriched.selectedImageUrl = selectedImageUrl;
+            // Add ALL image URLs from Step 5 (with placement metadata)
+            if (imageUrls.length > 0) {
+              enriched.imageUrls = imageUrls;
             }
             
             // Add author info
@@ -1016,8 +1095,8 @@ export const approveStepFromUI = mutation({
             if (blogSources && blogSources.length > 0) {
               enriched.sources = blogSources;
             }
-            if (selectedImageUrl) {
-              enriched.selectedImageUrl = selectedImageUrl;
+            if (imageUrls.length > 0) {
+              enriched.imageUrls = imageUrls;
             }
             if (authorInfo) {
               enriched.author = authorInfo;
@@ -1031,8 +1110,9 @@ export const approveStepFromUI = mutation({
             if (authorInfo) {
               enriched.author = authorInfo;
             }
-            if (selectedImageUrl) {
-              enriched.selectedImageUrl = selectedImageUrl;
+            // Add newsOutput for blog_writer and image_maker to have access to real source URLs
+            if (newsOutput) {
+              enriched.newsOutput = newsOutput;
             }
             finalInput = JSON.stringify(enriched);
           } catch {
@@ -1044,25 +1124,50 @@ export const approveStepFromUI = mutation({
             if (authorInfo) {
               enriched.author = authorInfo;
             }
-            if (selectedImageUrl) {
-              enriched.selectedImageUrl = selectedImageUrl;
+            if (newsOutput) {
+              enriched.newsOutput = newsOutput;
             }
             finalInput = JSON.stringify(enriched);
           }
         }
 
-        await ctx.db.insert("workflowSteps", {
-          workflowId: step.workflowId,
-          stepNumber: nextTemplateStep.stepNumber,
-          name: nextTemplateStep.name,
-          agentRole: nextTemplateStep.agentRole,
-          status: "pending",
-          input: finalInput,
-          requiresApproval: nextTemplateStep.requiresApproval,
-          timeoutMinutes: nextTemplateStep.timeoutMinutes,
-          createdAt: now,
-          updatedAt: now,
-        });
+        // Guard: Check if next step already exists
+        // If it exists with "rejected" status, patch it to awaiting_review (for review gates)
+        // Otherwise, only create if doesn't exist at all
+        const nextStepExists = await ctx.db
+          .query("workflowSteps")
+          .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+          .filter((q) => q.eq(q.field("stepNumber"), nextTemplateStep.stepNumber))
+          .first();
+
+        if (nextStepExists && nextStepExists.status === "rejected") {
+          // Rejected step exists - patch it back to awaiting_review if it's a review gate
+          if (nextTemplateStep.requiresApproval) {
+            await ctx.db.patch(nextStepExists._id, {
+              status: "awaiting_review",
+              updatedAt: now,
+            });
+          }
+          // Skip creating new step since we just reset the existing one
+        } else if (!nextStepExists) {
+          // Step doesn't exist - create it
+          // Special case: Review gates (agentRole: "none") should start in awaiting_review, not pending
+          const isReviewGate = nextTemplateStep.agentRole === "none" && nextTemplateStep.requiresApproval;
+          const initialStatus = isReviewGate ? "awaiting_review" : "pending";
+          
+          await ctx.db.insert("workflowSteps", {
+            workflowId: step.workflowId,
+            stepNumber: nextTemplateStep.stepNumber,
+            name: nextTemplateStep.name,
+            agentRole: nextTemplateStep.agentRole,
+            status: initialStatus,
+            input: finalInput,
+            requiresApproval: nextTemplateStep.requiresApproval,
+            timeoutMinutes: nextTemplateStep.timeoutMinutes,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
       }
 
       // Update workflow currentStepNumber
@@ -1138,16 +1243,45 @@ export const rejectStepFromUI = mutation({
       _retryCount: (prevInputObj._retryCount || 0) + 1,
     });
 
-    await ctx.db.insert("workflowSteps", {
-      workflowId: step.workflowId,
-      stepNumber: prevStepNum,
-      name: prevTemplateStep.name,
-      agentRole: prevTemplateStep.agentRole,
+    // Check if a step with prevStepNum already exists
+    const existingPrevStep = await ctx.db
+      .query("workflowSteps")
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
+      .filter((q) => q.eq(q.field("stepNumber"), prevStepNum))
+      .first();
+
+    if (existingPrevStep) {
+      // Step already exists - patch it to reset to pending with new input
+      await ctx.db.patch(existingPrevStep._id, {
+        status: "pending",
+        input: retryInput,
+        reviewNotes: undefined,
+        reviewedAt: undefined,
+        updatedAt: now,
+      });
+    } else {
+      // No existing step - create new one
+      await ctx.db.insert("workflowSteps", {
+        workflowId: step.workflowId,
+        stepNumber: prevStepNum,
+        name: prevTemplateStep.name,
+        agentRole: prevTemplateStep.agentRole,
+        status: "pending",
+        input: retryInput,
+        requiresApproval: prevTemplateStep.requiresApproval,
+        timeoutMinutes: prevTemplateStep.timeoutMinutes,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // CRITICAL: Also reset THIS step (the review gate) to pending so it can be re-created in awaiting_review
+    // Don't leave it as "rejected" — the daemon/advanceWorkflow won't know to re-create it
+    await ctx.db.patch(args.stepId, {
       status: "pending",
-      input: retryInput,
-      requiresApproval: prevTemplateStep.requiresApproval,
-      timeoutMinutes: prevTemplateStep.timeoutMinutes,
-      createdAt: now,
+      reviewNotes: undefined,
+      reviewedAt: undefined,
+      selectedOption: undefined,
       updatedAt: now,
     });
 

@@ -292,7 +292,28 @@ export default function StepCard({
 
   // Extract blog content from output OR input (for review steps)
   const extractBlogContent = (): string => {
-    // For review steps (agentRole 'none'), use the previous step's output
+    // For Content Review step specifically, extract blogOutput from the input
+    // (which comes from parallel Step 4 execution, not previous step)
+    
+    if (step.name === "Content Review" && step.input) {
+      // Content Review receives input with { blogOutput: "...", imageUrls: [...], ... }
+      try {
+        const inputData = JSON.parse(step.input);
+        if (inputData.blogOutput && typeof inputData.blogOutput === "string") {
+          // blogOutput is already formatted markdown from Convex
+          // It's in format: "# Title\n\n*Subtitle*\n\nContent..."
+          // Just return it as-is, no further parsing needed
+          console.log("[StepCard] Content Review: blogOutput extracted, length:", inputData.blogOutput.length);
+          return cleanEscapes(inputData.blogOutput);
+        }
+      } catch (e) {
+        console.log("[StepCard] Content Review: Could not parse input:", e);
+      }
+      // If we get here, blogOutput was missing or parsing failed
+      return "";
+    }
+    
+    // For other review gates, use previous step's output
     let source = step.output;
     if ((step.agentRole === "none" || step.status === "awaiting_review") && allSteps) {
       const previousStep = allSteps.find((s) => s.stepNumber === step.stepNumber - 1);
@@ -300,6 +321,7 @@ export default function StepCard({
         source = previousStep.output;
       }
     }
+    
     if (!source) return "";
 
     // DEBUG: Log raw source
@@ -308,6 +330,8 @@ export default function StepCard({
 
     // Keep parsing until we get to actual content (handle double-wrapped JSON)
     let data = source;
+    let parsedBlogData: any = null; // Track parsed blog object for formatting
+    
     for (let i = 0; i < 5; i++) {
       console.log(`[StepCard] Parse iteration ${i}, data type:`, typeof data, data.length || "N/A");
       try {
@@ -318,7 +342,12 @@ export default function StepCard({
           continue;
         }
         
-        // It's an object — look for content fields
+        // It's an object — check if it's a blog_writer output with title, content, sources
+        if (parsed.title && parsed.content) {
+          console.log(`[StepCard] Found blog_writer JSON format with title and content`);
+          parsedBlogData = parsed; // Store for formatting
+        }
+        
         // Check ALL possible nested paths for blog content
         let value =
           // Direct fields
@@ -364,10 +393,26 @@ export default function StepCard({
       }
     }
 
-    // Clean escape sequences and return
+    // Clean escape sequences
     const finalContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
     console.log("[StepCard] Final extracted content length:", finalContent.length);
-    return cleanEscapes(finalContent);
+    let displayContent = cleanEscapes(finalContent);
+
+    // FORMAT: If we parsed blog_writer data (title + content), display it nicely
+    if (parsedBlogData && parsedBlogData.title && parsedBlogData.content) {
+      console.log("[StepCard] Formatting as blog content with title, subtitle, content");
+      let formatted = `# ${parsedBlogData.title}\n\n`;
+      
+      if (parsedBlogData.subtitle) {
+        formatted += `*${parsedBlogData.subtitle}*\n\n`;
+      }
+      
+      formatted += parsedBlogData.content;
+      
+      displayContent = formatted;
+    }
+
+    return displayContent;
   };
 
   // Extract HTML content from a step's output

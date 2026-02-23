@@ -698,6 +698,30 @@ export default function StepCard({
           )}
 
           {/* Input Content (for review steps) — Skip if image review or headline picker */}
+          {/* Display blog headline if reviewing blog content */}
+          {isAwaitingReview && step.input && !isImageReview && step.agentRole !== "headline_generator" && step.name === "Content Review" && (() => {
+            let blogTitle = '';
+            let blogSubtitle = '';
+            try {
+              const parsed = JSON.parse(step.input || step.output || '{}');
+              blogTitle = parsed.title || '';
+              blogSubtitle = parsed.subtitle || '';
+              // Try nested fields
+              if (!blogTitle && parsed.output) {
+                const inner = typeof parsed.output === 'string' ? JSON.parse(parsed.output) : parsed.output;
+                blogTitle = inner.title || '';
+                blogSubtitle = inner.subtitle || '';
+              }
+            } catch {}
+            
+            return blogTitle ? (
+              <div className="mb-4 border-b border-amber-700/30 pb-3">
+                <h3 className="text-sm font-bold text-white">{blogTitle}</h3>
+                {blogSubtitle && <p className="text-xs text-gray-300 mt-1">{blogSubtitle}</p>}
+              </div>
+            ) : null;
+          })()}
+
           {isAwaitingReview && step.input && !isImageReview && step.agentRole !== "headline_generator" && (
             <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">
               <div className="flex items-center justify-between mb-2">

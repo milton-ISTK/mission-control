@@ -659,15 +659,18 @@ export const rejectStep = mutation({
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
-    const step = await ctx.db.get(args.stepId);
-    if (!step) throw new Error("Step not found");
+    const rejectedStep = await ctx.db.get(args.stepId);
+    if (!rejectedStep) throw new Error("Step not found");
 
     // Verify step is awaiting review
-    if (step.status !== "awaiting_review") {
-      throw new Error(`Step status is "${step.status}", expected "awaiting_review"`);
+    if (rejectedStep.status !== "awaiting_review") {
+      throw new Error(`Step status is "${rejectedStep.status}", expected "awaiting_review"`);
     }
 
-    // Mark this step as rejected
+    const workflow = await ctx.db.get(rejectedStep.workflowId);
+    if (!workflow) throw new Error("Workflow not found");
+
+    // Mark the review step as rejected
     await ctx.db.patch(args.stepId, {
       status: "rejected",
       reviewNotes: args.reviewNotes,
@@ -675,45 +678,44 @@ export const rejectStep = mutation({
       updatedAt: now,
     });
 
-    // Get the workflow and template to create retry step
-    const workflow = await ctx.db.get(step.workflowId);
-    if (!workflow) throw new Error("Workflow not found");
-
-    const template = await ctx.db.get(workflow.templateId);
-    if (!template) throw new Error("Template not found");
-
-    // Find the template step to get details for the retry
-    const templateStep = template.steps.find((ts) => ts.stepNumber === step.stepNumber);
-    if (!templateStep) throw new Error("Template step not found");
-
-    // Guard: Check if a pending retry already exists for this step (prevent duplicate retries)
-    const existingRetry = await ctx.db
+    // Find the agent step that needs to be redone (the step BEFORE this review step)
+    const allSteps = await ctx.db
       .query("workflowSteps")
-      .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
-      .filter((q) => q.eq(q.field("stepNumber"), step.stepNumber))
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .first();
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", rejectedStep.workflowId))
+      .collect();
 
-    if (!existingRetry) {
-      // Create a new workflowStep with same stepNumber for retry (status: pending)
-      // The daemon will pick it up again and the agent can incorporate Gregory's feedback
-      await ctx.db.insert("workflowSteps", {
-        workflowId: step.workflowId,
-        stepNumber: step.stepNumber,
-        name: templateStep.name,
-        agentRole: templateStep.agentRole,
-        status: "pending",
-        input: step.input, // Keep the same input; Gregory's feedback is in reviewNotes
-        requiresApproval: templateStep.requiresApproval,
-        timeoutMinutes: templateStep.timeoutMinutes,
-        createdAt: now,
-        updatedAt: now,
-      });
+    // Find the most recent agent step (not a review gate) before the rejected review step
+    let targetStep = null;
+    for (const s of allSteps.sort((a, b) => b.stepNumber - a.stepNumber)) {
+      if (s.stepNumber < rejectedStep.stepNumber && s.agentRole && s.agentRole !== "none") {
+        targetStep = s;
+        break;
+      }
     }
 
-    // Set workflow back to "active" (running) so it can pick up the retry step
-    await ctx.db.patch(step.workflowId, {
+    if (!targetStep) {
+      throw new Error("No agent step found before review step to retry");
+    }
+
+    // RESET the target step (e.g. Blog Writing) — DO NOT CREATE A NEW ONE
+    // Add revisionNotes to input so the agent sees the feedback
+    const existingInput = JSON.parse(targetStep.input || "{}");
+    existingInput.revisionNotes = args.reviewNotes || "";
+
+    await ctx.db.patch(targetStep._id, {
+      status: "pending",
+      input: JSON.stringify(existingInput),
+      output: undefined,
+      startedAt: undefined,
+      completedAt: undefined,
+      errorMessage: undefined,
+      updatedAt: now,
+    });
+
+    // Set workflow back to the target step number so daemon picks it up again
+    await ctx.db.patch(workflow._id, {
       status: "active",
+      currentStepNumber: targetStep.stepNumber,
       updatedAt: now,
     });
   },
@@ -922,6 +924,35 @@ export const approveStepFromUI = mutation({
             const enriched: any = { ...parsed, publish_date: publishDate };
             
             // Add selected headline for blog_writer to use as article title
+            enriched.selectedHeadline = selectedHeadline;
+            
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            
+            finalInput = JSON.stringify(enriched);
+          } catch {
+            // Fallback if input isn't JSON
+            const enriched: any = {
+              publish_date: publishDate,
+              selectedHeadline: selectedHeadline,
+            };
+            if (inputForNextStep) {
+              enriched.previousStepOutput = inputForNextStep;
+            }
+            if (authorInfo) {
+              enriched.author = authorInfo;
+            }
+            finalInput = JSON.stringify(enriched);
+          }
+        }
+        // Special case: For image_maker, include selected headline from Step 3
+        else if (nextTemplateStep.agentRole === "image_maker" && selectedHeadline) {
+          try {
+            const parsed = JSON.parse(inputForNextStep || "{}");
+            const enriched: any = { ...parsed, publish_date: publishDate };
+            
+            // Add selected headline for image_maker to generate relevant images
             enriched.selectedHeadline = selectedHeadline;
             
             if (authorInfo) {

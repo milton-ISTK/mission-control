@@ -39,7 +39,193 @@ interface AgentDisplay {
   shirtDk: string;
   skin: string;
   skinDk: string;
+  female: boolean;
 }
+
+const AGENTS: Array<AgentDisplay & { id: string }> = [
+  // ── AGENTS (orange shirts) ──
+  {
+    id: "blogwriter",
+    name: "Blog Writer",
+    role: "Long-Form Content Writer",
+    emoji: "✍️",
+    type: "agent",
+    color: "#F97316",
+    hair: "#222",
+    hairDk: "#111",
+    shirt: ORG,
+    shirtDk: ORG_DK,
+    skin: "#F5D0B0",
+    skinDk: "#DDB898",
+    female: false,
+  },
+  {
+    id: "copywriter",
+    name: "Copywriter",
+    role: "Social Media Copywriter",
+    emoji: "📝",
+    type: "agent",
+    color: "#F97316",
+    hair: "#8B4513",
+    hairDk: "#6B3410",
+    shirt: ORG,
+    shirtDk: ORG_DK,
+    skin: "#C49A6C",
+    skinDk: "#A88050",
+    female: true,
+  },
+  {
+    id: "gregory",
+    name: "Gregory",
+    role: "CEO / Founder",
+    emoji: "👔",
+    type: "agent",
+    color: "#F97316",
+    hair: "#B8860B",
+    hairDk: "#8B6508",
+    shirt: ORG,
+    shirtDk: ORG_DK,
+    skin: "#F0D0B8",
+    skinDk: "#D8B8A0",
+    female: false,
+  },
+  {
+    id: "milton",
+    name: "Milton",
+    role: "Chief of Staff / Executive AI",
+    emoji: "🤖",
+    type: "agent",
+    color: "#F97316",
+    hair: "#6A5ACD",
+    hairDk: "#5040A8",
+    shirt: ORG,
+    shirtDk: ORG_DK,
+    skin: "#D8C0A8",
+    skinDk: "#C0A890",
+    female: false,
+  },
+  {
+    id: "research",
+    name: "Res. Enhancer",
+    role: "Research Enhancement Specialist",
+    emoji: "🔬",
+    type: "agent",
+    color: "#F97316",
+    hair: "#1A1A1A",
+    hairDk: "#0A0A0A",
+    shirt: ORG,
+    shirtDk: ORG_DK,
+    skin: "#8D6E4C",
+    skinDk: "#7A5E3E",
+    female: true,
+  },
+  {
+    id: "publisher",
+    name: "Soc. Publisher",
+    role: "Multi-Platform Publisher",
+    emoji: "📡",
+    type: "agent",
+    color: "#F97316",
+    hair: "#DC143C",
+    hairDk: "#B0102F",
+    shirt: ORG,
+    shirtDk: ORG_DK,
+    skin: "#BA8C6A",
+    skinDk: "#A07850",
+    female: false,
+  },
+  // ── SUBAGENTS (cyan shirts) ──
+  {
+    id: "headline",
+    name: "Headline Gen",
+    role: "Headlines & Hooks Specialist",
+    emoji: "💡",
+    type: "subagent",
+    color: "#06B6D4",
+    hair: "#FFD700",
+    hairDk: "#CCB000",
+    shirt: CYN,
+    shirtDk: CYN_DK,
+    skin: "#F5D0B0",
+    skinDk: "#DDB898",
+    female: true,
+  },
+  {
+    id: "htmlbuilder",
+    name: "HTML Builder",
+    role: "HTML/CSS Production Specialist",
+    emoji: "🏗️",
+    type: "subagent",
+    color: "#06B6D4",
+    hair: "#0891B2",
+    hairDk: "#067A96",
+    shirt: CYN,
+    shirtDk: CYN_DK,
+    skin: "#C49A6C",
+    skinDk: "#A88050",
+    female: false,
+  },
+  {
+    id: "humanizer",
+    name: "Humanizer",
+    role: "Content Humanization Specialist",
+    emoji: "👻",
+    type: "subagent",
+    color: "#06B6D4",
+    hair: "#2E8B57",
+    hairDk: "#1E6B40",
+    shirt: CYN,
+    shirtDk: CYN_DK,
+    skin: "#F0D0B8",
+    skinDk: "#D8B8A0",
+    female: false,
+  },
+  {
+    id: "imagemaker",
+    name: "Image Maker",
+    role: "Visual Content Creator",
+    emoji: "🎨",
+    type: "subagent",
+    color: "#06B6D4",
+    hair: "#FF69B4",
+    hairDk: "#D05090",
+    shirt: CYN,
+    shirtDk: CYN_DK,
+    skin: "#8D6E4C",
+    skinDk: "#7A5E3E",
+    female: true,
+  },
+  {
+    id: "newsscraper",
+    name: "News Scraper",
+    role: "News & Data Aggregator",
+    emoji: "📰",
+    type: "subagent",
+    color: "#06B6D4",
+    hair: "#1A1A1A",
+    hairDk: "#0A0A0A",
+    shirt: CYN,
+    shirtDk: CYN_DK,
+    skin: "#BA8C6A",
+    skinDk: "#A07850",
+    female: false,
+  },
+  {
+    id: "sentiment",
+    name: "Sent. Scraper",
+    role: "Market Sentiment Analyst",
+    emoji: "🔍",
+    type: "subagent",
+    color: "#06B6D4",
+    hair: "#A0522D",
+    hairDk: "#804020",
+    shirt: CYN,
+    shirtDk: CYN_DK,
+    skin: "#F5D8C0",
+    skinDk: "#DDC0A8",
+    female: true,
+  },
+];
 
 const DESK1 = { row: 4, stations: [1.3, 2.5, 3.7, 4.9, 6.1, 7.3] };
 const DESK2 = { row: 6.5, stations: [1.3, 2.5, 3.7, 4.9, 6.1, 7.3] };
@@ -309,7 +495,18 @@ function drawLongDesk(ctx: CanvasRenderingContext2D, startCol: number, endCol: n
   ctx.closePath();
   ctx.fillStyle = "#B0A898";
   ctx.fill();
-  isoQuad(ctx, startCol + 0.15, row + 0.08, endCol - 0.15, row + 0.08, endCol - 0.15, row + dd - 0.08, startCol + 0.15, row + dd - 0.08, "#F0E8E0");
+  isoQuad(
+    ctx,
+    startCol + 0.15,
+    row + 0.08,
+    endCol - 0.15,
+    row + 0.08,
+    endCol - 0.15,
+    row + dd - 0.08,
+    startCol + 0.15,
+    row + dd - 0.08,
+    "#F0E8E0"
+  );
   const legs = [startCol + 0.3, (startCol + endCol) / 2, endCol - 0.3];
   legs.forEach((lc) => {
     const lp = iso(lc, row + dd);
@@ -494,7 +691,7 @@ function drawSofa(ctx: CanvasRenderingContext2D) {
 function drawChar(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: AgentDisplay, state: string, frame: number) {
   const x = Math.round(cx),
     y = Math.round(cy);
-  const { hair, hairDk, shirt, shirtDk, skin: sL, skinDk: sD } = a;
+  const { hair, hairDk, shirt, shirtDk, skin: sL, skinDk: sD, female } = a;
   const pL = "#384058",
     pD = "#2C3448";
   ctx.fillStyle = "#00000022";
@@ -542,13 +739,38 @@ function drawChar(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: Agen
   p(ctx, x - 11, y - 51, 3, 5, sL);
   p(ctx, x - 11, y - 49, 1, 3, sD);
   p(ctx, x + 8, y - 51, 3, 5, sD);
-  p(ctx, x - 10, y - 63, 20, 10, hair);
-  p(ctx, x + 8, y - 63, 2, 10, hairDk);
-  p(ctx, x - 9, y - 66, 18, 5, hair);
-  p(ctx, x + 7, y - 66, 2, 5, hairDk);
-  p(ctx, x - 9, y - 56, 7, 3, hair);
-  p(ctx, x - 9, y - 56, 2, 5, hair);
-  p(ctx, x - 8, y - 65, 10, 1, hair);
+
+  // Hair
+  if (female) {
+    // Long hair — flows down past shoulders
+    p(ctx, x - 10, y - 63, 20, 10, hair);
+    p(ctx, x + 8, y - 63, 2, 10, hairDk);
+    p(ctx, x - 9, y - 66, 18, 5, hair);
+    p(ctx, x + 7, y - 66, 2, 5, hairDk);
+    p(ctx, x - 10, y - 56, 4, 3, hair);
+    p(ctx, x - 10, y - 56, 2, 6, hair);
+    p(ctx, x + 7, y - 56, 3, 3, hair);
+    p(ctx, x + 8, y - 56, 2, 6, hair);
+    // Long strands down sides
+    p(ctx, x - 12, y - 53, 3, 22, hair);
+    p(ctx, x - 12, y - 53, 1, 22, hairDk);
+    p(ctx, x + 9, y - 53, 3, 22, hair);
+    p(ctx, x + 11, y - 53, 1, 22, hairDk);
+    // Fringe/bangs
+    p(ctx, x - 8, y - 63, 16, 4, hair);
+    p(ctx, x - 6, y - 65, 12, 2, hair);
+  } else {
+    // Short hair
+    p(ctx, x - 10, y - 63, 20, 10, hair);
+    p(ctx, x + 8, y - 63, 2, 10, hairDk);
+    p(ctx, x - 9, y - 66, 18, 5, hair);
+    p(ctx, x + 7, y - 66, 2, 5, hairDk);
+    p(ctx, x - 9, y - 56, 7, 3, hair);
+    p(ctx, x - 9, y - 56, 2, 5, hair);
+    p(ctx, x - 8, y - 65, 10, 1, hair);
+  }
+
+  // Eyes
   p(ctx, x - 5, y - 51, 4, 4, "#FFF");
   p(ctx, x + 2, y - 51, 4, 4, "#FFF");
   if (state === "working") {
@@ -560,16 +782,28 @@ function drawChar(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: Agen
   }
   p(ctx, x - 5, y - 51, 1, 1, "#FFF");
   p(ctx, x + 2, y - 51, 1, 1, "#FFF");
+  // Eyebrows
   p(ctx, x - 5, y - 53, 4, 1.5, hairDk);
   p(ctx, x + 2, y - 53, 4, 1.5, hairDk);
-  p(ctx, x - 0.5, y - 47, 2, 3, sD);
-  p(ctx, x - 2, y - 43, 5, 1.5, "#C08060");
+
+  if (female) {
+    // Eyelashes
+    p(ctx, x - 6, y - 52, 1, 2, "#1A1A2A");
+    p(ctx, x + 6, y - 52, 1, 2, "#1A1A2A");
+    // Lips
+    p(ctx, x - 0.5, y - 47, 2, 3, sD);
+    p(ctx, x - 2, y - 43, 5, 2, "#C06068");
+    p(ctx, x - 1.5, y - 43, 4, 1, "#D07078");
+  } else {
+    p(ctx, x - 0.5, y - 47, 2, 3, sD);
+    p(ctx, x - 2, y - 43, 5, 1.5, "#C08060");
+  }
 }
 
 function drawCharSofa(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: AgentDisplay, frame: number) {
   const x = Math.round(cx),
     y = Math.round(cy);
-  const { hair, hairDk, shirt, shirtDk, skin: sL, skinDk: sD } = a;
+  const { hair, hairDk, shirt, shirtDk, color, skin: sL, skinDk: sD, female } = a;
   const pL = "#384058";
   ctx.fillStyle = "#00000018";
   ctx.beginPath();
@@ -596,12 +830,33 @@ function drawCharSofa(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: 
   p(ctx, x - 7, y - 47, 14, 2, sL);
   p(ctx, x - 10, y - 42, 3, 5, sL);
   p(ctx, x + 7, y - 42, 3, 5, sD);
-  p(ctx, x - 9, y - 53, 18, 10, hair);
-  p(ctx, x + 7, y - 53, 2, 10, hairDk);
-  p(ctx, x - 8, y - 56, 16, 5, hair);
-  p(ctx, x + 6, y - 56, 2, 5, hairDk);
-  p(ctx, x - 8, y - 46, 6, 2, hair);
-  p(ctx, x - 8, y - 46, 2, 4, hair);
+
+  // Hair
+  if (female) {
+    p(ctx, x - 9, y - 53, 18, 10, hair);
+    p(ctx, x + 7, y - 53, 2, 10, hairDk);
+    p(ctx, x - 8, y - 56, 16, 5, hair);
+    p(ctx, x + 6, y - 56, 2, 5, hairDk);
+    p(ctx, x - 9, y - 46, 3, 2, hair);
+    p(ctx, x - 9, y - 46, 2, 5, hair);
+    p(ctx, x + 7, y - 46, 2, 2, hair);
+    p(ctx, x + 7, y - 46, 2, 5, hair);
+    // Long strands
+    p(ctx, x - 11, y - 44, 3, 18, hair);
+    p(ctx, x - 11, y - 44, 1, 18, hairDk);
+    p(ctx, x + 8, y - 44, 3, 18, hair);
+    p(ctx, x + 10, y - 44, 1, 18, hairDk);
+    p(ctx, x - 7, y - 53, 14, 3, hair);
+  } else {
+    p(ctx, x - 9, y - 53, 18, 10, hair);
+    p(ctx, x + 7, y - 53, 2, 10, hairDk);
+    p(ctx, x - 8, y - 56, 16, 5, hair);
+    p(ctx, x + 6, y - 56, 2, 5, hairDk);
+    p(ctx, x - 8, y - 46, 6, 2, hair);
+    p(ctx, x - 8, y - 46, 2, 4, hair);
+  }
+
+  // Eyes
   p(ctx, x - 5, y - 42, 3, 3, "#FFF");
   p(ctx, x + 2, y - 42, 3, 3, "#FFF");
   p(ctx, x - 4, y - 41, 2, 2, "#1A1A2A");
@@ -610,9 +865,19 @@ function drawCharSofa(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: 
   p(ctx, x + 2, y - 42, 1, 1, "#FFF");
   p(ctx, x - 5, y - 44, 3, 1, hairDk);
   p(ctx, x + 2, y - 44, 3, 1, hairDk);
-  p(ctx, x - 0.5, y - 39, 2, 2, sD);
-  p(ctx, x - 2, y - 36, 5, 1.5, "#C08060");
-  ctx.fillStyle = a.color;
+
+  if (female) {
+    p(ctx, x - 6, y - 43, 1, 2, "#1A1A2A");
+    p(ctx, x + 5, y - 43, 1, 2, "#1A1A2A");
+    p(ctx, x - 0.5, y - 39, 2, 2, sD);
+    p(ctx, x - 2, y - 36, 5, 2, "#C06068");
+    p(ctx, x - 1.5, y - 36, 4, 1, "#D07078");
+  } else {
+    p(ctx, x - 0.5, y - 39, 2, 2, sD);
+    p(ctx, x - 2, y - 36, 5, 1.5, "#C08060");
+  }
+
+  ctx.fillStyle = color;
   ctx.font = "bold 8px 'Courier New',monospace";
   ctx.textAlign = "center";
   ctx.fillText(a.name.toUpperCase(), x, y + 8);
@@ -768,7 +1033,7 @@ export default function AgentOffice({ agents }: Props) {
   const [states, setStates] = useState<Record<string, "working" | "waiting" | "idle">>({});
   const [hovered, setHovered] = useState<AgentDisplay | null>(null);
   const [mPos, setMPos] = useState({ x: 0, y: 0 });
-  
+
   const pandaRef = useRef({
     col: 5,
     row: 5,
@@ -787,22 +1052,6 @@ export default function AgentOffice({ agents }: Props) {
     });
     setStates(newStates);
   }, [agents]);
-
-  // Build agent display objects
-  const agentDisplays: AgentDisplay[] = agents.map((a) => ({
-    id: a.id,
-    name: a.name,
-    role: a.role,
-    emoji: a.emoji,
-    type: a.type,
-    color: a.color,
-    hair: a.type === "subagent" ? "#FFD700" : "#222",
-    hairDk: a.type === "subagent" ? "#CCB000" : "#111",
-    shirt: a.color,
-    shirtDk: a.color === "#F97316" ? "#D06010" : "#0598B0",
-    skin: "#F5D0B0",
-    skinDk: "#DDB898",
-  }));
 
   // Initialize background
   useEffect(() => {
@@ -852,7 +1101,7 @@ export default function AgentOffice({ agents }: Props) {
         { col: 9.0, row: 1.4 },
       ];
 
-      agentDisplays.forEach((agent, i) => {
+      AGENTS.forEach((agent, i) => {
         const st = states[agent.id];
         const station = STATIONS[i];
         const agentPos = iso(station.col, station.seatRow);
@@ -880,7 +1129,6 @@ export default function AgentOffice({ agents }: Props) {
         }
       });
 
-      // Panda movement
       const pd = pandaRef.current;
       if (pd.waitFrames > 0) {
         pd.waitFrames--;
@@ -910,8 +1158,7 @@ export default function AgentOffice({ agents }: Props) {
       entities.sort((a, b) => a.y - b.y);
       entities.forEach((e) => e.draw());
 
-      // Nameplates
-      agentDisplays.forEach((a, i) => {
+      AGENTS.forEach((a, i) => {
         if (states[a.id] !== "idle") {
           const s = STATIONS[i];
           const dp = iso(s.col, s.deskRow);
@@ -923,7 +1170,6 @@ export default function AgentOffice({ agents }: Props) {
         }
       });
 
-      // HUD
       ctx.fillStyle = "#F97316";
       ctx.font = "bold 18px 'Courier New',monospace";
       ctx.textAlign = "left";
@@ -944,7 +1190,7 @@ export default function AgentOffice({ agents }: Props) {
       ctx.font = "9px 'Courier New',monospace";
       ctx.fillText("● LIVE", CW - 18, 40);
     },
-    [agentDisplays, states]
+    [states]
   );
 
   useEffect(() => {
@@ -972,7 +1218,7 @@ export default function AgentOffice({ agents }: Props) {
     const mx = ((e.clientX - rc.left) * CW) / rc.width;
     const my = ((e.clientY - rc.top) * CH) / rc.height;
     let f: AgentDisplay | null = null;
-    agentDisplays.forEach((a, i) => {
+    AGENTS.forEach((a, i) => {
       const s = STATIONS[i];
       const dp = iso(s.col, s.seatRow);
       if (Math.abs(mx - dp.x) < 35 && Math.abs(my - dp.y) < 50) f = a;
@@ -987,7 +1233,16 @@ export default function AgentOffice({ agents }: Props) {
 
   return (
     <div style={{ background: "#0A0A12", minHeight: "100vh", color: "#E5E5E5", fontFamily: "'Courier New',monospace" }}>
-      <div style={{ padding: "12px 24px", borderBottom: "2px solid #F97316", display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(180deg,#14141E,#0A0A12)" }}>
+      <div
+        style={{
+          padding: "12px 24px",
+          borderBottom: "2px solid #F97316",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "linear-gradient(180deg,#14141E,#0A0A12)",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ color: "#F97316", fontWeight: "bold", fontSize: 18, letterSpacing: 2 }}>ISTK</span>
           <span style={{ color: "#333" }}>│</span>
@@ -1000,7 +1255,15 @@ export default function AgentOffice({ agents }: Props) {
             { l: "IDLE", n: cnt.idle, c: "#556" },
           ].map((s) => (
             <div key={s.l} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.c, boxShadow: s.c !== "#556" ? `0 0 8px ${s.c}` : "none" }} />
+              <div
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: s.c,
+                  boxShadow: s.c !== "#556" ? `0 0 8px ${s.c}` : "none",
+                }}
+              />
               <span style={{ color: s.c, letterSpacing: 1 }}>
                 {s.n} {s.l}
               </span>
@@ -1043,8 +1306,25 @@ export default function AgentOffice({ agents }: Props) {
               {hovered.emoji} {hovered.name}
             </div>
             <div style={{ color: "#7A8A98", marginTop: 3 }}>{hovered.role}</div>
-            <div style={{ color: states[hovered.id] === "working" ? "#10B981" : states[hovered.id] === "waiting" ? "#EAB308" : "#556", marginTop: 8, textTransform: "uppercase", fontSize: 11, letterSpacing: 1 }}>
-              {states[hovered.id] === "working" ? "⚙ Processing task..." : states[hovered.id] === "waiting" ? "⏳ Awaiting assignment" : "💤 Off duty"}
+            <div
+              style={{
+                color:
+                  states[hovered.id] === "working"
+                    ? "#10B981"
+                    : states[hovered.id] === "waiting"
+                      ? "#EAB308"
+                      : "#556",
+                marginTop: 8,
+                textTransform: "uppercase",
+                fontSize: 11,
+                letterSpacing: 1,
+              }}
+            >
+              {states[hovered.id] === "working"
+                ? "⚙ Processing task..."
+                : states[hovered.id] === "waiting"
+                  ? "⏳ Awaiting assignment"
+                  : "💤 Off duty"}
             </div>
           </div>
         )}

@@ -1657,3 +1657,29 @@ export const deleteWorkflowsByStatus = mutation({
     return { ok: true, deleted: deletedCount, message: `Deleted ${deletedCount} workflow(s)` };
   },
 });
+
+export const deleteTemplateByName = mutation({
+  args: {
+    templateName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("workflowTemplates")
+      .filter((q) => q.eq(q.field("name"), args.templateName))
+      .first();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+      return {
+        ok: true,
+        message: `Deleted template "${args.templateName}"`,
+        templateId: existing._id,
+      };
+    }
+
+    return {
+      ok: false,
+      error: `Template "${args.templateName}" not found`,
+    };
+  },
+});

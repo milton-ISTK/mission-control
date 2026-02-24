@@ -1304,5 +1304,49 @@ http.route({
   }),
 });
 
+// List all workflow templates
+http.route({
+  path: "/api/admin/templates",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const templates = await ctx.runQuery(api.workflows.getWorkflowTemplates);
+      return new Response(JSON.stringify(templates), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// Delete old Blog Post template to allow re-seeding
+http.route({
+  path: "/api/admin/delete-blog-template",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const result = await ctx.runMutation(api.workflows.deleteTemplateByName, {
+        templateName: "Blog Post",
+      });
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;
-// Force rebuild: 1771841054
+// Force rebuild: 1771841055

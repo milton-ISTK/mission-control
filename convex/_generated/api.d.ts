@@ -15,6 +15,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
+import type * as office from "../office.js";
 import type * as seed from "../seed.js";
 import type * as storage from "../storage.js";
 import type * as subagents from "../subagents.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   http: typeof http;
   memories: typeof memories;
+  office: typeof office;
   seed: typeof seed;
   storage: typeof storage;
   subagents: typeof subagents;

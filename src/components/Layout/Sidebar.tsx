@@ -25,6 +25,7 @@ const navItems = [
   { href: "/tasks", label: "Tasks", icon: KanbanSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/memories", label: "Memories", icon: Brain },
+  { href: "/office", label: "Office View", icon: Bot, color: "#06B6D4" },
   { href: "/team", label: "Team", icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -61,6 +62,10 @@ export default function Sidebar() {
             item.href === "/"
               ? pathname === "/"
               : pathname?.startsWith(item.href) ?? false;
+          const color = (item as any).color || "rgba(255,107,0,0.3)";
+          const bgColor = (item as any).color ? (item as any).color + "0a" : "rgba(255,107,0,0.04)";
+          const shadowColor = (item as any).color ? (item as any).color : "rgba(255,107,0,0.3)";
+          const hoverBorderColor = (item as any).color ? (item as any).color + "14" : "rgba(255,107,0,0.08)";
           return (
             <Link
               key={item.href}
@@ -68,13 +73,29 @@ export default function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
                 isActive
-                  ? "text-istk-accent border neon-border-orange"
-                  : "text-istk-textMuted hover:text-istk-text hover:bg-[rgba(255,107,0,0.04)] border border-transparent hover:border-[rgba(255,107,0,0.08)]"
+                  ? "border neon-border-orange"
+                  : "text-istk-textMuted hover:text-istk-text border border-transparent"
               )}
               style={isActive ? {
-                background: "rgba(255,107,0,0.06)",
-                textShadow: "0 0 10px rgba(255,107,0,0.3)",
-              } : undefined}
+                color: color === "rgba(255,107,0,0.3)" ? "#F97316" : "#06B6D4",
+                background: bgColor,
+                textShadow: `0 0 10px ${shadowColor}`,
+                borderColor: shadowColor,
+              } : {
+                borderColor: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.background = bgColor;
+                  (e.currentTarget as HTMLElement).style.borderColor = hoverBorderColor;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                  (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+                }
+              }}
             >
               <item.icon
                 className={cn(

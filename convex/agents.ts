@@ -403,6 +403,14 @@ export const seedAgentHierarchy = mutation({
         defaultRole: "Visual Content Creator",
         modelId: "claude-haiku-4-5-20251001",
       },
+      "Google Docs Creator": {
+        agentType: "subagent",
+        department: "content_production",
+        isSubagent: true,
+        parentNames: ["Blog Writer"],
+        defaultRole: "Legal Review Document Manager",
+        modelId: "none",
+      },
     };
 
     const validNames = new Set(Object.keys(hierarchy));

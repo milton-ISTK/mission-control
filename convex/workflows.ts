@@ -836,7 +836,8 @@ export const approveStepFromUI = mutation({
         // Special: Legal Review Gate (Step 7) — Pull latest Google Doc content
         if (step.stepNumber === 7) {
           try {
-            const step6Input = previousExecutedStep ? JSON.parse(previousExecutedStep.output) : {};
+            const step6Output = previousExecutedStep?.output || "{}";
+            const step6Input = JSON.parse(step6Output);
             const docId = step6Input.docId;
             
             if (docId) {
@@ -846,7 +847,7 @@ export const approveStepFromUI = mutation({
               let pullResponse: Response | null = null;
               for (const port of [18891, 18789]) {
                 try {
-                  pullResponse = await fetch(`http://127.0.0.1:${port}/pull-google-doc/${docId}`, { timeout: 30000 });
+                  pullResponse = await fetch(`http://127.0.0.1:${port}/pull-google-doc/${docId}`);
                   if (pullResponse.ok) {
                     break;
                   }

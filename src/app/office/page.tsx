@@ -19,9 +19,18 @@ export default function OfficePage() {
     );
   }
 
-  // Convert Convex data to component format
+  // Convert Convex data to component format, matching AGENTS array IDs
+  const agentRoleToId: Record<string, string> = {
+    "blog_writer": "blogwriter",
+    "headline_generator": "headline",
+    "image_maker": "imagemaker",
+    "html_builder": "htmlbuilder",
+    "news_scraper": "newsscraper",
+    "sentiment_scraper": "sentiment",
+  };
+
   const agents = agentActivity.map((agent) => ({
-    id: agent.agentRole || agent.id,
+    id: agentRoleToId[agent.agentRole || ""] || agent.id,
     name: agent.name,
     role: agent.role,
     emoji: agent.avatar || "🤖",

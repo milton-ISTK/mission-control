@@ -1165,11 +1165,9 @@ export default function AgentOffice({ agents }: Props) {
   // Initialize states from props
   useEffect(() => {
     const newStates: Record<string, "working" | "waiting" | "idle"> = {};
-    agents.forEach((a, i) => {
-      // Default: 3 working, 3 waiting, 6 idle — realistic spread
-      if (i < 3) newStates[a.id] = "working";
-      else if (i < 6) newStates[a.id] = "waiting";
-      else newStates[a.id] = "idle";
+    agents.forEach((a) => {
+      // Use activity from Convex query
+      newStates[a.id] = a.activity;
     });
     setStates(newStates);
   }, [agents]);
@@ -1469,6 +1467,57 @@ export default function AgentOffice({ agents }: Props) {
             </div>
           </div>
         )}
+      </div>
+      <div style={{ padding: "0 24px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 8, maxWidth: 1400, margin: "0 auto" }}>
+        {AGENTS.map((a) => {
+          const s = states[a.id];
+          const isAgent = a.type === "agent";
+          const typeColor = isAgent ? "#F97316" : "#06B6D4";
+          return (
+            <div
+              key={a.id}
+              onClick={() => {
+                setStates((pr) => ({
+                  ...pr,
+                  [a.id]: pr[a.id] === "working" ? "waiting" : pr[a.id] === "waiting" ? "idle" : "working",
+                }));
+              }}
+              style={{
+                background: "#12121E",
+                border: "1px solid #1A1A28",
+                borderRadius: 8,
+                padding: 10,
+                cursor: "pointer",
+                position: "relative",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = typeColor;
+                (e.currentTarget as HTMLElement).style.background = "#1A1A28";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = "#1A1A28";
+                (e.currentTarget as HTMLElement).style.background = "#12121E";
+              }}
+            >
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, borderRadius: "8px 8px 0 0", background: s === "working" ? "#10B981" : s === "waiting" ? "#EAB308" : "#1A1A28" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                <span style={{ fontSize: 14 }}>{a.emoji}</span>
+                <span style={{ color: typeColor, fontWeight: "bold", fontSize: 11 }}>{a.name}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: typeColor + "22", color: typeColor, fontWeight: "bold", letterSpacing: 0.5 }}>
+                  {isAgent ? "AGENT" : "SUB"}
+                </span>
+                <span style={{ color: "#445", fontSize: 9 }}>{a.role.split(" ")[0]}</span>
+              </div>
+              <div style={{ fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: s === "working" ? "#10B981" : s === "waiting" ? "#EAB308" : "#444", display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", display: "inline-block", background: s === "working" ? "#10B981" : s === "waiting" ? "#EAB308" : "#333", boxShadow: s === "working" ? "0 0 6px #10B981" : "none" }} />
+                {s === "working" ? "Active" : s === "waiting" ? "Standby" : "Idle"}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

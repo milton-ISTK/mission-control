@@ -832,6 +832,48 @@ export const approveStepFromUI = mutation({
         if (previousExecutedStep) {
           inputForNextStep = previousExecutedStep.output;
         }
+
+        // Special: Legal Review Gate (Step 7) — Pull latest Google Doc content
+        if (step.stepNumber === 7) {
+          try {
+            const step6Input = previousExecutedStep ? JSON.parse(previousExecutedStep.output) : {};
+            const docId = step6Input.docId;
+            
+            if (docId) {
+              console.log(`[approveStepFromUI] Pulling Google Doc content: ${docId}`);
+              
+              // Try daemon HTTP endpoint (try both ports)
+              let pullResponse: Response | null = null;
+              for (const port of [18891, 18789]) {
+                try {
+                  pullResponse = await fetch(`http://127.0.0.1:${port}/pull-google-doc/${docId}`, { timeout: 30000 });
+                  if (pullResponse.ok) {
+                    break;
+                  }
+                } catch (e) {
+                  // Try next port
+                }
+              }
+              
+              if (pullResponse && pullResponse.ok) {
+                const pulledContent = await pullResponse.json();
+                console.log(`[approveStepFromUI] Successfully pulled doc: ${pulledContent.title}`);
+                
+                // Merge pulled content with metadata for Step 8 input
+                inputForNextStep = JSON.stringify({
+                  ...pulledContent,
+                  legalReviewedAt: now,
+                  reviewNotes: args.reviewNotes
+                });
+              } else {
+                console.error(`[approveStepFromUI] Failed to pull Google Doc: no response or HTTP error`);
+              }
+            }
+          } catch (err) {
+            console.error("[approveStepFromUI] Error pulling Google Doc:", err);
+            // Fall back to previous output if pull fails
+          }
+        }
       }
 
       // Fetch author info if available

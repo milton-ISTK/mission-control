@@ -883,6 +883,124 @@ function drawCharSofa(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: 
   ctx.fillText(a.name.toUpperCase(), x, y + 8);
 }
 
+function drawCharStanding(ctx: CanvasRenderingContext2D, cx: number, cy: number, a: AgentDisplay, frame: number) {
+  const x = Math.round(cx),
+    y = Math.round(cy);
+  const { hair, hairDk, shirt, shirtDk, color, skin: sL, skinDk: sD, female } = a;
+  const pL = "#384058",
+    pD = "#2C3448";
+  ctx.fillStyle = "#00000022";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 4, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Legs (standing)
+  p(ctx, x - 6, y - 18, 5, 18, pL);
+  p(ctx, x - 2, y - 18, 1, 18, pD);
+  p(ctx, x + 1, y - 18, 5, 18, pL);
+  p(ctx, x + 5, y - 18, 1, 18, pD);
+  p(ctx, x - 6, y - 18, 12, 2, "#222");
+  p(ctx, x - 2, y - 17, 5, 1.5, "#555");
+
+  // Shoes
+  p(ctx, x - 7, y, 6, 3, "#2A2A2A");
+  p(ctx, x - 7, y, 6, 1, "#3A3A3A");
+  p(ctx, x + 1, y, 6, 3, "#2A2A2A");
+  p(ctx, x + 1, y, 6, 1, "#3A3A3A");
+
+  // Torso
+  p(ctx, x - 7, y - 36, 14, 18, shirt);
+  p(ctx, x + 5, y - 36, 2, 18, shirtDk);
+  p(ctx, x - 3, y - 36, 6, 3, shirtDk);
+  p(ctx, x - 1, y - 36, 3, 3, sL);
+  p(ctx, x - 0.5, y - 30, 1, 2, shirtDk + "66");
+
+  // Arms — one holding cup, one relaxed
+  p(ctx, x - 11, y - 34, 4, 14, shirt);
+  p(ctx, x - 11, y - 34, 1, 14, shirtDk);
+  p(ctx, x - 11, y - 20, 4, 3, sL);
+  p(ctx, x + 7, y - 34, 4, 10, shirt);
+  p(ctx, x + 10, y - 34, 1, 10, shirtDk);
+  p(ctx, x + 7, y - 24, 4, 3, sL);
+
+  // Cup in hand
+  isoBox(ctx, x + 9, y - 24, 5, 4, 6, "#F0E8E0", "#D0C8C0", "#C0B8B0");
+  p(ctx, x + 7, y - 27, 4, 2, "#80C0E0");
+
+  // Neck + Head
+  p(ctx, x - 2, y - 39, 5, 4, sL);
+  p(ctx, x + 2, y - 39, 1, 4, sD);
+  p(ctx, x - 8, y - 58, 16, 19, sL);
+  p(ctx, x + 6, y - 58, 2, 19, sD);
+  p(ctx, x - 7, y - 59, 14, 2, sL);
+  p(ctx, x - 10, y - 53, 3, 5, sL);
+  p(ctx, x + 7, y - 53, 3, 5, sD);
+
+  // Hair
+  if (female) {
+    p(ctx, x - 9, y - 65, 18, 10, hair);
+    p(ctx, x + 7, y - 65, 2, 10, hairDk);
+    p(ctx, x - 8, y - 68, 16, 5, hair);
+    p(ctx, x + 6, y - 68, 2, 5, hairDk);
+    p(ctx, x - 9, y - 58, 3, 2, hair);
+    p(ctx, x - 9, y - 58, 2, 5, hair);
+    p(ctx, x + 7, y - 58, 2, 2, hair);
+    p(ctx, x + 7, y - 58, 2, 5, hair);
+    p(ctx, x - 11, y - 55, 3, 24, hair);
+    p(ctx, x - 11, y - 55, 1, 24, hairDk);
+    p(ctx, x + 8, y - 55, 3, 24, hair);
+    p(ctx, x + 10, y - 55, 1, 24, hairDk);
+    p(ctx, x - 7, y - 65, 14, 3, hair);
+  } else {
+    p(ctx, x - 9, y - 65, 18, 10, hair);
+    p(ctx, x + 7, y - 65, 2, 10, hairDk);
+    p(ctx, x - 8, y - 68, 16, 5, hair);
+    p(ctx, x + 6, y - 68, 2, 5, hairDk);
+    p(ctx, x - 8, y - 58, 6, 2, hair);
+    p(ctx, x - 8, y - 58, 2, 4, hair);
+  }
+
+  // Eyes
+  p(ctx, x - 5, y - 53, 3, 3, "#FFF");
+  p(ctx, x + 2, y - 53, 3, 3, "#FFF");
+  p(ctx, x - 4, y - 52, 2, 2, "#1A1A2A");
+  p(ctx, x + 3, y - 52, 2, 2, "#1A1A2A");
+  p(ctx, x - 5, y - 53, 1, 1, "#FFF");
+  p(ctx, x + 2, y - 53, 1, 1, "#FFF");
+  p(ctx, x - 5, y - 55, 3, 1, hairDk);
+  p(ctx, x + 2, y - 55, 3, 1, hairDk);
+
+  if (female) {
+    p(ctx, x - 6, y - 54, 1, 2, "#1A1A2A");
+    p(ctx, x + 5, y - 54, 1, 2, "#1A1A2A");
+    p(ctx, x - 0.5, y - 50, 2, 2, sD);
+    p(ctx, x - 2, y - 47, 5, 2, "#C06068");
+    p(ctx, x - 1.5, y - 47, 4, 1, "#D07078");
+  } else {
+    p(ctx, x - 0.5, y - 50, 2, 2, sD);
+    p(ctx, x - 2, y - 47, 5, 1.5, "#C08060");
+  }
+
+  // Chat bubble (water cooler chat)
+  const chatPhase = Math.floor(frame / 16) % 3;
+  const bx = x + 8,
+    by = y - 72;
+  p(ctx, bx, by, 20, 12, "#1E2030");
+  p(ctx, bx - 1, by + 2, 22, 8, "#1E2030");
+  p(ctx, bx, by, 20, 1.5, "#8888AA");
+  p(ctx, bx + 8, by + 12, 4, 3, "#1E2030");
+  ctx.fillStyle = "#8888AA";
+  ctx.font = "8px 'Courier New',monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(chatPhase === 0 ? "..." : chatPhase === 1 ? "lol" : "brb", bx + 10, by + 9);
+
+  // Name
+  ctx.fillStyle = color;
+  ctx.font = "bold 8px 'Courier New',monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(a.name.toUpperCase(), x, y + 14);
+}
+
 function drawBub(ctx: CanvasRenderingContext2D, x: number, y: number, state: string, frame: number) {
   const bx = x - 14,
     by = state === "idle" ? y - 66 : y - 74;
@@ -1047,8 +1165,11 @@ export default function AgentOffice({ agents }: Props) {
   // Initialize states from props
   useEffect(() => {
     const newStates: Record<string, "working" | "waiting" | "idle"> = {};
-    agents.forEach((a) => {
-      newStates[a.id] = a.activity;
+    agents.forEach((a, i) => {
+      // Default: 3 working, 3 waiting, 6 idle — realistic spread
+      if (i < 3) newStates[a.id] = "working";
+      else if (i < 6) newStates[a.id] = "waiting";
+      else newStates[a.id] = "idle";
     });
     setStates(newStates);
   }, [agents]);
@@ -1101,21 +1222,41 @@ export default function AgentOffice({ agents }: Props) {
         { col: 9.0, row: 1.4 },
       ];
 
+      // Water cooler standing positions (2 spots, chatting)
+      const coolerSpots = [
+        { col: 1.2, row: 8.5 },
+        { col: 1.8, row: 9.2 },
+      ];
+
       AGENTS.forEach((agent, i) => {
         const st = states[agent.id];
         const station = STATIONS[i];
         const agentPos = iso(station.col, station.seatRow);
 
         if (st === "idle") {
-          const seat = sofaSeats[idleIdx % sofaSeats.length];
-          const sp = iso(seat.col, seat.row);
-          entities.push({
-            y: sp.y + 20,
-            draw: () => {
-              drawCharSofa(ctx, sp.x, sp.y, agent, frame);
-              drawBub(ctx, sp.x, sp.y, "idle", frame);
-            },
-          });
+          if (idleIdx < 2) {
+            // First 2 idle agents stand at water cooler
+            const spot = coolerSpots[idleIdx];
+            const sp = iso(spot.col, spot.row);
+            entities.push({
+              y: sp.y + 20,
+              draw: () => {
+                drawCharStanding(ctx, sp.x, sp.y, agent, frame);
+              },
+            });
+          } else {
+            // Rest sit on sofa
+            const seatIdx = idleIdx - 2;
+            const seat = sofaSeats[seatIdx % sofaSeats.length];
+            const sp = iso(seat.col, seat.row);
+            entities.push({
+              y: sp.y + 20,
+              draw: () => {
+                drawCharSofa(ctx, sp.x, sp.y, agent, frame);
+                drawBub(ctx, sp.x, sp.y, "idle", frame);
+              },
+            });
+          }
           idleIdx++;
         } else {
           entities.push({

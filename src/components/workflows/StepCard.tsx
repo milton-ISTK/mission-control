@@ -768,34 +768,35 @@ export default function StepCard({
           })()}
 
           {/* Step 8: Legal Review - Show Google Doc Link */}
-          {isAwaitingReview && step.stepNumber === 8 && step.input && (
-            <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-700/40 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-blue-300">📎 Legal Review Document:</p>
-              </div>
-              {(() => {
-                try {
-                  const inputData = JSON.parse(step.input);
-                  const docUrl = inputData.docUrl;
-                  const docTitle = inputData.docTitle;
-                  if (docUrl) {
-                    return (
-                      <a
-                        href={docUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-300 hover:text-blue-100 underline block mb-2"
-                      >
-                        🔗 {docTitle || 'Open in Google Docs'}
-                      </a>
-                    );
-                  }
-                } catch {}
-                return null;
-              })()}
-              <p className="text-xs text-blue-200">Share this link with counsel for review. Edit the document as needed, then approve to continue.</p>
-            </div>
-          )}
+          {isAwaitingReview && step.stepNumber === 8 && ((() => {
+            try {
+              const inputData = typeof step.input === 'string' ? JSON.parse(step.input) : step.input || {};
+              const docUrl = inputData.docUrl || '';
+              const docTitle = inputData.docTitle || '';
+              
+              if (docUrl) {
+                return (
+                  <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-700/40 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-blue-300">📎 Legal Review Document:</p>
+                    </div>
+                    <a
+                      href={docUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-300 hover:text-blue-100 underline font-bold block mb-2"
+                    >
+                      🔗 {docTitle || 'Open in Google Docs'}
+                    </a>
+                    <p className="text-xs text-blue-200">Share this link with counsel for review. Edit the document as needed, then approve to continue.</p>
+                  </div>
+                );
+              }
+            } catch (e) {
+              console.error('[StepCard] Failed to parse Step 8 input:', e);
+            }
+            return null;
+          })())}
 
           {isAwaitingReview && step.input && !isImageReview && step.agentRole !== "headline_generator" && step.stepNumber !== 8 && (
             <div className="p-3 rounded-lg bg-amber-900/10 border border-amber-700/30">

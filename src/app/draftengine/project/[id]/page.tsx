@@ -10,20 +10,23 @@ import Screen1TopicInput from '@/components/draftengine/screens/Screen1TopicInpu
 import Screen2ResearchLoading from '@/components/draftengine/screens/Screen2ResearchLoading';
 import Screen3HeadlineSelection from '@/components/draftengine/screens/Screen3HeadlineSelection';
 import Screen4HeadlineApproval from '@/components/draftengine/screens/Screen4HeadlineApproval';
-// Screens 5-10 coming in next commits
+import Screen5ImageStyleSelector from '@/components/draftengine/screens/Screen5ImageStyleSelector';
+import Screen6WritingImageLoading from '@/components/draftengine/screens/Screen6WritingImageLoading';
+import Screen7BlogReview from '@/components/draftengine/screens/Screen7BlogReview';
+// Screens 8-10 coming in next commits
 
 const SCREENS = [
-  Screen1TopicInput,
-  Screen2ResearchLoading,
-  Screen3HeadlineSelection,
-  Screen4HeadlineApproval, // Step 4: Headline approval gate
+  Screen1TopicInput,              // Screen 0: Topic input
+  Screen2ResearchLoading,         // Screen 1: Research loading (steps 1-3)
+  Screen3HeadlineSelection,       // Screen 2: Headline selection (step 3 output preview)
+  Screen4HeadlineApproval,        // Screen 3: Headline approval gate (step 4)
+  Screen5ImageStyleSelector,      // Screen 4: Image style selection (step 5)
+  Screen6WritingImageLoading,     // Screen 5: Writing + image generation (steps 6-7)
+  Screen7BlogReview,              // Screen 6: Blog review gate (step 8)
   // Placeholder screens to prevent errors (will be replaced)
-  Screen1TopicInput,
-  Screen1TopicInput,
-  Screen1TopicInput,
-  Screen1TopicInput,
-  Screen1TopicInput,
-  Screen1TopicInput,
+  Screen1TopicInput,              // Screen 7: Image review (step 9)
+  Screen1TopicInput,              // Screen 8: Theme selection (step 10)
+  Screen1TopicInput,              // Screen 9: Final preview (step 11)
 ];
 
 export default function WizardPage() {
@@ -58,37 +61,36 @@ export default function WizardPage() {
   }
 
   // Derive screen purely from currentStepNumber
-  // No status checking - just follow the workflow progress
+  // Maps workflow step numbers to screen indices
   const deriveScreen = (): number => {
     const stepNum = workflow?.currentStepNumber || 1;
     
-    // Step mapping: currentStepNumber → screen index
-    // Steps 1-3: research (show loading)
+    // Step 1-3: Research phases (trend + news analysis running) → Research Loading (Screen 1)
     if (stepNum >= 1 && stepNum <= 3) return 1;
     
-    // Step 4: headline approval gate (show approval UI)
+    // Step 4: Headline generation → Headline Approval Gate (Screen 3)
     if (stepNum === 4) return 3;
     
-    // Step 5: image style selection
+    // Step 5: Image style selection → Image Style Selector (Screen 4)
     if (stepNum === 5) return 4;
     
-    // Steps 6-7: writing/image generation (show loading)
+    // Steps 6-7: Blog writing + Image generation (parallel) → Loading (Screen 5)
     if (stepNum >= 6 && stepNum <= 7) return 5;
     
-    // Step 8: blog review
+    // Step 8: Blog review → Blog Review (Screen 6)
     if (stepNum === 8) return 6;
     
-    // Step 9: image review
+    // Step 9: Image review → Image Review (Screen 7, placeholder)
     if (stepNum === 9) return 7;
     
-    // Step 10: theme selection
+    // Step 10: Theme selection → Theme Selector (Screen 8, placeholder)
     if (stepNum === 10) return 8;
     
-    // Step 11: final preview
-    if (stepNum === 11) return 9;
+    // Step 11-12: Final preview → Preview (Screen 9, placeholder)
+    if (stepNum >= 11 && stepNum <= 12) return 9;
     
-    // Step 12+: complete
-    if (stepNum >= 12) return 10;
+    // Step 13+: Complete or beyond
+    if (stepNum >= 13) return 9;
 
     return 1; // Default
   };

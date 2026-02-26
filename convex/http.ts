@@ -1348,5 +1348,47 @@ http.route({
   }),
 });
 
+// ---- GET /api/draftengine/project-by-workflow ----
+http.route({
+  path: "/api/draftengine/project-by-workflow",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const url = new URL(request.url);
+      const workflowId = url.searchParams.get("workflowId");
+      if (!workflowId) {
+        return new Response(JSON.stringify({ ok: false, error: "Missing workflowId parameter" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const project = await ctx.runQuery(api.draftengine.getProjectByWorkflow, {
+        workflowId: workflowId as any,
+      });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          project: project || {},
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;
 // Force rebuild: 1771841055

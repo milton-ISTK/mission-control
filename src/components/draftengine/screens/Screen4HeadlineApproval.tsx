@@ -30,9 +30,9 @@ export default function Screen4HeadlineApproval({
 
     setIsApproving(true);
     try {
-      // Find step 4 (headline selection)
-      const step4 = steps.find((s) => s.stepNumber === 4);
-      if (!step4) throw new Error('Step 4 not found');
+      // Find the headline generator step (agentRole: de_headline_generator)
+      const headlineStep = steps.find((s) => s.agentRole === 'de_headline_generator');
+      if (!headlineStep) throw new Error('Headline generator step not found');
 
       // Parse the selected headline if it's JSON (object format)
       let headlineDisplay = selectedHeadline;
@@ -45,7 +45,7 @@ export default function Screen4HeadlineApproval({
 
       // Approve the step with the selected headline as review notes
       await approveStep({
-        stepId: step4._id,
+        stepId: headlineStep._id,
         reviewNotes: `Selected headline: ${headlineDisplay}`,
       });
 
@@ -58,22 +58,24 @@ export default function Screen4HeadlineApproval({
     }
   };
 
-  // Extract headlines from step 4 output
-  const step4 = steps.find((s) => s.stepNumber === 4);
+  // Extract headlines from headline generator step output
+  const headlineGeneratorStep = steps.find((s) => s.agentRole === 'de_headline_generator');
   const headlines: any[] = [];
 
-  if (step4?.output) {
+  if (headlineGeneratorStep?.output) {
     try {
-      const output = JSON.parse(step4.output);
+      const output = JSON.parse(headlineGeneratorStep.output);
+      console.log('Parsed headline output:', output);
+      
       if (Array.isArray(output.headlines)) {
-        // Headlines can be strings or objects with {headline, hook, style}
+        // Format: {headlines: [{headline, hook, style}, ...]}
         headlines.push(...output.headlines);
       } else if (Array.isArray(output)) {
-        // Direct array of headlines
+        // Direct array of headlines: [{headline, hook, style}, ...]
         headlines.push(...output);
       }
     } catch (e) {
-      console.error('Failed to parse headlines:', e);
+      console.error('Failed to parse headlines from output:', headlineGeneratorStep.output, e);
     }
   }
 

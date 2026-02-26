@@ -34,10 +34,10 @@ export default function Screen4HeadlineApproval({
       const step4 = steps.find((s) => s.stepNumber === 4);
       if (!step4) throw new Error('Step 4 not found');
 
-      // Approve the step (this creates the next step and marks step 4 as approved)
+      // Approve the step with the selected headline as review notes
       await approveStep({
         stepId: step4._id,
-        approvalData: { selectedHeadline },
+        reviewNotes: `Selected headline: ${selectedHeadline}`,
       });
 
       onNext?.();

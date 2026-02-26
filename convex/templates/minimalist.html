@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{META_DESC}}">
+    <meta property="og:title" content="{{TITLE}}">
+    <meta property="og:description" content="{{META_DESC}}">
+    <meta property="og:image" content="{{HERO_IMAGE_URL}}">
+    
+    <title>{{TITLE}}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: {{ACCENT_COLOR}};
+            --accent-light: {{ACCENT_LIGHT}};
+            --accent-dark: {{ACCENT_DARK}};
+            --text-primary: #1a1a1a;
+            --text-secondary: #777;
+            --bg: #ffffff;
+            --border: #e5e5e5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 2;
+            color: var(--text-primary);
+            background-color: var(--bg);
+            letter-spacing: 0.3px;
+        }
+        
+        /* Header */
+        header {
+            padding: 60px 0 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 600;
+            text-transform: lowercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        .meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+        
+        /* Hero Image */
+        .hero-image {
+            width: 100%;
+            height: auto;
+            margin: 60px 0;
+            display: block;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Content */
+        .content {
+            margin: 0 0 80px;
+        }
+        
+        /* Typography */
+        h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-transform: lowercase;
+            letter-spacing: 0.05em;
+            margin-top: 60px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        h3 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: lowercase;
+            letter-spacing: 0.05em;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        p {
+            margin-bottom: 0;
+            line-height: 2;
+            color: var(--text-primary);
+        }
+        
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent);
+            transition: all 0.3s ease;
+        }
+        
+        a:hover {
+            background: var(--accent-light);
+            padding: 2px 4px;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 2px solid var(--accent);
+            padding-left: 20px;
+            margin: 60px 0;
+            font-style: italic;
+            color: var(--text-secondary);
+            line-height: 2;
+        }
+        
+        blockquote p {
+            margin-bottom: 0;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 30px 0 30px 40px;
+            line-height: 2;
+        }
+        
+        li {
+            margin-bottom: 0;
+        }
+        
+        /* Images in content */
+        .content img {
+            max-width: 100%;
+            height: auto;
+            margin: 60px 0;
+            display: block;
+        }
+        
+        strong {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+        
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            background: var(--border);
+            padding: 2px 6px;
+            border-radius: 2px;
+            color: var(--text-primary);
+        }
+        
+        pre {
+            background: var(--border);
+            padding: 20px;
+            border-radius: 2px;
+            overflow-x: auto;
+            margin: 30px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        /* Footer */
+        footer {
+            margin-top: 100px;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        .tags {
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .footer-credit {
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        header, .content, footer {
+            animation: fadeIn 0.8s ease;
+        }
+        
+        .content {
+            animation-delay: 0.2s;
+        }
+        
+        footer {
+            animation-delay: 0.4s;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
+            
+            header {
+                padding: 40px 0 30px;
+                margin-bottom: 30px;
+            }
+            
+            h1 {
+                font-size: 1.4rem;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
+                margin-top: 40px;
+            }
+            
+            h3 {
+                font-size: 1rem;
+                margin-top: 30px;
+            }
+            
+            body {
+                line-height: 1.8;
+            }
+            
+            .hero-image {
+                margin: 40px 0;
+            }
+            
+            footer {
+                margin-top: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <article>
+        <!-- Header -->
+        <header>
+            <h1>{{TITLE}}</h1>
+            <div class="meta">{{DATE}} · {{READ_TIME}}</div>
+        </header>
+        
+        <!-- Container -->
+        <div class="container">
+            <!-- Hero Image -->
+            <img src="{{HERO_IMAGE_URL}}" alt="{{HERO_ALT_TEXT}}" class="hero-image">
+            
+            <!-- Main Content -->
+            <div class="content">
+                {{CONTENT}}
+            </div>
+            
+            <!-- Footer -->
+            <footer>
+                <div class="tags">{{TAGS}}</div>
+                <div class="footer-credit">
+                    Made with <a href="#">DraftEngine</a>
+                </div>
+            </footer>
+        </div>
+    </article>
+</body>
+</html>

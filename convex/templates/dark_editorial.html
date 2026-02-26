@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{META_DESC}}">
+    <meta property="og:title" content="{{TITLE}}">
+    <meta property="og:description" content="{{META_DESC}}">
+    <meta property="og:image" content="{{HERO_IMAGE_URL}}">
+    
+    <title>{{TITLE}}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: {{ACCENT_COLOR}};
+            --accent-light: {{ACCENT_LIGHT}};
+            --accent-dark: {{ACCENT_DARK}};
+            --bg-dark: #1a1a2e;
+            --bg-darker: #0f0f1e;
+            --text-primary: #f5f5f5;
+            --text-secondary: #b0b0b0;
+            --border: #2a2a3e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            line-height: 1.75;
+            color: var(--text-primary);
+            background-color: var(--bg-dark);
+        }
+        
+        /* Hero Section */
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 550px;
+            margin-bottom: 80px;
+            overflow: hidden;
+        }
+        
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(26,26,46,0.9));
+            display: flex;
+            align-items: flex-end;
+            padding: 60px 40px;
+        }
+        
+        .hero-content h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--text-primary);
+            max-width: 720px;
+        }
+        
+        .hero-meta {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+        
+        /* Typography */
+        h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-top: 60px;
+            margin-bottom: 25px;
+            color: var(--text-primary);
+        }
+        
+        h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-top: 45px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+        
+        p {
+            margin-bottom: 25px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+        
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+        
+        /* Pull Quotes */
+        .quote {
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+            margin: 50px 0;
+            padding: 30px;
+            color: var(--accent);
+            border-bottom: 3px solid var(--accent);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--accent);
+            padding-left: 25px;
+            margin: 40px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        blockquote p {
+            color: var(--text-secondary);
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 25px 0 25px 40px;
+        }
+        
+        li {
+            margin-bottom: 12px;
+            line-height: 1.8;
+        }
+        
+        /* Images */
+        .content img {
+            max-width: 100%;
+            height: auto;
+            margin: 50px 0;
+            border-radius: 4px;
+            display: block;
+        }
+        
+        strong {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+        
+        code {
+            background-color: var(--bg-darker);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: var(--accent-light);
+        }
+        
+        pre {
+            background-color: var(--bg-darker);
+            padding: 20px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 30px 0;
+            border-left: 3px solid var(--accent);
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-secondary);
+        }
+        
+        /* Footer */
+        footer {
+            margin-top: 100px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .tags {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background-color: var(--accent);
+            color: var(--bg-dark);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .footer-text {
+            margin-top: 25px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .content {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        footer {
+            animation: fadeInUp 0.8s ease 0.2s forwards;
+            opacity: 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                height: 350px;
+                margin-bottom: 50px;
+            }
+            
+            .hero-overlay {
+                padding: 40px 20px;
+            }
+            
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.6rem;
+                margin-top: 40px;
+            }
+            
+            h3 {
+                font-size: 1.3rem;
+                margin-top: 30px;
+            }
+            
+            .hero-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 0 20px;
+            }
+            
+            .quote {
+                font-size: 1.2rem;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <article>
+        <!-- Hero Section -->
+        <section class="hero">
+            <img src="{{HERO_IMAGE_URL}}" alt="{{HERO_ALT_TEXT}}" class="hero-image">
+            <div class="hero-overlay">
+                <div class="hero-content">
+                    <h1>{{TITLE}}</h1>
+                    <div class="hero-meta">
+                        <span>{{DATE}}</span>
+                        <span>{{READ_TIME}}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Main Content -->
+        <div class="container">
+            <div class="content">
+                {{CONTENT}}
+            </div>
+            
+            <!-- Footer -->
+            <footer>
+                <div class="tags">
+                    {{TAGS}}
+                </div>
+                <div class="footer-text">
+                    Produced with <a href="#">DraftEngine</a>
+                </div>
+            </footer>
+        </div>
+    </article>
+</body>
+</html>

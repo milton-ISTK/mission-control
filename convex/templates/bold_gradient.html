@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{META_DESC}}">
+    <meta property="og:title" content="{{TITLE}}">
+    <meta property="og:description" content="{{META_DESC}}">
+    <meta property="og:image" content="{{HERO_IMAGE_URL}}">
+    
+    <title>{{TITLE}}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: {{ACCENT_COLOR}};
+            --accent-light: {{ACCENT_LIGHT}};
+            --accent-dark: {{ACCENT_DARK}};
+            --bg: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
+            --border: #e5e5e5;
+            --bg-light: #f8f9fa;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg);
+        }
+        
+        /* Hero Gradient Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            padding: 80px 40px;
+            position: relative;
+            overflow: hidden;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 400px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(200px, -200px);
+        }
+        
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-content h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .hero-meta {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
+            display: flex;
+            gap: 25px;
+        }
+        
+        .hero-image-wrapper {
+            position: relative;
+        }
+        
+        .hero-image {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            object-fit: cover;
+            aspect-ratio: 1;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+        
+        /* Typography */
+        h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 3px solid var(--accent);
+        }
+        
+        h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 3px solid var(--accent-light);
+        }
+        
+        p {
+            margin-bottom: 20px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+        
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        a:hover {
+            color: var(--accent-dark);
+            text-decoration: underline;
+        }
+        
+        /* Content Sections */
+        .content > p:nth-child(odd) {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--accent);
+            padding-left: 20px;
+            margin: 40px 0;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 25px 0 25px 40px;
+        }
+        
+        li {
+            margin-bottom: 12px;
+            line-height: 1.8;
+        }
+        
+        /* Custom list styling */
+        ul > li::marker {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        /* Images */
+        .content img {
+            max-width: 100%;
+            height: auto;
+            margin: 40px 0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        
+        strong {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+        
+        /* Data Callouts */
+        .stat-box {
+            background: var(--accent-light);
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        
+        /* Footer */
+        footer {
+            margin-top: 80px;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background: var(--accent-light);
+            color: var(--text-primary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .footer-bar {
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
+            padding: 30px 0;
+            color: white;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 60px;
+        }
+        
+        .footer-bar a {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        /* Animations */
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .hero-content { animation: slideInLeft 0.6s ease; }
+        .hero-image-wrapper { animation: slideInRight 0.6s ease; }
+        
+        .content {
+            animation: slideInLeft 0.6s ease 0.2s both;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 50px 20px;
+                min-height: 400px;
+            }
+            
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-section::before {
+                width: 250px;
+                height: 250px;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            h3 {
+                font-size: 1.2rem;
+            }
+            
+            .container {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section with Gradient -->
+    <section class="hero-section">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1>{{TITLE}}</h1>
+                <div class="hero-meta">
+                    <span>{{DATE}}</span>
+                    <span>{{READ_TIME}}</span>
+                </div>
+            </div>
+            <div class="hero-image-wrapper">
+                <img src="{{HERO_IMAGE_URL}}" alt="{{HERO_ALT_TEXT}}" class="hero-image">
+            </div>
+        </div>
+    </section>
+    
+    <!-- Main Content -->
+    <div class="container">
+        <div class="content">
+            {{CONTENT}}
+        </div>
+        
+        <!-- Footer -->
+        <footer>
+            <div class="tags">
+                {{TAGS}}
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Footer Bar -->
+    <div class="footer-bar">
+        Created with <a href="#">DraftEngine</a>
+    </div>
+</body>
+</html>

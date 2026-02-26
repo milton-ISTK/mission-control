@@ -12,6 +12,7 @@ import type * as agents from "../agents.js";
 import type * as authors from "../authors.js";
 import type * as contentPipeline from "../contentPipeline.js";
 import type * as dashboard from "../dashboard.js";
+import type * as draftengine from "../draftengine.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   authors: typeof authors;
   contentPipeline: typeof contentPipeline;
   dashboard: typeof dashboard;
+  draftengine: typeof draftengine;
   events: typeof events;
   http: typeof http;
   memories: typeof memories;

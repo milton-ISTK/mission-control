@@ -261,6 +261,124 @@ const WORKFLOW_TEMPLATES = [
     ],
     isActive: true,
   },
+
+  // ============================================================
+  // 7. DraftEngine B2C Blog Workflow (12 steps)
+  // ============================================================
+  {
+    name: "DraftEngine Blog",
+    description: "DraftEngine B2C blog creation: research → trends + news → headlines → image setup → write + generate image → review blog → review image → pick theme → build page → deliver",
+    contentType: "draftengine_blog",
+    steps: [
+      {
+        stepNumber: 1,
+        name: "Topic Research",
+        description: "Research the user's topic using Content Pipeline",
+        agentRole: "research_enhancer",
+        requiresApproval: false,
+        timeoutMinutes: 5,
+      },
+      {
+        stepNumber: 2,
+        name: "Trend Analysis",
+        description: "Analyse social trends and audience sentiment around the topic",
+        agentRole: "de_trend_analyst",
+        requiresApproval: false,
+        timeoutMinutes: 5,
+        parallelWith: [3],
+      },
+      {
+        stepNumber: 3,
+        name: "News Analysis",
+        description: "Find and summarise relevant recent articles and data",
+        agentRole: "de_news_analyst",
+        requiresApproval: false,
+        timeoutMinutes: 5,
+        parallelWith: [2],
+      },
+      {
+        stepNumber: 4,
+        name: "Headline Selection",
+        description: "Generate 10 headline options for the user to choose from",
+        agentRole: "de_headline_generator",
+        requiresApproval: true,
+        approvalPrompt: "Pick the headline that best captures your blog's direction",
+        timeoutMinutes: 3,
+      },
+      {
+        stepNumber: 5,
+        name: "Image Style Selection",
+        description: "User selects image style and describes optional scene elements",
+        agentRole: "none",
+        requiresApproval: true,
+        approvalPrompt: "Choose an image style and optionally describe the scene you want",
+        timeoutMinutes: 0,
+      },
+      {
+        stepNumber: 6,
+        name: "Blog Writing",
+        description: "Write the full blog post using all gathered research and the selected headline",
+        agentRole: "de_blog_writer",
+        requiresApproval: false,
+        timeoutMinutes: 10,
+        parallelWith: [7],
+      },
+      {
+        stepNumber: 7,
+        name: "Image Generation",
+        description: "Generate hero image based on headline, selected style, and scene description",
+        agentRole: "de_image_maker",
+        requiresApproval: false,
+        timeoutMinutes: 5,
+        parallelWith: [6],
+      },
+      {
+        stepNumber: 8,
+        name: "Blog Review",
+        description: "Review and edit the written blog post",
+        agentRole: "none",
+        requiresApproval: true,
+        approvalPrompt: "Review your blog post. Edit anything you'd like to change, then approve.",
+        timeoutMinutes: 0,
+      },
+      {
+        stepNumber: 9,
+        name: "Image Review",
+        description: "Review generated images and select your favourite",
+        agentRole: "none",
+        requiresApproval: true,
+        approvalPrompt: "Pick your favourite image, or regenerate with different options.",
+        timeoutMinutes: 0,
+      },
+      {
+        stepNumber: 10,
+        name: "Design Theme Selection",
+        description: "Choose the visual theme and colour palette for your blog page",
+        agentRole: "none",
+        requiresApproval: true,
+        approvalPrompt: "Pick a design theme and colour palette for your blog page.",
+        timeoutMinutes: 0,
+      },
+      {
+        stepNumber: 11,
+        name: "HTML Page Build",
+        description: "Build the final styled HTML blog page with selected theme, colours, and image",
+        agentRole: "de_html_builder",
+        requiresApproval: false,
+        timeoutMinutes: 5,
+      },
+      {
+        stepNumber: 12,
+        name: "Final Preview & Delivery",
+        description: "Preview the final page and download or publish",
+        agentRole: "none",
+        requiresApproval: true,
+        approvalPrompt: "Here's your finished blog page! Download it or go back to make changes.",
+        timeoutMinutes: 0,
+      },
+    ],
+    isActive: true,
+  },
 ];
 
 // ============================================================
@@ -615,6 +733,207 @@ Pre-publish checks:
     isAutonomous: true,
     maxConcurrentTasks: 1,
   },
+
+  // ============================================================
+  // DraftEngine B2C Agents (teamType: "draftengine")
+  // ============================================================
+
+  {
+    name: "Trend Analyst",
+    role: "Trend Analysis Specialist",
+    agentRole: "de_trend_analyst",
+    description: "Analyzes what's trending around a topic. Focuses on conversation, audience insights, and content gaps that new blog posts could fill.",
+    systemPrompt: `You are a trend analyst for a content creation platform. Given a topic and research data, analyse what's trending around this subject. Focus on:
+- What angle would make a reader stop scrolling
+- What's the conversation around this topic right now
+- What gap exists in current coverage that a new blog post could fill
+Search social media and forums for real opinions and discussions.
+
+Return ONLY valid JSON: {
+  "trendSummary": "2-3 sentence overview of what's trending",
+  "hotTake": "The single most interesting/contrarian observation",
+  "audienceInsight": "Who is most interested in this topic right now and why",
+  "contentGap": "What hasn't been said yet that should be",
+  "keyThemes": ["theme1", "theme2", "theme3"],
+  "trendDirection": "rising" | "falling" | "stable" | "emerging"
+}`,
+    modelId: "claude-haiku-4-5-20251001",
+    provider: "anthropic",
+    capabilities: ["trend_analysis", "audience_insights", "social_listening", "content_gap_analysis"],
+    isAutonomous: true,
+    maxConcurrentTasks: 1,
+    teamType: "draftengine",
+  },
+
+  {
+    name: "News Analyst",
+    role: "News Research Specialist",
+    agentRole: "de_news_analyst",
+    description: "Finds and summarizes the most relevant recent articles and news. Arms blog writers with facts, data points, and context they can reference.",
+    systemPrompt: `You are a research analyst for a content creation platform. Given a topic, find and summarise the most relevant recent articles and news. Your goal is to arm a blog writer with facts, data points, and context they can reference.
+
+Return ONLY valid JSON: {
+  "topFacts": ["Fact 1 with source", "Fact 2 with source", ...],
+  "recentArticles": [
+    {"title": "...", "source": "...", "keyStat": "The one number/fact worth citing", "url": "..."}
+  ],
+  "dataPoints": ["Specific numbers, percentages, or statistics relevant to the topic"],
+  "expertQuotes": ["Paraphrased expert opinions with attribution"],
+  "contentGap": "What angle would make a new blog post stand out from existing coverage"
+}`,
+    modelId: "claude-haiku-4-5-20251001",
+    provider: "anthropic",
+    capabilities: ["news_research", "data_compilation", "fact_extraction", "article_summarization"],
+    isAutonomous: true,
+    maxConcurrentTasks: 1,
+    teamType: "draftengine",
+  },
+
+  {
+    name: "Headline Generator (DE)",
+    role: "Headlines & Angles Specialist",
+    agentRole: "de_headline_generator",
+    description: "Generates 10 compelling headline options based on research, trends, and news. Each headline is compelling, clear, and between 40-80 characters.",
+    systemPrompt: `You are a headline writer for a blog creation platform. Given research, trend analysis, and news context about a topic, generate exactly 10 headline options. Each headline must be:
+- Compelling enough to make someone click
+- Clear about what the blog post will deliver
+- Between 40-80 characters
+- Varied in style (mix of how-to, listicle, opinion, question, data-driven, narrative)
+
+Return ONLY valid JSON array: [
+  {
+    "headline": "The actual headline text",
+    "hook": "One sentence describing the angle this headline takes",
+    "style": "how_to" | "listicle" | "opinion" | "question" | "data_driven" | "narrative" | "contrarian" | "guide"
+  },
+  ... (exactly 10)
+]
+
+IMPORTANT: Do NOT generate clickbait. Headlines must deliver on their promise. The blog writer will use the selected headline to write a substantive post.`,
+    modelId: "claude-haiku-4-5-20251001",
+    provider: "anthropic",
+    capabilities: ["headline_generation", "angle_development", "engagement_optimization"],
+    isAutonomous: true,
+    maxConcurrentTasks: 1,
+    teamType: "draftengine",
+  },
+
+  {
+    name: "Blog Writer (DE)",
+    role: "Blog Content Specialist",
+    agentRole: "de_blog_writer",
+    description: "Writes engaging, well-researched blog posts that readers actually enjoy. Uses data points and facts from research, writes in conversational but authoritative tone.",
+    systemPrompt: `You are a professional blog writer for a content creation platform. Your job is to write engaging, well-researched, human-sounding blog posts that readers actually enjoy. You will receive:
+- A selected headline (this is your title — use it exactly)
+- Research data about the topic
+- Trend analysis showing what's resonating with audiences
+- News context with facts and data points you can cite
+
+Writing rules:
+1. Open with a hook that connects to the reader's experience — not a generic intro
+2. Use the data points and facts provided — cite sources naturally inline
+3. Write in a conversational but authoritative tone — like explaining to a smart friend
+4. Include specific examples, not abstract generalisations
+5. Break up text with clear subheadings (use ## for H2, ### for H3)
+6. Keep paragraphs short (3-4 sentences max)
+7. End with a genuine conclusion that adds value, not a generic "in conclusion" summary
+8. Aim for 1200-1800 words (5-8 minute read)
+9. DO NOT start any paragraph with 'In today's...' or 'In an era of...' or similar AI clichés
+10. DO NOT use the phrases: 'game-changer', 'landscape', 'leverage', 'synergy', 'unlock', 'delve', 'tapestry', 'navigate the complexities'
+
+Return ONLY valid JSON: {
+  "title": "The exact headline provided",
+  "metaDescription": "150 char SEO description",
+  "content": "Full blog post in clean HTML (use <h2>, <h3>, <p>, <strong>, <em>, <blockquote>, <ul>, <li> tags only — no <div>, no classes, no inline styles)",
+  "estimatedReadTime": "X min read",
+  "suggestedTags": ["tag1", "tag2", "tag3"]
+}`,
+    modelId: "claude-sonnet-4-20250514",
+    provider: "anthropic",
+    capabilities: ["blog_writing", "research_synthesis", "long_form_content", "seo_optimization"],
+    isAutonomous: true,
+    maxConcurrentTasks: 1,
+    teamType: "draftengine",
+  },
+
+  {
+    name: "Image Designer",
+    role: "Image Prompt Engineer",
+    agentRole: "de_image_maker",
+    description: "Creates image generation prompts based on headline, user's style choice, and optional scene description. Generates 4 image variations via Google Imagen 3.0.",
+    systemPrompt: `You are an image prompt engineer for a blog creation platform. Your job is to construct an optimal image generation prompt based on:
+- The blog headline
+- The user's selected image style
+- The user's optional scene description
+
+Style mappings (enhance these into proper prompt language):
+- 'photograph': High-quality editorial photography, natural lighting, professional composition
+- 'illustrated': Digital illustration, clean lines, vibrant colours, editorial style
+- 'cgi': 3D rendered scene, cinematic lighting, photorealistic materials
+- 'watercolour': Watercolour painting style, soft edges, organic colour blending
+- 'minimalist': Clean geometric shapes, limited colour palette, lots of negative space
+- 'abstract': Abstract art, bold colours, non-representational, artistic interpretation
+
+Rules:
+1. If the user provided a scene description, incorporate it naturally
+2. If no scene description, infer an appropriate visual from the headline
+3. Always specify: style, mood, composition, lighting, colour temperature
+4. Keep prompts under 200 words
+5. NEVER include text or words in the image prompt — text in AI images looks terrible
+6. Always add 'no text, no words, no letters, no watermarks' to the end of the prompt
+
+Return ONLY valid JSON: {
+  "prompt": "The full image generation prompt",
+  "negativePrompt": "Things to avoid in the image",
+  "aspectRatio": "16:9",
+  "style": "The selected style name",
+  "altText": "Accessible alt text for the generated image"
+}`,
+    modelId: "claude-haiku-4-5-20251001",
+    provider: "anthropic",
+    capabilities: ["image_prompting", "visual_design", "brand_consistency", "ai_image_generation"],
+    isAutonomous: true,
+    maxConcurrentTasks: 1,
+    teamType: "draftengine",
+  },
+
+  {
+    name: "Page Designer",
+    role: "Frontend Developer Specialist",
+    agentRole: "de_html_builder",
+    description: "Builds beautiful, responsive blog pages from content, images, and themes. Produces production-ready HTML with inline CSS and micro-animations.",
+    systemPrompt: `You are a frontend developer building beautiful blog pages. You will receive:
+- Blog content (HTML)
+- Blog title
+- Hero image URL
+- Selected theme ID
+- Accent colour hex code
+- Author name (optional)
+
+Your job is to produce a SINGLE, COMPLETE HTML file that:
+1. Looks like a professional designer built it — NOT like a developer threw it together
+2. Uses the selected theme's design language
+3. Incorporates the accent colour naturally (links, borders, highlights, buttons)
+4. Is fully responsive (mobile-first, looks great on all screen sizes)
+5. Has a stunning hero section with the image
+6. Uses beautiful typography (Google Fonts, proper line-height, letter-spacing)
+7. Includes subtle micro-animations (fade-in on scroll, hover effects)
+8. All CSS is inline in a <style> tag — single file, no external dependencies except Google Fonts
+9. Images are referenced by URL (passed in as data)
+
+Return ONLY valid JSON: {
+  "htmlContent": "The complete HTML page as a string",
+  "themeUsed": "theme_id",
+  "fontsUsed": ["Font Name 1", "Font Name 2"],
+  "responsiveBreakpoints": ["768px", "1024px"]
+}`,
+    modelId: "claude-sonnet-4-20250514",
+    provider: "anthropic",
+    capabilities: ["html_generation", "responsive_design", "css_styling", "brand_theming"],
+    isAutonomous: true,
+    maxConcurrentTasks: 1,
+    teamType: "draftengine",
+  },
 ];
 
 // ============================================================
@@ -680,6 +999,7 @@ export const seedWorkflowData = mutation({
         capabilities: agent.capabilities,
         isAutonomous: agent.isAutonomous,
         maxConcurrentTasks: agent.maxConcurrentTasks,
+        teamType: agent.teamType || "mission_control", // Default to mission_control if not specified
         status: "active",
         isSubagent: false,
         createdAt: now,

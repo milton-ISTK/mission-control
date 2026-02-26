@@ -93,10 +93,13 @@ export default defineSchema({
     agentType: v.optional(v.string()),              // "agent" | "subagent" — default "agent"
     parentAgentIds: v.optional(v.array(v.id("agents"))), // Which agents this subagent reports to
     department: v.optional(v.string()),             // "content_production" | "research" | "distribution" | "creative"
+    // ---- Product Assignment ----
+    teamType: v.optional(v.string()),               // "mission_control" | "draftengine" — separates agents by product
   })
     .index("by_status", ["status"])
     .index("by_name", ["name"])
-    .index("by_agentRole", ["agentRole"]),
+    .index("by_agentRole", ["agentRole"])
+    .index("by_teamType", ["teamType"]),
 
   // ---- System Status (daemon health, sync status, etc.) ----
   systemStatus: defineTable({
@@ -318,4 +321,40 @@ export default defineSchema({
   })
     .index("by_isActive", ["isActive"])
     .index("by_name", ["name"]),
+
+  // ==== DraftEngine B2C Platform ====
+
+  // ---- DraftEngine Projects ----
+  // Tracks a user's DraftEngine blog creation session from topic to final output
+  draftEngineProjects: defineTable({
+    // Identity
+    userId: v.optional(v.string()),       // For future auth — can be anonymous for demo
+    topic: v.string(),                    // What the user typed
+    // Linked workflow
+    workflowId: v.optional(v.id("workflows")),
+    // User selections (stored as they make them)
+    selectedHeadlineIndex: v.optional(v.number()),
+    selectedHeadline: v.optional(v.string()),
+    // Image choices
+    imageStyle: v.optional(v.string()),   // "photograph" | "illustrated" | "cgi" | "watercolour" | "minimalist" | "abstract"
+    imageSceneDescription: v.optional(v.string()),
+    selectedImageIndex: v.optional(v.number()),
+    selectedImageUrl: v.optional(v.string()),
+    // Theme choices
+    themeId: v.optional(v.string()),      // "clean_light" | "dark_editorial" | "bold_gradient" | "magazine" | "minimalist" | "corporate"
+    accentColor: v.optional(v.string()),  // Hex colour code
+    paletteName: v.optional(v.string()),  // "warm_sunset", "ocean_blue", etc.
+    // Output
+    finalHtmlUrl: v.optional(v.string()),
+    blogContent: v.optional(v.string()),  // Approved blog content (JSON)
+    // State
+    currentScreen: v.string(),             // Which wizard screen: topic_input | researching | headline_select | image_style | creating | blog_review | image_review | theme_select | preview | complete
+    // Timestamps
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_workflowId", ["workflowId"])
+    .index("by_currentScreen", ["currentScreen"]),
 });

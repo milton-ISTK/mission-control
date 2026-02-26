@@ -57,22 +57,70 @@ export const getProjectsByUser = query({
 
 // ---- Mutations ----
 
-/** Create a new DraftEngine project */
+/** Create a new DraftEngine project AND initialize workflow */
 export const createProject = mutation({
   args: {
     topic: v.string(),
     userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
+    const now = new Date().toISOString();
+    const nowMs = Date.now();
+    
+    // Find the DraftEngine Blog template
+    const templates = await ctx.db
+      .query("workflowTemplates")
+      .collect();
+    const template = templates.find((t) => t.contentType === "draftengine_blog");
+    
+    if (!template) {
+      throw new Error("DraftEngine Blog template not found. Please seed the database first.");
+    }
+    
+    // Create a workflow for this DraftEngine session
+    const workflowId = await ctx.db.insert("workflows", {
+      templateId: template._id,
+      sourceResearchId: template._id as any, // Reuse template ID as placeholder
+      selectedAngle: args.topic,
+      contentType: "draftengine_blog",
+      status: "active",
+      currentStepNumber: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Create the DraftEngine project
     const projectId = await ctx.db.insert("draftEngineProjects", {
       topic: args.topic,
       userId: args.userId,
       currentScreen: "researching",
+      workflowId,
+      createdAt: nowMs,
+      updatedAt: nowMs,
+    });
+    
+    // Create the first step (Topic Research)
+    await ctx.db.insert("workflowSteps", {
+      workflowId,
+      stepNumber: 1,
+      name: "Topic Research",
+      agentRole: "research_enhancer",
+      status: "pending",
+      requiresApproval: false,
+      input: JSON.stringify({ topic: args.topic }),
+      timeoutMinutes: 120,
       createdAt: now,
       updatedAt: now,
     });
-    return { _id: projectId, ...args, currentScreen: "researching", createdAt: now, updatedAt: now };
+    
+    return { 
+      _id: projectId, 
+      workflowId,
+      topic: args.topic,
+      currentScreen: "researching", 
+      createdAt: nowMs, 
+      updatedAt: nowMs 
+    };
   },
 });
 

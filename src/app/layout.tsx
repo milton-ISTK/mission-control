@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ConvexClientProvider } from "@/lib/convex";
 import AuthGuard from "@/components/auth/AuthGuard";
-import Sidebar from "@/components/Layout/Sidebar";
-import Navbar from "@/components/Layout/Navbar";
-import Footer from "@/components/Layout/Footer";
-import FluidBackground from "@/components/Layout/FluidBackground";
-import ClickAnimationHandler from "@/components/Layout/ClickAnimationHandler";
+import LayoutWrapper from "@/components/Layout/LayoutWrapper";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -33,30 +29,7 @@ export default function RootLayout({
       <body className="bg-istk-bg text-istk-text font-sans antialiased">
         <ConvexClientProvider>
           <AuthGuard>
-            {/* Click Animation Handler */}
-            <ClickAnimationHandler />
-
-            {/* Interactive Fluid/Lava Background */}
-            <FluidBackground />
-
-            <div className="relative flex min-h-screen" style={{ zIndex: 1 }}>
-              {/* Sidebar — collapses to icon bar on mobile */}
-              <Sidebar />
-
-              {/* Main Content Area */}
-              <div className="flex-1 flex flex-col min-w-0">
-                {/* Top Navbar */}
-                <Navbar />
-
-                {/* Page Content */}
-                <main className="flex-1 overflow-auto p-6 lg:p-8">
-                  {children}
-                </main>
-
-                {/* Footer */}
-                <Footer />
-              </div>
-            </div>
+            <LayoutWrapper>{children}</LayoutWrapper>
           </AuthGuard>
         </ConvexClientProvider>
       </body>

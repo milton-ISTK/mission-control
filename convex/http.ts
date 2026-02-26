@@ -1390,5 +1390,48 @@ http.route({
   }),
 });
 
+// ---- POST /api/draftengine/create-project ----
+// Create a new DraftEngine project (for testing)
+http.route({
+  path: "/api/draftengine/create-project",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = await request.json();
+      const topic = (body as any).topic as string;
+
+      if (!topic) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing topic parameter" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const projectId = await ctx.runMutation(api.draftengine.createProject, {
+        topic,
+        userId: "test-user",
+      });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          projectId,
+          message: "DraftEngine project created",
+        }),
+        { status: 201, headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;
-// Force rebuild: 1771841055
+// Force rebuild: 1771841056

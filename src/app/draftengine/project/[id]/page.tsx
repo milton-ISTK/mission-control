@@ -46,41 +46,40 @@ export default function WizardPage() {
 
   const { workflow, steps } = workflowData;
 
-  // Derive screen from workflow state
-  // Map currentStepNumber + step status to screen index
+  // Derive screen purely from currentStepNumber
+  // No status checking - just follow the workflow progress
   const deriveScreen = (): number => {
     const stepNum = workflow.currentStepNumber;
-    const currentStep = steps.find((s) => s.stepNumber === stepNum);
+    
+    // Step mapping: currentStepNumber → screen index
+    // Steps 1-3: research (show loading)
+    if (stepNum >= 1 && stepNum <= 3) return 1;
+    
+    // Step 4: headlines (show selection once step 4 is reached)
+    if (stepNum === 4) return 2;
+    
+    // Step 5: image style
+    if (stepNum === 5) return 3;
+    
+    // Steps 6-7: writing/image generation (show loading)
+    if (stepNum >= 6 && stepNum <= 7) return 4;
+    
+    // Step 8: blog review
+    if (stepNum === 8) return 5;
+    
+    // Step 9: image review
+    if (stepNum === 9) return 6;
+    
+    // Step 10: theme selection
+    if (stepNum === 10) return 7;
+    
+    // Step 11: final preview
+    if (stepNum === 11) return 8;
+    
+    // Step 12+: complete
+    if (stepNum >= 12) return 9;
 
-    if (stepNum >= 1 && stepNum <= 3 && currentStep?.status === 'pending') {
-      return 1; // Research loading (steps 1-3 are processing)
-    }
-    if (stepNum === 4 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
-      return 2; // Headline selection (step 4 done, awaiting review)
-    }
-    if (stepNum === 5 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
-      return 3; // Image style (step 5 done)
-    }
-    if (stepNum >= 6 && stepNum <= 7 && currentStep?.status === 'pending') {
-      return 4; // Writing loading (steps 6-7 processing)
-    }
-    if (stepNum === 8 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
-      return 5; // Blog review
-    }
-    if (stepNum === 9 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
-      return 6; // Image review
-    }
-    if (stepNum === 10 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
-      return 7; // Theme selection
-    }
-    if (stepNum === 11 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
-      return 8; // Final preview
-    }
-    if (stepNum === 12 && currentStep?.status === 'completed') {
-      return 9; // Complete
-    }
-
-    return 1; // Default to research loading while processing
+    return 1; // Default
   };
 
   const displayScreen = deriveScreen();

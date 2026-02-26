@@ -4,18 +4,20 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/lib/convex-client';
+import ErrorBoundary from '@/components/draftengine/ErrorBoundary';
 import WizardShell from '@/components/draftengine/WizardShell';
 import Screen1TopicInput from '@/components/draftengine/screens/Screen1TopicInput';
 import Screen2ResearchLoading from '@/components/draftengine/screens/Screen2ResearchLoading';
 import Screen3HeadlineSelection from '@/components/draftengine/screens/Screen3HeadlineSelection';
-// Screens 4-10 coming in next commits
+import Screen4HeadlineApproval from '@/components/draftengine/screens/Screen4HeadlineApproval';
+// Screens 5-10 coming in next commits
 
 const SCREENS = [
   Screen1TopicInput,
   Screen2ResearchLoading,
   Screen3HeadlineSelection,
+  Screen4HeadlineApproval, // Step 4: Headline approval gate
   // Placeholder screens to prevent errors (will be replaced)
-  Screen1TopicInput,
   Screen1TopicInput,
   Screen1TopicInput,
   Screen1TopicInput,
@@ -64,29 +66,29 @@ export default function WizardPage() {
     // Steps 1-3: research (show loading)
     if (stepNum >= 1 && stepNum <= 3) return 1;
     
-    // Step 4: headlines (show selection once step 4 is reached)
-    if (stepNum === 4) return 2;
+    // Step 4: headline approval gate (show approval UI)
+    if (stepNum === 4) return 3;
     
-    // Step 5: image style
-    if (stepNum === 5) return 3;
+    // Step 5: image style selection
+    if (stepNum === 5) return 4;
     
     // Steps 6-7: writing/image generation (show loading)
-    if (stepNum >= 6 && stepNum <= 7) return 4;
+    if (stepNum >= 6 && stepNum <= 7) return 5;
     
     // Step 8: blog review
-    if (stepNum === 8) return 5;
+    if (stepNum === 8) return 6;
     
     // Step 9: image review
-    if (stepNum === 9) return 6;
+    if (stepNum === 9) return 7;
     
     // Step 10: theme selection
-    if (stepNum === 10) return 7;
+    if (stepNum === 10) return 8;
     
     // Step 11: final preview
-    if (stepNum === 11) return 8;
+    if (stepNum === 11) return 9;
     
     // Step 12+: complete
-    if (stepNum >= 12) return 9;
+    if (stepNum >= 12) return 10;
 
     return 1; // Default
   };
@@ -114,19 +116,21 @@ export default function WizardPage() {
   };
 
   return (
-    <WizardShell
-      currentScreen={displayScreen + 1}
-      totalScreens={SCREENS.length}
-      onPrevious={handlePreviousScreen}
-      onExit={handleExit}
-      canGoPrevious={displayScreen > 0}
-    >
-      <CurrentScreen
-        project={project}
-        workflow={workflow}
-        steps={steps}
-        onNext={handleNextScreen}
-      />
-    </WizardShell>
+    <ErrorBoundary>
+      <WizardShell
+        currentScreen={displayScreen + 1}
+        totalScreens={SCREENS.length}
+        onPrevious={handlePreviousScreen}
+        onExit={handleExit}
+        canGoPrevious={displayScreen > 0}
+      >
+        <CurrentScreen
+          project={project}
+          workflow={workflow}
+          steps={steps}
+          onNext={handleNextScreen}
+        />
+      </WizardShell>
+    </ErrorBoundary>
   );
 }

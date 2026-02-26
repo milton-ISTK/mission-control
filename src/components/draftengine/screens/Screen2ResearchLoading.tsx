@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 
 interface Screen2ResearchLoadingProps {
   project: any;
+  workflow?: any;
+  steps?: any[];
 }
 
-export default function Screen2ResearchLoading({ project }: Screen2ResearchLoadingProps) {
+export default function Screen2ResearchLoading({ project, workflow, steps: workflowSteps }: Screen2ResearchLoadingProps) {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const steps = [
+  const animationSteps = [
     'Searching for relevant sources...',
     'Analyzing sentiment and trends...',
     'Extracting key insights...',
@@ -60,7 +62,7 @@ export default function Screen2ResearchLoading({ project }: Screen2ResearchLoadi
 
       {/* Steps */}
       <div className="space-y-3">
-        {steps.map((step, index) => (
+        {animationSteps.map((step, index) => (
           <div key={index} className="flex items-center gap-3">
             <div
               className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${

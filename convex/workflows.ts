@@ -199,6 +199,25 @@ export const getWorkflowByTaskId = query({
   },
 });
 
+/** Get workflow + all steps by workflowId (for DraftEngine wizard real-time updates) */
+export const getWorkflowWithSteps = query({
+  args: { workflowId: v.id("workflows") },
+  handler: async (ctx, args) => {
+    const workflow = await ctx.db.get(args.workflowId);
+    if (!workflow) return null;
+    
+    const steps = await ctx.db
+      .query("workflowSteps")
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", args.workflowId))
+      .collect();
+    
+    return {
+      workflow,
+      steps: steps.sort((a, b) => a.stepNumber - b.stepNumber),
+    };
+  },
+});
+
 // ============================================================
 // MUTATIONS
 // ============================================================

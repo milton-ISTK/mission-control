@@ -6,6 +6,8 @@ import { api } from '@/lib/convex-client';
 
 interface Screen1TopicInputProps {
   project: any;
+  workflow?: any;
+  steps?: any[];
   onNext: (data: { topic: string; projectId: string }) => void;
 }
 

@@ -31,28 +31,59 @@ export default function WizardPage() {
 
   const [currentScreen, setCurrentScreen] = useState(0);
   
-  // Fetch project directly from Convex
+  // Fetch project to get workflow ID
   const project = useQuery(api.draftengine.getProject, projectId ? { projectId: projectId as any } : 'skip');
 
-  if (!project) {
-    return <div className="flex items-center justify-center min-h-screen">Loading project...</div>;
+  // Fetch workflow + all steps (real-time subscription)
+  const workflowData = useQuery(
+    api.workflows.getWorkflowWithSteps,
+    project?.workflowId ? { workflowId: project.workflowId } : 'skip'
+  );
+
+  if (!project || !workflowData) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  // Map current screen based on project state
-  const screenMap: { [key: string]: number } = {
-    topic_input: 0,
-    researching: 1,
-    headline_select: 2,
-    image_style: 3,
-    creating: 4,
-    blog_review: 5,
-    image_review: 6,
-    theme_select: 7,
-    preview: 8,
-    complete: 9,
+  const { workflow, steps } = workflowData;
+
+  // Derive screen from workflow state
+  // Map currentStepNumber + step status to screen index
+  const deriveScreen = (): number => {
+    const stepNum = workflow.currentStepNumber;
+    const currentStep = steps.find((s) => s.stepNumber === stepNum);
+
+    if (stepNum >= 1 && stepNum <= 3 && currentStep?.status === 'pending') {
+      return 1; // Research loading (steps 1-3 are processing)
+    }
+    if (stepNum === 4 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
+      return 2; // Headline selection (step 4 done, awaiting review)
+    }
+    if (stepNum === 5 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
+      return 3; // Image style (step 5 done)
+    }
+    if (stepNum >= 6 && stepNum <= 7 && currentStep?.status === 'pending') {
+      return 4; // Writing loading (steps 6-7 processing)
+    }
+    if (stepNum === 8 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
+      return 5; // Blog review
+    }
+    if (stepNum === 9 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
+      return 6; // Image review
+    }
+    if (stepNum === 10 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
+      return 7; // Theme selection
+    }
+    if (stepNum === 11 && (currentStep?.status === 'awaiting_review' || currentStep?.status === 'completed')) {
+      return 8; // Final preview
+    }
+    if (stepNum === 12 && currentStep?.status === 'completed') {
+      return 9; // Complete
+    }
+
+    return 1; // Default to research loading while processing
   };
-  
-  const displayScreen = screenMap[project.currentScreen] || currentScreen;
+
+  const displayScreen = deriveScreen();
 
   const CurrentScreen = SCREENS[displayScreen];
 
@@ -84,6 +115,8 @@ export default function WizardPage() {
     >
       <CurrentScreen
         project={project}
+        workflow={workflow}
+        steps={steps}
         onNext={handleNextScreen}
       />
     </WizardShell>

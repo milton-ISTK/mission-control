@@ -4,7 +4,8 @@ import { useState } from 'react';
 
 interface Screen3HeadlineSelectionProps {
   project: any;
-  headlines?: string[];
+  workflow: any;
+  steps: any[];
   onNext: (data: { selectedHeadline: string }) => void;
 }
 
@@ -23,11 +24,25 @@ const SAMPLE_HEADLINES = [
 
 export default function Screen3HeadlineSelection({
   project,
-  headlines = SAMPLE_HEADLINES,
+  workflow,
+  steps,
   onNext,
 }: Screen3HeadlineSelectionProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Extract headlines from step 4 output
+  const step4 = steps?.find((s) => s.stepNumber === 4);
+  const headlines = step4?.output
+    ? (() => {
+        try {
+          const parsed = JSON.parse(step4.output);
+          return Array.isArray(parsed) ? parsed : parsed.headlines || SAMPLE_HEADLINES;
+        } catch {
+          return SAMPLE_HEADLINES;
+        }
+      })()
+    : SAMPLE_HEADLINES;
 
   const handleSelect = (headline: string) => {
     setSelected(headline);
@@ -51,7 +66,7 @@ export default function Screen3HeadlineSelection({
 
       {/* Headline Grid */}
       <div className="grid grid-cols-1 gap-3">
-        {headlines.map((headline, index) => (
+        {headlines.map((headline: string, index: number) => (
           <button
             key={index}
             onClick={() => handleSelect(headline)}

@@ -34,10 +34,19 @@ export default function Screen4HeadlineApproval({
       const step4 = steps.find((s) => s.stepNumber === 4);
       if (!step4) throw new Error('Step 4 not found');
 
+      // Parse the selected headline if it's JSON (object format)
+      let headlineDisplay = selectedHeadline;
+      try {
+        const parsed = JSON.parse(selectedHeadline);
+        headlineDisplay = parsed.headline || selectedHeadline;
+      } catch {
+        // It's already a string
+      }
+
       // Approve the step with the selected headline as review notes
       await approveStep({
         stepId: step4._id,
-        reviewNotes: `Selected headline: ${selectedHeadline}`,
+        reviewNotes: `Selected headline: ${headlineDisplay}`,
       });
 
       onNext?.();
@@ -51,13 +60,17 @@ export default function Screen4HeadlineApproval({
 
   // Extract headlines from step 4 output
   const step4 = steps.find((s) => s.stepNumber === 4);
-  const headlines: string[] = [];
+  const headlines: any[] = [];
 
   if (step4?.output) {
     try {
       const output = JSON.parse(step4.output);
       if (Array.isArray(output.headlines)) {
+        // Headlines can be strings or objects with {headline, hook, style}
         headlines.push(...output.headlines);
+      } else if (Array.isArray(output)) {
+        // Direct array of headlines
+        headlines.push(...output);
       }
     } catch (e) {
       console.error('Failed to parse headlines:', e);
@@ -77,22 +90,46 @@ export default function Screen4HeadlineApproval({
       {/* Headlines Grid */}
       {headlines.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 mb-6 flex-1 overflow-y-auto">
-          {headlines.map((headline, idx) => (
-            <button
-              key={idx}
-              onClick={() => setSelectedHeadline(headline)}
-              className={`p-4 text-left rounded-lg border-2 transition ${
-                selectedHeadline === headline
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-300 bg-white hover:border-blue-400'
-              }`}
-            >
-              <div className="font-semibold text-gray-900">{headline}</div>
-              {selectedHeadline === headline && (
-                <div className="text-sm text-blue-600 mt-2">✓ Selected</div>
-              )}
-            </button>
-          ))}
+          {headlines.map((item, idx) => {
+            // Handle both string and object formats
+            let headlineText = '';
+            let hookText = '';
+            let headlineStr = '';
+
+            if (typeof item === 'string') {
+              headlineText = item;
+              headlineStr = item;
+            } else if (typeof item === 'object' && item !== null) {
+              // Object format: {headline, hook, style}
+              headlineText = item.headline || item.text || '';
+              hookText = item.hook || item.description || '';
+              headlineStr = JSON.stringify(item);
+            } else {
+              // Fallback for unknown format
+              headlineText = String(item);
+              headlineStr = String(item);
+            }
+
+            return (
+              <button
+                key={idx}
+                onClick={() => setSelectedHeadline(headlineStr)}
+                className={`p-4 text-left rounded-lg border-2 transition ${
+                  selectedHeadline === headlineStr
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-300 bg-white hover:border-blue-400'
+                }`}
+              >
+                <div className="font-semibold text-gray-900">{headlineText || '(No text)'}</div>
+                {hookText && (
+                  <div className="text-sm text-gray-600 mt-1">{hookText}</div>
+                )}
+                {selectedHeadline === headlineStr && (
+                  <div className="text-sm text-blue-600 mt-2">✓ Selected</div>
+                )}
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg mb-6">

@@ -40,7 +40,7 @@ export default function Screen1TopicInput({ project, onNext }: Screen1TopicInput
           onChange={(e) => setTopic(e.target.value)}
           disabled={isLoading}
           autoFocus
-          className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-6 py-4 text-lg text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
         />
       </div>
 

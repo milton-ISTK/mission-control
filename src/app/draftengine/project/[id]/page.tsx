@@ -1,7 +1,9 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@/lib/convex-client';
 import WizardShell from '@/components/draftengine/WizardShell';
 import Screen1TopicInput from '@/components/draftengine/screens/Screen1TopicInput';
 import Screen2ResearchLoading from '@/components/draftengine/screens/Screen2ResearchLoading';
@@ -28,62 +30,35 @@ export default function WizardPage() {
   const projectId = (params?.id as string) || '';
 
   const [currentScreen, setCurrentScreen] = useState(0);
-  const [project, setProject] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  
+  // Fetch project directly from Convex
+  const project = useQuery(api.draftengine.getProject, projectId ? { projectId: projectId as any } : 'skip');
 
-  // Load project on mount
-  useEffect(() => {
-    const loadProject = async () => {
-      try {
-        const response = await fetch(`/api/draftengine/project/${projectId}`);
-        if (!response.ok) throw new Error('Project not found');
-        const data = await response.json();
-        setProject(data);
-        // Determine current screen based on project state
-        const screenMap: { [key: string]: number } = {
-          topic_input: 0,
-          researching: 1,
-          headline_select: 2,
-          image_style: 3,
-          creating: 4,
-          blog_review: 5,
-          image_review: 6,
-          theme_select: 7,
-          preview: 8,
-          complete: 9,
-        };
-        setCurrentScreen(screenMap[data.currentScreen] || 0);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load project');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProject();
-  }, [projectId]);
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if (!project) {
+    return <div className="flex items-center justify-center min-h-screen">Loading project...</div>;
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-600">{error}</div>
-      </div>
-    );
-  }
+  // Map current screen based on project state
+  const screenMap: { [key: string]: number } = {
+    topic_input: 0,
+    researching: 1,
+    headline_select: 2,
+    image_style: 3,
+    creating: 4,
+    blog_review: 5,
+    image_review: 6,
+    theme_select: 7,
+    preview: 8,
+    complete: 9,
+  };
+  
+  const displayScreen = screenMap[project.currentScreen] || currentScreen;
 
-  const CurrentScreen = SCREENS[currentScreen];
+  const CurrentScreen = SCREENS[displayScreen];
 
   const handleNextScreen = (data?: any) => {
-    if (currentScreen < SCREENS.length - 1) {
-      setCurrentScreen(currentScreen + 1);
-      if (data) {
-        setProject({ ...project, ...data });
-      }
+    if (displayScreen < SCREENS.length - 1) {
+      setCurrentScreen(displayScreen + 1);
     }
   };
 
@@ -101,11 +76,11 @@ export default function WizardPage() {
 
   return (
     <WizardShell
-      currentScreen={currentScreen + 1}
+      currentScreen={displayScreen + 1}
       totalScreens={SCREENS.length}
       onPrevious={handlePreviousScreen}
       onExit={handleExit}
-      canGoPrevious={currentScreen > 0}
+      canGoPrevious={displayScreen > 0}
     >
       <CurrentScreen
         project={project}

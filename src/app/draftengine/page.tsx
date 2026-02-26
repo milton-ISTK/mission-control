@@ -2,12 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '@/lib/convex-client';
 
 export default function DraftEngineLanding() {
   const router = useRouter();
   const [topic, setTopic] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const createProject = useMutation(api.draftengine.createProject);
 
   const handleStartResearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,18 +21,9 @@ export default function DraftEngineLanding() {
     setError('');
 
     try {
-      // Create a new DraftEngine project
-      const response = await fetch('/api/draftengine/project', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: topic.trim() }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create project');
-      }
-
-      const { projectId } = await response.json();
+      // Create a new DraftEngine project via Convex
+      const result = await createProject({ topic: topic.trim() });
+      const projectId = result._id;
 
       // Navigate to wizard
       router.push(`/draftengine/project/${projectId}`);
@@ -67,7 +62,7 @@ export default function DraftEngineLanding() {
               onChange={(e) => setTopic(e.target.value)}
               disabled={loading}
               autoFocus
-              className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-6 py-4 text-lg text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
             />
           </div>
 

@@ -1,22 +1,35 @@
 'use client';
 
 import { useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '@/lib/convex-client';
 
 interface Screen1TopicInputProps {
   project: any;
-  onNext: (data: { topic: string }) => void;
+  onNext: (data: { topic: string; projectId: string }) => void;
 }
 
 export default function Screen1TopicInput({ project, onNext }: Screen1TopicInputProps) {
   const [topic, setTopic] = useState(project?.topic || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const createProject = useMutation(api.draftengine.createProject);
 
   const handleStartResearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
 
     setIsLoading(true);
-    onNext({ topic: topic.trim() });
+    setError('');
+    
+    try {
+      const result = await createProject({ topic: topic.trim() });
+      onNext({ topic: topic.trim(), projectId: result._id });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create project');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,6 +56,13 @@ export default function Screen1TopicInput({ project, onNext }: Screen1TopicInput
           className="w-full px-6 py-4 text-lg text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
         />
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Start Button */}
       <button

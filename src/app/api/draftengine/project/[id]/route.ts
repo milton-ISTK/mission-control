@@ -14,9 +14,9 @@ export async function GET(
     }
 
     // Fetch project from Convex
-    const result = await convex.query('draftengine:getProjectById', {
+    const result = await convex.query('draftengine:getProject', {
       projectId,
-    });
+    } as any);
 
     if (!result) {
       return Response.json({ error: 'Project not found' }, { status: 404 });

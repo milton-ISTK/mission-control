@@ -14,10 +14,13 @@ export async function POST(request: Request) {
     // This should trigger the daemon to start research
     const result = await convex.mutation('draftengine:createProject', {
       topic: topic.trim(),
-    });
+    } as any);
+
+    // result contains _id and other fields
+    const projectId = result._id || result.id;
 
     return Response.json({
-      projectId: result,
+      projectId,
       message: 'Project created, research starting...',
     });
   } catch (error) {

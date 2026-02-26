@@ -219,7 +219,7 @@ export default defineSchema({
   // Running instances of workflow templates
   workflows: defineTable({
     templateId: v.id("workflowTemplates"),
-    sourceResearchId: v.id("contentResearch"),
+    sourceResearchId: v.optional(v.id("contentResearch")), // Optional for DraftEngine workflows
     taskId: v.optional(v.id("tasks")), // Link to Task Board
     selectedAngle: v.string(),
     contentType: v.string(),

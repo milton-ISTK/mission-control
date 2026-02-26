@@ -80,7 +80,7 @@ export const createProject = mutation({
     // Create a workflow for this DraftEngine session
     const workflowId = await ctx.db.insert("workflows", {
       templateId: template._id,
-      sourceResearchId: template._id as any, // Reuse template ID as placeholder
+      // sourceResearchId is optional for DraftEngine workflows (no contentResearch record needed)
       selectedAngle: args.topic,
       contentType: "draftengine_blog",
       status: "active",

@@ -445,13 +445,15 @@ export const advanceWorkflow = mutation({
       }
 
       // Update source research status to "complete"
-      try {
-        await ctx.db.patch(workflow.sourceResearchId, {
-          status: "complete",
-          updatedAt: now,
-        });
-      } catch {
-        // Source research may not exist or may already be complete — non-fatal
+      if (workflow.sourceResearchId) {
+        try {
+          await ctx.db.patch(workflow.sourceResearchId, {
+            status: "complete",
+            updatedAt: now,
+          });
+        } catch {
+          // Source research may not exist or may already be complete — non-fatal
+        }
       }
 
       return;

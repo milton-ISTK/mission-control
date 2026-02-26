@@ -38,11 +38,8 @@ export default function WizardShell({
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">⚡</span>
-            <span className="font-semibold text-gray-900">DraftEngine</span>
-          </div>
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          <img src="/draftengine-logo.png" alt="DraftEngine" className="h-10" />
           <button
             onClick={onExit}
             className="text-sm text-gray-600 hover:text-gray-900 transition"

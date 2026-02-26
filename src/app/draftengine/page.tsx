@@ -38,9 +38,8 @@ export default function DraftEngineLanding() {
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="text-5xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">
-            <span>⚡</span>
-            <span>DraftEngine</span>
+          <div className="mb-4 flex items-center justify-center">
+            <img src="/draftengine-logo.png" alt="DraftEngine" className="h-24" />
           </div>
           <p className="text-xl text-gray-600">
             Transform your idea into a beautifully designed blog post in minutes

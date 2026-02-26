@@ -11,6 +11,11 @@ interface Screen7Props {
   onNext?: () => void;
 }
 
+// Detect if content is HTML or plain text
+const isHtmlContent = (content: string): boolean => {
+  return /<[^>]*>/g.test(content);
+};
+
 export default function Screen7BlogReview({
   project,
   workflow,
@@ -106,18 +111,166 @@ export default function Screen7BlogReview({
             className="w-full h-full p-4 border border-gray-300 rounded resize-none focus:outline-none focus:border-blue-600 font-mono text-sm"
             style={{ fontFamily: 'ui-monospace, monospace' }}
           />
-        ) : (
-          <div className="prose prose-sm max-w-none overflow-y-auto h-full">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-              {blogContent || (
-                <p className="text-gray-400">
-                  Loading blog content...
-                </p>
-              )}
+        ) : blogContent ? (
+          isHtmlContent(blogContent) ? (
+            // Render as HTML
+            <div 
+              className="overflow-y-auto h-full prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: blogContent }}
+              style={{
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: '#1f2937',
+              } as React.CSSProperties}
+            />
+          ) : (
+            // Render as plain text with formatting
+            <div className="overflow-y-auto h-full whitespace-pre-wrap text-gray-800 leading-relaxed font-sans">
+              {blogContent}
             </div>
-          </div>
+          )
+        ) : (
+          <p className="text-gray-400">Loading blog content...</p>
         )}
       </div>
+
+      {/* Global styles for rendered HTML */}
+      <style>{`
+        .prose {
+          font-size: 16px;
+          line-height: 1.6;
+          color: #1f2937;
+        }
+
+        .prose h1,
+        .prose h2,
+        .prose h3,
+        .prose h4,
+        .prose h5,
+        .prose h6 {
+          color: #111827;
+          font-weight: 600;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          line-height: 1.25;
+        }
+
+        .prose h1 {
+          font-size: 2em;
+          margin-top: 0.5em;
+        }
+
+        .prose h2 {
+          font-size: 1.5em;
+          border-bottom: 2px solid #e5e7eb;
+          padding-bottom: 0.3em;
+        }
+
+        .prose h3 {
+          font-size: 1.25em;
+        }
+
+        .prose h4 {
+          font-size: 1.1em;
+        }
+
+        .prose p {
+          margin: 1em 0;
+          line-height: 1.8;
+        }
+
+        .prose ul,
+        .prose ol {
+          margin: 1em 0;
+          padding-left: 2em;
+        }
+
+        .prose li {
+          margin: 0.5em 0;
+        }
+
+        .prose a {
+          color: #2563eb;
+          text-decoration: none;
+          border-bottom: 1px solid rgba(37, 99, 235, 0.3);
+        }
+
+        .prose a:hover {
+          color: #1d4ed8;
+          border-bottom-color: rgba(29, 78, 216, 0.5);
+        }
+
+        .prose strong {
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .prose em {
+          font-style: italic;
+          color: #374151;
+        }
+
+        .prose code {
+          background-color: #f3f4f6;
+          color: #d97706;
+          padding: 0.2em 0.4em;
+          border-radius: 3px;
+          font-family: 'Monaco', 'Courier New', monospace;
+          font-size: 0.9em;
+        }
+
+        .prose pre {
+          background-color: #1f2937;
+          color: #f3f4f6;
+          padding: 1em;
+          border-radius: 6px;
+          overflow-x: auto;
+          margin: 1em 0;
+          font-family: 'Monaco', 'Courier New', monospace;
+          font-size: 0.85em;
+          line-height: 1.4;
+        }
+
+        .prose blockquote {
+          border-left: 4px solid #d1d5db;
+          padding-left: 1em;
+          margin: 1em 0;
+          color: #6b7280;
+          font-style: italic;
+        }
+
+        .prose table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1em 0;
+        }
+
+        .prose th,
+        .prose td {
+          border: 1px solid #d1d5db;
+          padding: 0.75em;
+          text-align: left;
+        }
+
+        .prose th {
+          background-color: #f9fafb;
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .prose img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 6px;
+          margin: 1em 0;
+        }
+
+        .prose hr {
+          border: none;
+          border-top: 2px solid #e5e7eb;
+          margin: 2em 0;
+        }
+      `}</style>
 
       {/* Action Buttons */}
       <div className="flex gap-3">

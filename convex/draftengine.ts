@@ -138,6 +138,37 @@ export const completeProject = mutation({
   },
 });
 
+/** Update a project by workflow ID (used by daemon to update currentScreen) */
+export const updateProjectByWorkflow = mutation({
+  args: {
+    workflowId: v.id("workflows"),
+    updates: v.object({
+      currentScreen: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    // Find project by workflowId
+    const project = await ctx.db
+      .query("draftEngineProjects")
+      .filter((q) => q.eq(q.field("workflowId"), args.workflowId))
+      .first();
+
+    if (!project) {
+      // Project not found (might not be a DraftEngine workflow)
+      return { updated: false };
+    }
+
+    const updated = {
+      ...project,
+      ...args.updates,
+      updatedAt: Date.now(),
+    };
+
+    await ctx.db.replace(project._id, updated);
+    return { updated: true, project: updated };
+  },
+});
+
 /** Delete a project (for cleanup) */
 export const deleteProject = mutation({
   args: { projectId: v.id("draftEngineProjects") },

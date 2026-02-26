@@ -40,16 +40,25 @@ export default function WizardPage() {
     project?.workflowId ? { workflowId: project.workflowId } : 'skip'
   );
 
-  if (!project || !workflowData) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if (!project) {
+    return <div className="flex items-center justify-center min-h-screen">Loading project...</div>;
   }
 
-  const { workflow, steps } = workflowData;
+  if (!workflowData) {
+    return <div className="flex items-center justify-center min-h-screen">Loading workflow...</div>;
+  }
+
+  const workflow = workflowData.workflow;
+  const steps = workflowData.steps || [];
+
+  if (!workflow) {
+    return <div className="flex items-center justify-center min-h-screen">Workflow not found...</div>;
+  }
 
   // Derive screen purely from currentStepNumber
   // No status checking - just follow the workflow progress
   const deriveScreen = (): number => {
-    const stepNum = workflow.currentStepNumber;
+    const stepNum = workflow?.currentStepNumber || 1;
     
     // Step mapping: currentStepNumber → screen index
     // Steps 1-3: research (show loading)

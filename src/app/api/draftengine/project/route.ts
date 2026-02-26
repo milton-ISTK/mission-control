@@ -1,8 +1,6 @@
-import { ConvexHttpClient } from 'convex/browser';
+import { NextRequest } from 'next/server';
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { topic } = await request.json();
 
@@ -10,13 +8,23 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Invalid topic' }, { status: 400 });
     }
 
-    // Create a new DraftEngine project via Convex mutation
-    // This should trigger the daemon to start research
-    const result = await convex.mutation('draftengine:createProject', {
-      topic: topic.trim(),
-    } as any);
+    // Call Convex mutation via HTTP API
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) {
+      throw new Error('NEXT_PUBLIC_CONVEX_URL not configured');
+    }
 
-    // result contains _id and other fields
+    const response = await fetch(`${convexUrl}/api/draftengine:createProject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic.trim() }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Convex error: ${response.statusText}`);
+    }
+
+    const result = await response.json();
     const projectId = result._id || result.id;
 
     return Response.json({

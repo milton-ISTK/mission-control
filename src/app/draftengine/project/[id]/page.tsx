@@ -25,7 +25,7 @@ const SCREENS = [
 export default function WizardPage() {
   const params = useParams();
   const router = useRouter();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string) || '';
 
   const [currentScreen, setCurrentScreen] = useState(0);
   const [project, setProject] = useState<any>(null);
@@ -110,7 +110,6 @@ export default function WizardPage() {
       <CurrentScreen
         project={project}
         onNext={handleNextScreen}
-        onPrevious={handlePreviousScreen}
       />
     </WizardShell>
   );

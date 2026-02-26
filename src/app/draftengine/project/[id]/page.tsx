@@ -13,7 +13,9 @@ import Screen4HeadlineApproval from '@/components/draftengine/screens/Screen4Hea
 import Screen5ImageStyleSelector from '@/components/draftengine/screens/Screen5ImageStyleSelector';
 import Screen6WritingImageLoading from '@/components/draftengine/screens/Screen6WritingImageLoading';
 import Screen7BlogReview from '@/components/draftengine/screens/Screen7BlogReview';
-// Screens 8-10 coming in next commits
+import Screen8ImageReview from '@/components/draftengine/screens/Screen8ImageReview';
+import Screen9ThemeColorSelector from '@/components/draftengine/screens/Screen9ThemeColorSelector';
+import Screen10FinalPreview from '@/components/draftengine/screens/Screen10FinalPreview';
 
 const SCREENS = [
   Screen1TopicInput,              // Screen 0: Topic input
@@ -23,10 +25,9 @@ const SCREENS = [
   Screen5ImageStyleSelector,      // Screen 4: Image style selection (step 5)
   Screen6WritingImageLoading,     // Screen 5: Writing + image generation (steps 6-7)
   Screen7BlogReview,              // Screen 6: Blog review gate (step 8)
-  // Placeholder screens to prevent errors (will be replaced)
-  Screen1TopicInput,              // Screen 7: Image review (step 9)
-  Screen1TopicInput,              // Screen 8: Theme selection (step 10)
-  Screen1TopicInput,              // Screen 9: Final preview (step 11)
+  Screen8ImageReview,             // Screen 7: Image review (step 9)
+  Screen9ThemeColorSelector,      // Screen 8: Theme + colour selector (step 10)
+  Screen10FinalPreview,           // Screen 9: Final preview + download (step 11+)
 ];
 
 export default function WizardPage() {

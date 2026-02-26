@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
@@ -13,10 +14,24 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   // Check if this is a DraftEngine route
   const isDraftEngine = pathname?.startsWith('/draftengine');
 
+  // Update body background based on route
+  useEffect(() => {
+    const body = document.querySelector('body');
+    if (body) {
+      if (isDraftEngine) {
+        body.style.backgroundColor = 'white';
+        body.style.color = 'rgb(17, 24, 39)'; // gray-900
+      } else {
+        body.style.backgroundColor = '';
+        body.style.color = '';
+      }
+    }
+  }, [isDraftEngine]);
+
   // For DraftEngine routes, render without sidebar/navbar/footer
   if (isDraftEngine) {
     return (
-      <div className="relative flex min-h-screen" style={{ zIndex: 1 }}>
+      <div className="w-full min-h-screen bg-white text-gray-900">
         {children}
       </div>
     );

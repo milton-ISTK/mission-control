@@ -1390,6 +1390,44 @@ http.route({
   }),
 });
 
+// ---- GET /api/workflow/with-steps ----
+// Get a workflow with all its steps (for debugging)
+http.route({
+  path: "/api/workflow/with-steps",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const url = new URL(request.url);
+      const workflowId = url.searchParams.get("workflowId");
+
+      if (!workflowId) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing workflowId parameter" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const result = await ctx.runQuery(api.workflows.getWorkflowWithSteps, {
+        workflowId: workflowId as any,
+      });
+
+      return new Response(JSON.stringify({ ok: true, ...result }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 // ---- POST /api/draftengine/create-project ----
 // Create a new DraftEngine project (for testing)
 http.route({

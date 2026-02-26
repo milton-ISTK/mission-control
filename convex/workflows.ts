@@ -591,6 +591,52 @@ export const advanceWorkflow = mutation({
       let stepInput = combinedInput;
       let outputOptions: string[] | undefined = undefined;
 
+      // Special handling for Image Generation (Step 7): Extract selectedHeadline from Step 4
+      if (templateStep.agentRole === "de_image_maker") {
+        try {
+          const inputObj = stepInput ? JSON.parse(stepInput) : {};
+          
+          // Find the headline generator step (Step 4) from ALL completed steps
+          const headlineStep = allSteps.find((s) => s.agentRole === "de_headline_generator" && ["completed", "approved"].includes(s.status));
+          
+          if (headlineStep?.output) {
+            try {
+              const headlineData = JSON.parse(headlineStep.output);
+              // Extract first headline from the array (or selectedOption if available)
+              if (Array.isArray(headlineData) && headlineData.length > 0) {
+                const selectedHeadline = headlineData[0]; // Use first option if no explicit selection
+                inputObj.selectedHeadline = selectedHeadline;
+                console.log(`[workflow-advance] Image Generation: Extracted headline from Step 4: "${selectedHeadline.headline}"`);
+              }
+            } catch (e) {
+              console.error("[workflow-advance] Failed to parse headline data from Step 4:", e);
+            }
+          } else {
+            // Fallback: try to get title from blog writer step (Step 6)
+            const blogStep = allSteps.find((s) => s.agentRole === "de_blog_writer" && s.status === "completed");
+            if (blogStep?.output) {
+              try {
+                const blogData = JSON.parse(blogStep.output);
+                if (blogData.title) {
+                  inputObj.selectedHeadline = {
+                    headline: blogData.title,
+                    hook: blogData.metaDescription || "",
+                    style: "statement",
+                  };
+                  console.log(`[workflow-advance] Image Generation: Using blog title as headline: "${blogData.title}"`);
+                }
+              } catch (e) {
+                console.error("[workflow-advance] Failed to parse blog title from Step 6:", e);
+              }
+            }
+          }
+          
+          stepInput = JSON.stringify(inputObj);
+        } catch (e) {
+          console.error("[workflow-advance] Failed to prepare Image Generation input:", e);
+        }
+      }
+
       // Special handling for Content Review (Step 6): Extract blogOutput and imageUrls from parallel steps
       if (templateStep.name === "Content Review" && prevBatchOutputs.length > 1) {
         try {

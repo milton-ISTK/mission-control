@@ -87,11 +87,8 @@ export default function WizardPage() {
     // Step 10: Theme selection → Theme Selector (Screen 8, placeholder)
     if (stepNum === 10) return 8;
     
-    // Step 11-12: Final preview → Preview (Screen 9, placeholder)
-    if (stepNum >= 11 && stepNum <= 12) return 9;
-    
-    // Step 13+: Complete or beyond
-    if (stepNum >= 13) return 9;
+    // Step 11+: Final preview (Screen 10 will show loading state until HTML builder completes)
+    if (stepNum >= 11) return 9;
 
     return 1; // Default
   };

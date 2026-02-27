@@ -637,6 +637,121 @@ export const advanceWorkflow = mutation({
         }
       }
 
+      // Special handling for de_html_builder: Extract blog content + images + theme/palette from previous steps
+      if (templateStep.agentRole === "de_html_builder") {
+        try {
+          let blogContent: string | undefined;
+          let blogSources: any[] = [];
+          let imageUrls: any[] = [];
+          let selectedTheme: string | undefined;
+          let selectedPalette: string | undefined;
+          
+          // 1. Get blog content from de_blog_writer step
+          const blogWriterStep = allSteps.find((s) => s.agentRole === "de_blog_writer" && s.status === "completed");
+          if (blogWriterStep?.output) {
+            try {
+              const blogData = JSON.parse(blogWriterStep.output);
+              blogContent = 
+                blogData.content || 
+                blogData.revisedContent || 
+                blogData.blogContent || 
+                blogData.output || 
+                (typeof blogData === 'string' ? blogData : undefined);
+              
+              if (blogData.title) {
+                blogContent = `# ${blogData.title}\n\n${blogContent}`;
+              }
+              
+              if (blogData.sources && Array.isArray(blogData.sources)) {
+                blogSources = blogData.sources;
+              }
+              
+              console.log(`[workflow-advance] HTML Builder: Found blog content (${blogContent?.length || 0} chars)`);
+            } catch (e) {
+              console.error("[workflow-advance] Failed to parse de_blog_writer output:", e);
+              blogContent = blogWriterStep.output;
+            }
+          }
+          
+          // 2. Get images from de_image_maker step
+          const imageMakerStep = allSteps.find((s) => s.agentRole === "de_image_maker" && s.status === "completed");
+          if (imageMakerStep?.output) {
+            try {
+              const imageData = JSON.parse(imageMakerStep.output);
+              const images = imageData.images || (Array.isArray(imageData) ? imageData : []);
+              if (Array.isArray(images)) {
+                imageUrls = images.map((img: any) => ({
+                  url: img.url || "",
+                  storageId: img.storageId || "",
+                  placement: img.placement || "",
+                  description: img.description || img.name || img.altText || "",
+                }));
+                console.log(`[workflow-advance] HTML Builder: Found ${imageUrls.length} images`);
+              }
+            } catch (e) {
+              console.error("[workflow-advance] Failed to parse de_image_maker output:", e);
+            }
+          }
+          
+          // 3. Get theme and palette from Design Theme Selection (Step 10)
+          const themeStep = allSteps.find((s) => s.stepNumber === 10 && s.status === "approved");
+          if (themeStep?.selectedOption) {
+            try {
+              if (themeStep.output) {
+                const themeData = JSON.parse(themeStep.output);
+                if (typeof themeData === 'object') {
+                  selectedTheme = themeData.theme || themeData.selectedTheme || themeData.name;
+                  selectedPalette = themeData.palette || themeData.selectedPalette || themeData.colors;
+                }
+              }
+              
+              if (themeStep.reviewNotes && !selectedTheme) {
+                selectedTheme = themeStep.reviewNotes.split(':')[0]?.trim();
+              }
+              
+              console.log(`[workflow-advance] HTML Builder: Theme="${selectedTheme}", Palette="${selectedPalette}"`);
+            } catch (e) {
+              console.error("[workflow-advance] Failed to extract theme/palette:", e);
+            }
+          }
+          
+          // 4. Assemble complete input for HTML builder
+          const htmlBuilderInput: any = {
+            publish_date: publishDate,
+          };
+          
+          if (blogContent) {
+            htmlBuilderInput.blogContent = blogContent;
+            htmlBuilderInput.blogOutput = blogContent;
+          }
+          
+          if (blogSources.length > 0) {
+            htmlBuilderInput.sources = blogSources;
+          }
+          
+          if (imageUrls.length > 0) {
+            htmlBuilderInput.imageUrls = imageUrls;
+          }
+          
+          if (selectedTheme) {
+            htmlBuilderInput.selectedTheme = selectedTheme;
+          }
+          
+          if (selectedPalette) {
+            htmlBuilderInput.selectedPalette = selectedPalette;
+          }
+          
+          if (authorInfo) {
+            htmlBuilderInput.author = authorInfo;
+          }
+          
+          console.log(`[workflow-advance] HTML Builder input assembled: blog=${!!blogContent}, images=${imageUrls.length}, theme=${selectedTheme}`);
+          stepInput = JSON.stringify(htmlBuilderInput);
+        } catch (err) {
+          console.error("[workflow-advance] Error assembling HTML builder input:", err);
+        }
+      }
+
       // Special handling for Content Review (Step 6): Extract blogOutput and imageUrls from parallel steps
       if (templateStep.name === "Content Review" && prevBatchOutputs.length > 1) {
         try {

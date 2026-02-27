@@ -129,16 +129,17 @@ export default function Screen10FinalPreview({
       </div>
 
       {/* Preview Container */}
-      <div className="flex-1 mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="mb-6 overflow-hidden rounded-lg border-2 border-gray-300 bg-white shadow-lg" style={{ minHeight: '700px', height: 'auto' }}>
         {htmlContent ? (
           <iframe
             srcDoc={htmlContent}
-            className="w-full h-full border-none"
+            className="w-full border-none"
+            style={{ minHeight: '700px', height: 'auto', display: 'block' }}
             title="Blog Preview"
             sandbox="allow-same-origin"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+          <div className="w-full flex items-center justify-center bg-gray-50" style={{ minHeight: '700px' }}>
             <p className="text-gray-500">No content generated</p>
           </div>
         )}

@@ -693,7 +693,29 @@ export const advanceWorkflow = mutation({
             }
           }
           
-          // 3. Get theme and palette from Design Theme Selection (Step 10)
+          // 3. Get selected headline from Step 4 (de_headline_generator)
+          let selectedHeadline: any = undefined;
+          const headlineStep = allSteps.find((s) => s.agentRole === "de_headline_generator" && ["completed", "approved"].includes(s.status));
+          if (headlineStep?.output) {
+            try {
+              const headlineData = JSON.parse(headlineStep.output);
+              if (Array.isArray(headlineData) && headlineData.length > 0) {
+                selectedHeadline = headlineData[0]; // Use first by default
+                // If user selected a specific one, use selectedOption
+                if (headlineStep.selectedOption) {
+                  const selectedIdx = parseInt(headlineStep.selectedOption as string);
+                  if (headlineData[selectedIdx]) {
+                    selectedHeadline = headlineData[selectedIdx];
+                  }
+                }
+                console.log(`[workflow-advance] HTML Builder: Using headline: "${selectedHeadline.headline}"`);
+              }
+            } catch (e) {
+              console.error("[workflow-advance] Failed to extract selectedHeadline:", e);
+            }
+          }
+          
+          // 4. Get theme and palette from Design Theme Selection (Step 10)
           const themeStep = allSteps.find((s) => s.stepNumber === 10 && s.status === "approved");
           if (themeStep?.selectedOption) {
             try {
@@ -715,7 +737,7 @@ export const advanceWorkflow = mutation({
             }
           }
           
-          // 4. Assemble complete input for HTML builder
+          // 5. Assemble complete input for HTML builder
           const htmlBuilderInput: any = {
             publish_date: publishDate,
           };
@@ -723,6 +745,11 @@ export const advanceWorkflow = mutation({
           if (blogContent) {
             htmlBuilderInput.blogContent = blogContent;
             htmlBuilderInput.blogOutput = blogContent;
+          }
+          
+          if (selectedHeadline) {
+            htmlBuilderInput.selectedHeadline = selectedHeadline;
+            htmlBuilderInput.heroTitle = selectedHeadline.headline || selectedHeadline;
           }
           
           if (blogSources.length > 0) {
@@ -745,7 +772,7 @@ export const advanceWorkflow = mutation({
             htmlBuilderInput.author = authorInfo;
           }
           
-          console.log(`[workflow-advance] HTML Builder input assembled: blog=${!!blogContent}, images=${imageUrls.length}, theme=${selectedTheme}`);
+          console.log(`[workflow-advance] HTML Builder input assembled: blog=${!!blogContent}, images=${imageUrls.length}, headline="${selectedHeadline?.headline || 'none'}", theme=${selectedTheme}`);
           stepInput = JSON.stringify(htmlBuilderInput);
         } catch (err) {
           console.error("[workflow-advance] Error assembling HTML builder input:", err);

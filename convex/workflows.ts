@@ -523,10 +523,13 @@ export const advanceWorkflow = mutation({
         .withIndex("by_workflowId", (q) => q.eq("workflowId", args.workflowId))
         .first();
       
+      console.log(`[workflow-advance] DraftEngine project lookup: deProject=${!!deProject}, authorName="${deProject?.authorName || 'NOT SET'}"`);
+      
       if (deProject?.authorName) {
         authorInfo = {
           name: deProject.authorName,
         };
+        console.log(`[workflow-advance] Extracted author from DraftEngine project: "${authorInfo.name}"`);
       }
     }
 
@@ -848,9 +851,12 @@ export const advanceWorkflow = mutation({
           
           if (authorInfo) {
             htmlBuilderInput.author = authorInfo;
+            console.log(`[workflow-advance] HTML Builder: Adding author="${authorInfo.name}" to input`);
+          } else {
+            console.log(`[workflow-advance] HTML Builder: No authorInfo to add`);
           }
           
-          console.log(`[workflow-advance] HTML Builder input assembled: blog=${!!blogContent}, images=${imageUrls.length}, headline="${selectedHeadline?.headline || 'none'}", theme=${selectedTheme}`);
+          console.log(`[workflow-advance] HTML Builder input assembled: blog=${!!blogContent}, images=${imageUrls.length}, headline="${selectedHeadline?.headline || 'none'}", theme=${selectedTheme}, author="${authorInfo?.name || 'none'}"`);
           stepInput = JSON.stringify(htmlBuilderInput);
         } catch (err) {
           console.error("[workflow-advance] Error assembling HTML builder input:", err);

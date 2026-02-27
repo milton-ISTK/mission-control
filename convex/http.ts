@@ -1471,5 +1471,116 @@ http.route({
   }),
 });
 
+// ---- GET /api/suggestions/pending ----
+// Fetch pending suggestion requests (daemon polls this)
+http.route({
+  path: "/api/suggestions/pending",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = (await request.json()) as any;
+      const limit = body.limit || 10;
+
+      const requests = await ctx.runQuery(api.draftengine.getPendingSuggestionRequests, {
+        limit,
+      });
+
+      return new Response(JSON.stringify({ ok: true, requests }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/suggestions/complete ----
+// Mark a suggestion request as completed with results (daemon calls this)
+http.route({
+  path: "/api/suggestions/complete",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = (await request.json()) as any;
+      const requestId = body.requestId as string;
+      const suggestions = body.suggestions as string[];
+
+      if (!requestId || !suggestions) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing requestId or suggestions" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const result = await ctx.runMutation(api.draftengine.updateSuggestionRequest, {
+        requestId: requestId as any,
+        suggestions,
+      });
+
+      return new Response(JSON.stringify({ ok: true, result }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
+// ---- POST /api/suggestions/fail ----
+// Mark a suggestion request as failed (daemon calls this on error)
+http.route({
+  path: "/api/suggestions/fail",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!checkAuth(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const body = (await request.json()) as any;
+      const requestId = body.requestId as string;
+      const error = body.error as string;
+
+      if (!requestId || !error) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing requestId or error" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const result = await ctx.runMutation(api.draftengine.failSuggestionRequest, {
+        requestId: requestId as any,
+        error,
+      });
+
+      return new Response(JSON.stringify({ ok: true, result }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return new Response(
+        JSON.stringify({ ok: false, error: message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }),
+});
+
 export default http;
-// Force rebuild: 1771841056
+// Force rebuild: 1771841057

@@ -358,4 +358,21 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_workflowId", ["workflowId"])
     .index("by_currentScreen", ["currentScreen"]),
+
+  // ---- DraftEngine Suggestion Requests (processed by daemon) ----
+  draftEngineSuggestionRequests: defineTable({
+    type: v.union(v.literal("topic"), v.literal("scene")), // Type of suggestion
+    // Request input
+    sector: v.optional(v.string()),       // For topic suggestions: "fintech", "healthcare", etc.
+    headline: v.optional(v.string()),     // For scene suggestions: the blog headline
+    // Response output
+    suggestions: v.optional(v.array(v.string())), // Array of suggestions
+    status: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
+    error: v.optional(v.string()),        // If status=failed
+    // Timestamps
+    createdAt: v.number(),
+    processedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_type", ["type"]),
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/lib/convex-client';
 
 interface Screen5Props {
@@ -28,9 +28,19 @@ export default function Screen5ImageStyleSelector({
 }: Screen5Props) {
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [sceneDescription, setSceneDescription] = useState('');
-  const [sceneSuggestions, setSceneSuggestions] = useState<string[]>([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [sceneSuggestionsRequestId, setSceneSuggestionsRequestId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const requestSceneSuggestions = useMutation(api.draftengine.requestSceneSuggestions);
+
+  // Poll for suggestion results via Convex
+  const suggestionRequest = useQuery(
+    api.draftengine.getSuggestionRequest,
+    sceneSuggestionsRequestId ? { requestId: sceneSuggestionsRequestId as any } : 'skip'
+  );
+
+  const sceneSuggestions = suggestionRequest?.suggestions || [];
+  const isLoadingSuggestions = sceneSuggestionsRequestId && suggestionRequest?.status === "pending";
 
   // Auto-fetch scene suggestions on mount using selected headline
   useEffect(() => {
@@ -38,29 +48,19 @@ export default function Screen5ImageStyleSelector({
       const headline = project?.selectedHeadline;
       if (!headline) return;
 
-      setIsLoadingSuggestions(true);
-      try {
-        const response = await fetch('/api/draftengine/suggest-scenes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            headline: typeof headline === 'string' ? headline : headline.headline || headline 
-          }),
-        });
+      const headlineText = typeof headline === 'string' ? headline : headline.headline || headline;
 
-        if (!response.ok) throw new Error('Failed to get suggestions');
-        const data = await response.json();
-        setSceneSuggestions(data.suggestions || []);
+      try {
+        const result = await requestSceneSuggestions({ headline: headlineText });
+        setSceneSuggestionsRequestId(result.requestId);
       } catch (err) {
-        console.error('Error fetching scene suggestions:', err);
-        setSceneSuggestions([]);
-      } finally {
-        setIsLoadingSuggestions(false);
+        console.error('Error requesting scene suggestions:', err);
+        setSceneSuggestionsRequestId(null);
       }
     };
 
     loadSceneSuggestions();
-  }, [project?.selectedHeadline]);
+  }, [project?.selectedHeadline, requestSceneSuggestions]);
 
   const approveStep = useMutation(api.workflows.approveStepFromUI);
   const updateDraftEngineProject = useMutation(api.draftengine.updateProject);

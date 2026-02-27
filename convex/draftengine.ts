@@ -324,3 +324,89 @@ export const deleteProject = mutation({
     return { deleted: true };
   },
 });
+
+// ---- Suggestion Requests (processed by daemon) ----
+
+/** Request topic suggestions for a sector (frontend calls this) */
+export const requestTopicSuggestions = mutation({
+  args: { sector: v.string() },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const requestId = await ctx.db.insert("draftEngineSuggestionRequests", {
+      type: "topic",
+      sector: args.sector.trim(),
+      status: "pending",
+      createdAt: now,
+    });
+    return { requestId, status: "pending" };
+  },
+});
+
+/** Request scene suggestions for a headline (frontend calls this) */
+export const requestSceneSuggestions = mutation({
+  args: { headline: v.string() },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const requestId = await ctx.db.insert("draftEngineSuggestionRequests", {
+      type: "scene",
+      headline: args.headline.trim(),
+      status: "pending",
+      createdAt: now,
+    });
+    return { requestId, status: "pending" };
+  },
+});
+
+/** Get a suggestion request by ID (frontend polls this to get results) */
+export const getSuggestionRequest = query({
+  args: { requestId: v.id("draftEngineSuggestionRequests") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.requestId);
+  },
+});
+
+/** Get pending suggestion requests (daemon polls this) */
+export const getPendingSuggestionRequests = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const requests = await ctx.db
+      .query("draftEngineSuggestionRequests")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .order("asc")
+      .take(args.limit || 10);
+    return requests;
+  },
+});
+
+/** Update a suggestion request with results (daemon calls this) */
+export const updateSuggestionRequest = mutation({
+  args: {
+    requestId: v.id("draftEngineSuggestionRequests"),
+    suggestions: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const updated = await ctx.db.patch(args.requestId, {
+      suggestions: args.suggestions,
+      status: "completed",
+      processedAt: now,
+    });
+    return { updated: true, suggestion: updated };
+  },
+});
+
+/** Mark a suggestion request as failed (daemon calls this on error) */
+export const failSuggestionRequest = mutation({
+  args: {
+    requestId: v.id("draftEngineSuggestionRequests"),
+    error: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const updated = await ctx.db.patch(args.requestId, {
+      status: "failed",
+      error: args.error,
+      processedAt: Date.now(),
+    });
+    return { updated: true };
+  },
+});

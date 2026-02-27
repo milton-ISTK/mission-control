@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/lib/convex-client';
 
 export default function DraftEngineLanding() {
@@ -10,39 +10,38 @@ export default function DraftEngineLanding() {
   const [topic, setTopic] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [sector, setSector] = useState('');
-  const [topicSuggestions, setTopicSuggestions] = useState<string[]>([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [topicSuggestionsRequestId, setTopicSuggestionsRequestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const debounceTimer = useRef<NodeJS.Timeout>();
   
   const createProject = useMutation(api.draftengine.createProject);
+  const requestTopicSuggestions = useMutation(api.draftengine.requestTopicSuggestions);
 
-  // Debounced API call for topic suggestions
+  // Poll for suggestion results via Convex
+  const suggestionRequest = useQuery(
+    api.draftengine.getSuggestionRequest,
+    topicSuggestionsRequestId ? { requestId: topicSuggestionsRequestId as any } : 'skip'
+  );
+
+  const topicSuggestions = suggestionRequest?.suggestions || [];
+  const isLoadingSuggestions = topicSuggestionsRequestId && suggestionRequest?.status === "pending";
+
+  // Request topic suggestions via daemon
   const fetchTopicSuggestions = useCallback(async (sectorValue: string) => {
     if (!sectorValue.trim()) {
-      setTopicSuggestions([]);
+      setTopicSuggestionsRequestId(null);
       return;
     }
 
-    setIsLoadingSuggestions(true);
     try {
-      const response = await fetch('/api/draftengine/suggest-topics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sector: sectorValue }),
-      });
-
-      if (!response.ok) throw new Error('Failed to get suggestions');
-      const data = await response.json();
-      setTopicSuggestions(data.suggestions || []);
+      const result = await requestTopicSuggestions({ sector: sectorValue });
+      setTopicSuggestionsRequestId(result.requestId);
     } catch (err) {
-      console.error('Error fetching suggestions:', err);
-      setTopicSuggestions([]);
-    } finally {
-      setIsLoadingSuggestions(false);
+      console.error('Error requesting suggestions:', err);
+      setTopicSuggestionsRequestId(null);
     }
-  }, []);
+  }, [requestTopicSuggestions]);
 
   // Debounce sector input
   const handleSectorChange = (value: string) => {
@@ -168,7 +167,7 @@ export default function DraftEngineLanding() {
                     type="button"
                     onClick={() => {
                       setTopic(suggestion);
-                      setTopicSuggestions([]);
+                      setTopicSuggestionsRequestId(null);
                       setSector('');
                     }}
                     className="px-4 py-2 bg-orange-50 hover:bg-orange-100 border-2 border-orange-300 text-orange-900 rounded-lg font-medium text-sm transition cursor-pointer"

@@ -35,10 +35,12 @@ export default function DraftEngineLanding() {
     }
 
     try {
+      console.log(`🔍 Frontend: Calling requestTopicSuggestions({ sector: "${sectorValue}" })`);
       const result = await requestTopicSuggestions({ sector: sectorValue });
+      console.log(`✅ Frontend: Got requestId: ${result.requestId}, status: ${result.status}`);
       setTopicSuggestionsRequestId(result.requestId);
     } catch (err) {
-      console.error('Error requesting suggestions:', err);
+      console.error('❌ Error requesting suggestions:', err);
       setTopicSuggestionsRequestId(null);
     }
   }, [requestTopicSuggestions]);

@@ -1,17 +1,67 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/lib/convex-client';
 
 export default function DraftEngineLanding() {
   const router = useRouter();
   const [topic, setTopic] = useState('');
+  const [authorName, setAuthorName] = useState('');
+  const [sector, setSector] = useState('');
+  const [topicSuggestions, setTopicSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const debounceTimer = useRef<NodeJS.Timeout>();
   
   const createProject = useMutation(api.draftengine.createProject);
+
+  // Debounced API call for topic suggestions
+  const fetchTopicSuggestions = useCallback(async (sectorValue: string) => {
+    if (!sectorValue.trim()) {
+      setTopicSuggestions([]);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await fetch('/api/draftengine/suggest-topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sector: sectorValue }),
+      });
+
+      if (!response.ok) throw new Error('Failed to get suggestions');
+      const data = await response.json();
+      setTopicSuggestions(data.suggestions || []);
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+      setTopicSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, []);
+
+  // Debounce sector input
+  const handleSectorChange = (value: string) => {
+    setSector(value);
+    
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      fetchTopicSuggestions(value);
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, []);
 
   const handleStartResearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +71,11 @@ export default function DraftEngineLanding() {
     setError('');
 
     try {
-      // Create a new DraftEngine project via Convex
-      const result = await createProject({ topic: topic.trim() });
+      // Create a new DraftEngine project via Convex with author name
+      const result = await createProject({ 
+        topic: topic.trim(),
+        authorName: authorName.trim() || undefined,
+      });
       const projectId = result._id;
 
       // Navigate to wizard
@@ -65,6 +118,68 @@ export default function DraftEngineLanding() {
             />
           </div>
 
+          {/* Author Name Input */}
+          <div>
+            <label htmlFor="authorName" className="block text-sm text-gray-700 mb-2">
+              Author Name <span className="text-gray-400 text-xs">(optional)</span>
+            </label>
+            <input
+              id="authorName"
+              type="text"
+              placeholder='Your name (optional)'
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              disabled={loading}
+              className="w-full px-6 py-3 text-base !text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            />
+          </div>
+
+          {/* Sector/Industry Input */}
+          <div>
+            <label htmlFor="sector" className="block text-sm text-gray-700 mb-2">
+              Industry or Sector <span className="text-gray-400 text-xs">(optional - get topic suggestions)</span>
+            </label>
+            <div className="relative">
+              <input
+                id="sector"
+                type="text"
+                placeholder='e.g. fintech, healthcare, sustainability'
+                value={sector}
+                onChange={(e) => handleSectorChange(e.target.value)}
+                disabled={loading}
+                className="w-full px-6 py-3 text-base !text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+              />
+              {isLoadingSuggestions && (
+                <div className="absolute right-4 top-3.5 text-orange-500 animate-spin">
+                  ⏳
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Topic Suggestions */}
+          {topicSuggestions.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-600 mb-2">Suggested topics for <strong>{sector}</strong>:</p>
+              <div className="flex flex-wrap gap-2">
+                {topicSuggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setTopic(suggestion);
+                      setTopicSuggestions([]);
+                      setSector('');
+                    }}
+                    className="px-4 py-2 bg-orange-50 hover:bg-orange-100 border-2 border-orange-300 text-orange-900 rounded-lg font-medium text-sm transition cursor-pointer"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -82,21 +197,25 @@ export default function DraftEngineLanding() {
           </button>
         </form>
 
-        {/* Optional: Recent Topics */}
+        {/* Optional: Example Topics */}
         <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-500 mb-4">Popular topics:</p>
+          <p className="text-sm text-gray-600 mb-4">Try a topic like:</p>
           <div className="flex flex-wrap gap-2">
-            {['sustainable packaging', 'AI in healthcare', 'web3 trends', 'remote work'].map(
-              (tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setTopic(tag)}
-                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition"
-                >
-                  {tag}
-                </button>
-              )
-            )}
+            {[
+              'sustainable packaging trends in 2026',
+              'AI in healthcare',
+              'remote work productivity tips',
+              'web3 and the metaverse',
+            ].map((exampleTopic) => (
+              <button
+                key={exampleTopic}
+                type="button"
+                onClick={() => setTopic(exampleTopic)}
+                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition"
+              >
+                {exampleTopic}
+              </button>
+            ))}
           </div>
         </div>
       </div>

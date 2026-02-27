@@ -61,6 +61,7 @@ export const getProjectsByUser = query({
 export const createProject = mutation({
   args: {
     topic: v.string(),
+    authorName: v.optional(v.string()),
     userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -92,6 +93,7 @@ export const createProject = mutation({
     // Create the DraftEngine project
     const projectId = await ctx.db.insert("draftEngineProjects", {
       topic: args.topic,
+      authorName: args.authorName || undefined,
       userId: args.userId,
       currentScreen: "researching",
       workflowId,
@@ -117,6 +119,7 @@ export const createProject = mutation({
       _id: projectId, 
       workflowId,
       topic: args.topic,
+      authorName: args.authorName,
       currentScreen: "researching", 
       createdAt: nowMs, 
       updatedAt: nowMs 

@@ -330,6 +330,7 @@ export default defineSchema({
     // Identity
     userId: v.optional(v.string()),       // For future auth — can be anonymous for demo
     topic: v.string(),                    // What the user typed
+    authorName: v.optional(v.string()),   // Author name for blog byline (default: "DraftEngine")
     // Linked workflow
     workflowId: v.optional(v.id("workflows")),
     // User selections (stored as they make them)

@@ -516,6 +516,18 @@ export const advanceWorkflow = mutation({
           voiceNotes: author.voiceNotes,
         };
       }
+    } else if (workflow.contentType === "draftengine_blog") {
+      // For DraftEngine workflows, fetch authorName from draftEngineProjects
+      const deProject = await ctx.db
+        .query("draftEngineProjects")
+        .withIndex("by_workflowId", (q) => q.eq("workflowId", args.workflowId))
+        .first();
+      
+      if (deProject?.authorName) {
+        authorInfo = {
+          name: deProject.authorName,
+        };
+      }
     }
 
     // Format current date as "February 23, 2026"

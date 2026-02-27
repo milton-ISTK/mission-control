@@ -13,6 +13,7 @@ interface Screen1TopicInputProps {
 
 export default function Screen1TopicInput({ project, onNext }: Screen1TopicInputProps) {
   const [topic, setTopic] = useState(project?.topic || '');
+  const [authorName, setAuthorName] = useState(project?.authorName || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -26,7 +27,10 @@ export default function Screen1TopicInput({ project, onNext }: Screen1TopicInput
     setError('');
     
     try {
-      const result = await createProject({ topic: topic.trim() });
+      const result = await createProject({ 
+        topic: topic.trim(),
+        authorName: authorName.trim() || undefined,
+      });
       onNext({ topic: topic.trim(), projectId: result._id });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
@@ -42,7 +46,7 @@ export default function Screen1TopicInput({ project, onNext }: Screen1TopicInput
         <p className="text-gray-600">Tell us your topic, and we'll research and write it for you.</p>
       </div>
 
-      {/* Input */}
+      {/* Topic Input */}
       <div>
         <label htmlFor="topic" className="sr-only">
           Topic
@@ -56,6 +60,22 @@ export default function Screen1TopicInput({ project, onNext }: Screen1TopicInput
           disabled={isLoading}
           autoFocus
           className="w-full px-6 py-4 text-lg !text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+        />
+      </div>
+
+      {/* Author Name Input */}
+      <div>
+        <label htmlFor="authorName" className="block text-sm text-gray-700 mb-2">
+          Author Name <span className="text-gray-400 text-xs">(optional)</span>
+        </label>
+        <input
+          id="authorName"
+          type="text"
+          placeholder='Your name (optional)'
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          disabled={isLoading}
+          className="w-full px-6 py-3 text-base !text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
         />
       </div>
 

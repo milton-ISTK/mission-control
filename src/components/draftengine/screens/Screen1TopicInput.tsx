@@ -23,7 +23,7 @@ export default function Screen1TopicInput({ project, onNext }: Screen1TopicInput
   
   const createProject = useMutation(api.draftengine.createProject);
 
-  // Debounced API call for topic suggestions
+  // Debounced API call for topic suggestions (triggered after 500ms of user input)
   const fetchTopicSuggestions = useCallback(async (sectorValue: string) => {
     if (!sectorValue.trim()) {
       setTopicSuggestions([]);

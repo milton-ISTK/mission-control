@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/lib/convex-client';
 
@@ -28,7 +28,39 @@ export default function Screen5ImageStyleSelector({
 }: Screen5Props) {
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [sceneDescription, setSceneDescription] = useState('');
+  const [sceneSuggestions, setSceneSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-fetch scene suggestions on mount using selected headline
+  useEffect(() => {
+    const loadSceneSuggestions = async () => {
+      const headline = project?.selectedHeadline;
+      if (!headline) return;
+
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await fetch('/api/draftengine/suggest-scenes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            headline: typeof headline === 'string' ? headline : headline.headline || headline 
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to get suggestions');
+        const data = await response.json();
+        setSceneSuggestions(data.suggestions || []);
+      } catch (err) {
+        console.error('Error fetching scene suggestions:', err);
+        setSceneSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    loadSceneSuggestions();
+  }, [project?.selectedHeadline]);
 
   const approveStep = useMutation(api.workflows.approveStepFromUI);
   const updateDraftEngineProject = useMutation(api.draftengine.updateProject);
@@ -119,6 +151,33 @@ export default function Screen5ImageStyleSelector({
         <p className="text-xs text-gray-500 mt-1">
           Help our image generator create the perfect visuals
         </p>
+
+        {/* Scene Suggestions */}
+        {isLoadingSuggestions && (
+          <div className="mt-3 text-center text-sm text-gray-500">
+            ⏳ Generating scene suggestions...
+          </div>
+        )}
+
+        {sceneSuggestions.length > 0 && !isLoadingSuggestions && (
+          <div className="mt-4">
+            <p className="text-xs text-gray-600 mb-2 font-medium">
+              💡 Suggested scenes:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {sceneSuggestions.map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setSceneDescription(suggestion)}
+                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-900 rounded text-xs font-medium transition cursor-pointer"
+                >
+                  {suggestion.length > 50 ? suggestion.slice(0, 50) + '...' : suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Submit Button */}

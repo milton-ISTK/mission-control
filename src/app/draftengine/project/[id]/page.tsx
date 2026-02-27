@@ -123,6 +123,7 @@ export default function WizardPage() {
         onPrevious={handlePreviousScreen}
         onExit={handleExit}
         canGoPrevious={displayScreen > 0}
+        workflowId={project?.workflowId}
       >
         <CurrentScreen
           project={project}

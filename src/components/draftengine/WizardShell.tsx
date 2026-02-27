@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import WorkflowActivityPanel from './WorkflowActivityPanel';
 
 interface WizardShellProps {
   currentScreen: number;
@@ -9,6 +10,7 @@ interface WizardShellProps {
   onPrevious: () => void;
   onExit: () => void;
   canGoPrevious: boolean;
+  workflowId?: string;
 }
 
 const SCREEN_NAMES = [
@@ -31,11 +33,14 @@ export default function WizardShell({
   onPrevious,
   onExit,
   canGoPrevious,
+  workflowId,
 }: WizardShellProps) {
   const progress = (currentScreen / totalScreens) * 100;
+  // Show activity panel on screens 2-10 (currentScreen > 1)
+  const showActivityPanel = Boolean(currentScreen > 1 && workflowId);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white lg:mr-[250px]">
       {/* Header */}
       <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -88,6 +93,14 @@ export default function WizardShell({
 
       {/* Spacer for fixed footer */}
       <div className="h-20" />
+
+      {/* Activity Panel (Desktop sidebar + Mobile badge) */}
+      {workflowId && (
+        <WorkflowActivityPanel
+          workflowId={workflowId}
+          isVisible={showActivityPanel}
+        />
+      )}
     </div>
   );
 }

@@ -603,6 +603,43 @@ export const advanceWorkflow = mutation({
       let stepInput = combinedInput;
       let outputOptions: string[] | undefined = undefined;
 
+      // Special handling for Blog Writing (Step 6): Extract selectedHeadline from Step 4
+      if (templateStep.agentRole === "de_blog_writer") {
+        try {
+          const inputObj = stepInput ? JSON.parse(stepInput) : {};
+          
+          // Find the headline generator step (Step 4) from ALL completed steps
+          const headlineStep = allSteps.find((s) => s.agentRole === "de_headline_generator" && ["completed", "approved"].includes(s.status));
+          
+          if (headlineStep?.output) {
+            try {
+              const headlineData = JSON.parse(headlineStep.output);
+              // Extract selected headline from the array
+              if (Array.isArray(headlineData) && headlineData.length > 0) {
+                let selectedHeadline = headlineData[0]; // Default to first
+                
+                // If Step 4 was approved with a selectedOption, use that index
+                if (headlineStep.selectedOption) {
+                  const selectedIdx = parseInt(headlineStep.selectedOption as string);
+                  if (headlineData[selectedIdx]) {
+                    selectedHeadline = headlineData[selectedIdx];
+                  }
+                }
+                
+                inputObj.selectedHeadline = selectedHeadline;
+                console.log(`[workflow-advance] Blog Writer: Using headline: "${selectedHeadline.headline}"`);
+              }
+            } catch (e) {
+              console.error("[workflow-advance] Failed to parse headline data from Step 4:", e);
+            }
+          }
+          
+          stepInput = JSON.stringify(inputObj);
+        } catch (e) {
+          console.error("[workflow-advance] Failed to prepare Blog Writer input:", e);
+        }
+      }
+
       // Special handling for Image Generation (Step 7): Extract selectedHeadline from Step 4
       if (templateStep.agentRole === "de_image_maker") {
         try {
@@ -685,23 +722,52 @@ export const advanceWorkflow = mutation({
             }
           }
           
-          // 2. Get images from de_image_maker step
-          const imageMakerStep = allSteps.find((s) => s.agentRole === "de_image_maker" && s.status === "completed");
-          if (imageMakerStep?.output) {
-            try {
-              const imageData = JSON.parse(imageMakerStep.output);
-              const images = imageData.images || (Array.isArray(imageData) ? imageData : []);
-              if (Array.isArray(images)) {
-                imageUrls = images.map((img: any) => ({
-                  url: img.url || "",
-                  storageId: img.storageId || "",
-                  placement: img.placement || "",
-                  description: img.description || img.name || img.altText || "",
-                }));
-                console.log(`[workflow-advance] HTML Builder: Found ${imageUrls.length} images`);
+          // 2. Get ONLY the selected image from Step 9 (Image Review), not all generated images
+          const imageReviewStep = allSteps.find((s) => s.stepNumber === 9 && s.agentRole === "none" && ["completed", "approved"].includes(s.status));
+          
+          if (imageReviewStep?.selectedOption !== null && imageReviewStep?.selectedOption !== undefined) {
+            // User selected a specific image at Step 9
+            const imageMakerStep = allSteps.find((s) => s.agentRole === "de_image_maker" && s.status === "completed");
+            if (imageMakerStep?.output) {
+              try {
+                const imageData = JSON.parse(imageMakerStep.output);
+                const allImages = imageData.images || (Array.isArray(imageData) ? imageData : []);
+                if (Array.isArray(allImages)) {
+                  const selectedIdx = parseInt(imageReviewStep.selectedOption as string);
+                  if (allImages[selectedIdx]) {
+                    const selectedImg = allImages[selectedIdx];
+                    imageUrls = [{
+                      url: selectedImg.url || "",
+                      storageId: selectedImg.storageId || "",
+                      placement: selectedImg.placement || "hero",
+                      description: selectedImg.description || selectedImg.name || selectedImg.altText || "Blog hero image",
+                    }];
+                    console.log(`[workflow-advance] HTML Builder: Using selected image ${selectedIdx} of ${allImages.length}`);
+                  }
+                }
+              } catch (e) {
+                console.error("[workflow-advance] Failed to parse selected image from de_image_maker output:", e);
               }
-            } catch (e) {
-              console.error("[workflow-advance] Failed to parse de_image_maker output:", e);
+            }
+          } else {
+            // Fallback: if no image was reviewed/approved, get all images (shouldn't normally happen)
+            const imageMakerStep = allSteps.find((s) => s.agentRole === "de_image_maker" && s.status === "completed");
+            if (imageMakerStep?.output) {
+              try {
+                const imageData = JSON.parse(imageMakerStep.output);
+                const images = imageData.images || (Array.isArray(imageData) ? imageData : []);
+                if (Array.isArray(images)) {
+                  imageUrls = images.map((img: any) => ({
+                    url: img.url || "",
+                    storageId: img.storageId || "",
+                    placement: img.placement || "",
+                    description: img.description || img.name || img.altText || "",
+                  }));
+                  console.log(`[workflow-advance] HTML Builder: Fallback - Found ${imageUrls.length} images (no image review step)`);
+                }
+              } catch (e) {
+                console.error("[workflow-advance] Failed to parse de_image_maker output:", e);
+              }
             }
           }
           

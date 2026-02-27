@@ -66,9 +66,10 @@ export default function Screen8ImageReview({
         },
       });
 
-      // Approve the step
+      // Approve the step with selectedOption for image index
       await approveStep({
         stepId: step9._id,
+        selectedOption: selectedImageIndex,
         reviewNotes: `Selected image ${selectedImageIndex + 1} of ${images.length}`,
       });
 

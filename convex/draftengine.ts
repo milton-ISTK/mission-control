@@ -69,8 +69,19 @@ export const getWorkflowStats = query({
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    // Calculate agent work time (only count non-review steps)
-    let totalAgentSeconds = 0;
+    // Variable time saved rates (minutes saved per second of agent work) by agentRole
+    const timeSavedRates: Record<string, number> = {
+      "de_topic_research": 3,      // Topic Research: 3 min per second
+      "de_trend_analyzer": 5,      // Trend Analysis: 5 min per second
+      "de_news_scraper": 3,        // News Analysis: 3 min per second
+      "de_blog_writer": 5,         // Blog Writing: 5 min per second
+      "de_image_generator": 2,     // Image Generation: 2 min per second
+      "de_html_builder": 3,        // HTML Page Build: 3 min per second
+      // Default: 3 min per second for any other step
+    };
+
+    // Calculate agent work time (only count non-review steps) with variable rates
+    let totalTimeSavedSeconds = 0;
     const activityLog: Array<{
       stepNumber: number;
       name: string;
@@ -89,7 +100,11 @@ export const getWorkflowStats = query({
         const completedMs = new Date(step.completedAt).getTime();
         const durationSeconds = Math.round((completedMs - createdMs) / 1000);
         
-        totalAgentSeconds += durationSeconds;
+        // Get rate for this agent role (default 3 min per second)
+        const rate = timeSavedRates[step.agentRole] ?? 3;
+        const timeSavedForThisStep = durationSeconds * rate * 60; // Convert to seconds
+        totalTimeSavedSeconds += timeSavedForThisStep;
+
         activityLog.push({
           stepNumber: step.stepNumber,
           name: step.name,
@@ -120,15 +135,14 @@ export const getWorkflowStats = query({
     const elapsedMs = Date.now() - projectStartMs;
     const elapsedSeconds = Math.round(elapsedMs / 1000);
 
-    // Calculate time saved: 1 second of agent work = 5 minutes saved
-    const timeSavedSeconds = totalAgentSeconds * 5 * 60; // Convert to seconds
-    const timeSavedMinutes = Math.round(timeSavedSeconds / 60);
+    // Convert total time saved from seconds to hours and minutes
+    const timeSavedMinutes = Math.round(totalTimeSavedSeconds / 60);
     const timeSavedHours = Math.floor(timeSavedMinutes / 60);
     const timeSavedMins = timeSavedMinutes % 60;
 
     return {
       elapsedSeconds,
-      totalAgentSeconds,
+      totalAgentSeconds: Math.round(totalTimeSavedSeconds / 60), // For backward compat, return in minutes
       timeSavedHours,
       timeSavedMinutes: timeSavedMins,
       timeSavedFormatted: `${timeSavedHours}h ${timeSavedMins}m saved`,

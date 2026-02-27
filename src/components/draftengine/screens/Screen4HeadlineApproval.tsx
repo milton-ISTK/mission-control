@@ -18,12 +18,13 @@ export default function Screen4HeadlineApproval({
   onNext,
 }: Screen4Props) {
   const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isApproving, setIsApproving] = useState(false);
 
   const approveStep = useMutation(api.workflows.approveStepFromUI);
 
   const handleApprove = async () => {
-    if (!selectedHeadline) {
+    if (!selectedHeadline || selectedIndex === null) {
       alert('Please select a headline');
       return;
     }
@@ -43,9 +44,10 @@ export default function Screen4HeadlineApproval({
         // It's already a string
       }
 
-      // Approve the step with the selected headline as review notes
+      // Approve the step with the selected headline index AND review notes
       await approveStep({
         stepId: headlineStep._id,
+        selectedOption: selectedIndex,
         reviewNotes: `Selected headline: ${headlineDisplay}`,
       });
 
@@ -115,7 +117,10 @@ export default function Screen4HeadlineApproval({
             return (
               <button
                 key={idx}
-                onClick={() => setSelectedHeadline(headlineStr)}
+                onClick={() => {
+                  setSelectedHeadline(headlineStr);
+                  setSelectedIndex(idx);
+                }}
                 className={`p-4 text-left rounded-lg border-2 transition ${
                   selectedHeadline === headlineStr
                     ? 'border-blue-600 bg-blue-50'

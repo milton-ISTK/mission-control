@@ -1004,11 +1004,13 @@ export const approveStepFromUI = mutation({
         }
       }
 
-      // Special handling for HTML Builder: include blog content + ALL image URLs from Step 5
+      // Special handling for HTML Builder: include blog content + ALL image URLs + theme + palette
       let imageUrls: any[] = [];
       let blogContent: string | undefined;
       let blogSources: any[] = [];
-      if (nextTemplateStep.agentRole === "html_builder") {
+      let selectedTheme: string | undefined;
+      let selectedPalette: string | undefined;
+      if (nextTemplateStep.agentRole === "de_html_builder") {
         try {
           // Fetch all workflow steps once
           const allSteps = await ctx.db
@@ -1016,8 +1018,8 @@ export const approveStepFromUI = mutation({
             .withIndex("by_workflowId", (q) => q.eq("workflowId", step.workflowId))
             .collect();
           
-          // 1. Get blog content from Step 4 (blog_writer)
-          const blogWriterStep = allSteps.find((s) => s.stepNumber === 4 && s.agentRole === "blog_writer");
+          // 1. Get blog content from Step 6 (de_blog_writer) — DraftEngine workflow
+          const blogWriterStep = allSteps.find((s) => s.agentRole === "de_blog_writer" && s.status === "completed");
           if (blogWriterStep && blogWriterStep.output) {
             try {
               const blogData = JSON.parse(blogWriterStep.output);
@@ -1036,30 +1038,61 @@ export const approveStepFromUI = mutation({
               if (blogData.sources && Array.isArray(blogData.sources)) {
                 blogSources = blogData.sources;
               }
+              
+              console.log(`[workflow-advance] HTML Builder: Found blog content (${blogContent?.length || 0} chars)`);
             } catch (e) {
-              console.error("[workflow-advance] Failed to parse blog_writer output:", e);
+              console.error("[workflow-advance] Failed to parse de_blog_writer output:", e);
               blogContent = blogWriterStep.output;
             }
           }
           
-          // 2. Get ALL images from Step 5 (image_maker) — no more Image Review step
-          const imageMakerStep = allSteps.find((s) => s.stepNumber === 5 && s.agentRole === "image_maker");
+          // 2. Get ALL images from Step 7 (de_image_maker)
+          const imageMakerStep = allSteps.find((s) => s.agentRole === "de_image_maker" && s.status === "completed");
           if (imageMakerStep && imageMakerStep.output) {
             try {
-              const images = JSON.parse(imageMakerStep.output);
+              const imageData = JSON.parse(imageMakerStep.output);
+              // Handle both direct array and {images: [...]} format
+              const images = imageData.images || (Array.isArray(imageData) ? imageData : []);
               if (Array.isArray(images)) {
                 imageUrls = images.map((img: any) => ({
                   url: img.url || "",
+                  storageId: img.storageId || "",
                   placement: img.placement || "",
-                  description: img.description || img.name || "",
+                  description: img.description || img.name || img.altText || "",
                 }));
+                console.log(`[workflow-advance] HTML Builder: Found ${imageUrls.length} images`);
               }
             } catch (e) {
-              console.error("[workflow-advance] Failed to parse image_maker output:", e);
+              console.error("[workflow-advance] Failed to parse de_image_maker output:", e);
             }
           }
-        } catch {
-          // If anything fails, continue without images or blog content
+          
+          // 3. Get theme and color palette from Step 10 (Design Theme Selection) approval
+          const themeStep = allSteps.find((s) => s.stepNumber === 10 && s.status === "approved");
+          if (themeStep?.selectedOption) {
+            // selectedOption contains the user's choice as a string index
+            try {
+              // If the theme step output contains template/palette info, parse it
+              if (themeStep.output) {
+                const themeData = JSON.parse(themeStep.output);
+                if (typeof themeData === 'object') {
+                  selectedTheme = themeData.theme || themeData.selectedTheme || themeData.name;
+                  selectedPalette = themeData.palette || themeData.selectedPalette || themeData.colors;
+                }
+              }
+              
+              // Also check review notes for theme info
+              if (themeStep.reviewNotes && !selectedTheme) {
+                selectedTheme = themeStep.reviewNotes.split(':')[0]?.trim();
+              }
+              
+              console.log(`[workflow-advance] HTML Builder: Theme="${selectedTheme}", Palette="${selectedPalette}"`);
+            } catch (e) {
+              console.error("[workflow-advance] Failed to extract theme/palette:", e);
+            }
+          }
+        } catch (err) {
+          console.error("[workflow-advance] Error fetching HTML builder data:", err);
         }
       }
 
@@ -1164,15 +1197,16 @@ export const approveStepFromUI = mutation({
             finalInput = JSON.stringify(enriched);
           }
         }
-        // Special case: For HTML Builder, merge blog content with existing context
-        else if (nextTemplateStep.agentRole === "html_builder") {
+        // Special case: For HTML Builder (de_html_builder), merge blog content with existing context
+        else if (nextTemplateStep.agentRole === "de_html_builder") {
           try {
             const parsed = JSON.parse(inputForNextStep || "{}");
             const enriched: any = { ...parsed, publish_date: publishDate };
             
-            // Add blog content from Step 4 (critical!)
+            // Add blog content from de_blog_writer step (CRITICAL!)
             if (blogContent) {
-              enriched.blogOutput = blogContent;
+              enriched.blogContent = blogContent;
+              enriched.blogOutput = blogContent; // Alias for compatibility
             }
             
             // Add sources from blog_writer
@@ -1180,9 +1214,17 @@ export const approveStepFromUI = mutation({
               enriched.sources = blogSources;
             }
             
-            // Add ALL image URLs from Step 5 (with placement metadata)
+            // Add ALL image URLs from de_image_maker step (with metadata)
             if (imageUrls.length > 0) {
               enriched.imageUrls = imageUrls;
+            }
+            
+            // Add theme and color palette from Step 10 selection
+            if (selectedTheme) {
+              enriched.selectedTheme = selectedTheme;
+            }
+            if (selectedPalette) {
+              enriched.selectedPalette = selectedPalette;
             }
             
             // Add author info
@@ -1190,6 +1232,7 @@ export const approveStepFromUI = mutation({
               enriched.author = authorInfo;
             }
             
+            console.log(`[workflow-advance] HTML Builder input: blog=${!!blogContent}, images=${imageUrls.length}, theme=${selectedTheme}`);
             finalInput = JSON.stringify(enriched);
           } catch {
             // Fallback if inputForNextStep isn't JSON
@@ -1200,6 +1243,7 @@ export const approveStepFromUI = mutation({
               enriched.previousStepOutput = inputForNextStep;
             }
             if (blogContent) {
+              enriched.blogContent = blogContent;
               enriched.blogOutput = blogContent;
             }
             if (blogSources && blogSources.length > 0) {
@@ -1207,6 +1251,12 @@ export const approveStepFromUI = mutation({
             }
             if (imageUrls.length > 0) {
               enriched.imageUrls = imageUrls;
+            }
+            if (selectedTheme) {
+              enriched.selectedTheme = selectedTheme;
+            }
+            if (selectedPalette) {
+              enriched.selectedPalette = selectedPalette;
             }
             if (authorInfo) {
               enriched.author = authorInfo;

@@ -22,6 +22,7 @@ export default function Screen4HeadlineApproval({
   const [isApproving, setIsApproving] = useState(false);
 
   const approveStep = useMutation(api.workflows.approveStepFromUI);
+  const updateProject = useMutation(api.draftengine.updateProject);
 
   const handleApprove = async () => {
     if (!selectedHeadline || selectedIndex === null) {
@@ -43,6 +44,15 @@ export default function Screen4HeadlineApproval({
       } catch {
         // It's already a string
       }
+
+      // Update project with selected headline FIRST (so it's available for Screen 5)
+      await updateProject({
+        projectId: project._id,
+        updates: {
+          selectedHeadline: headlineDisplay,
+          selectedHeadlineIndex: selectedIndex,
+        },
+      });
 
       // Approve the step with the selected headline index AND review notes
       await approveStep({

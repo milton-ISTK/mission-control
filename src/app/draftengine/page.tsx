@@ -135,23 +135,45 @@ export default function DraftEngineLanding() {
             />
           </div>
 
-          {/* Sector/Industry Input */}
+          {/* CTA Button */}
+          <button
+            type="submit"
+            disabled={!topic.trim() || loading}
+            className="w-full py-4 px-6 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-lg"
+          >
+            {loading ? '🔍 Researching...' : '🚀 Start Researching'}
+          </button>
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Divider with Helper Text */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-px bg-gray-200"></div>
+            <p className="text-sm text-gray-500 whitespace-nowrap px-2">
+              Need inspiration? Type your industry below for topic ideas
+            </p>
+            <div className="flex-1 h-px bg-gray-200"></div>
+          </div>
+
+          {/* Sector/Industry Input (Secondary) */}
           <div>
-            <label htmlFor="sector" className="block text-sm text-gray-700 mb-2">
-              Industry or Sector <span className="text-gray-400 text-xs">(optional - get topic suggestions)</span>
-            </label>
             <div className="relative">
               <input
                 id="sector"
                 type="text"
-                placeholder='e.g. fintech, healthcare, sustainability'
+                placeholder='e.g. fintech, healthcare, wine...'
                 value={sector}
                 onChange={(e) => handleSectorChange(e.target.value)}
                 disabled={loading}
-                className="w-full px-6 py-3 text-base !text-gray-900 placeholder-gray-400 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 text-sm !text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               />
               {isLoadingSuggestions && (
-                <div className="absolute right-4 top-3.5 text-orange-500 animate-spin">
+                <div className="absolute right-3 top-2 text-gray-400 animate-spin">
                   ⏳
                 </div>
               )}
@@ -160,8 +182,7 @@ export default function DraftEngineLanding() {
 
           {/* Topic Suggestions */}
           {topicSuggestions.length > 0 && (
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Suggested topics for <strong>{sector}</strong>:</p>
+            <div className="mt-4">
               <div className="flex flex-wrap gap-2">
                 {topicSuggestions.map((suggestion, idx) => (
                   <button
@@ -172,7 +193,7 @@ export default function DraftEngineLanding() {
                       setTopicSuggestionsRequestId(null);
                       setSector('');
                     }}
-                    className="px-4 py-2 bg-orange-50 hover:bg-orange-100 border-2 border-orange-300 text-orange-900 rounded-lg font-medium text-sm transition cursor-pointer"
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 rounded-full text-xs transition cursor-pointer font-medium"
                   >
                     {suggestion}
                   </button>
@@ -180,45 +201,7 @@ export default function DraftEngineLanding() {
               </div>
             </div>
           )}
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* CTA Button */}
-          <button
-            type="submit"
-            disabled={!topic.trim() || loading}
-            className="w-full py-4 px-6 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-lg"
-          >
-            {loading ? '🔍 Researching...' : '🚀 Start Researching'}
-          </button>
         </form>
-
-        {/* Optional: Example Topics */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600 mb-4">Try a topic like:</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              'sustainable packaging trends in 2026',
-              'AI in healthcare',
-              'remote work productivity tips',
-              'web3 and the metaverse',
-            ].map((exampleTopic) => (
-              <button
-                key={exampleTopic}
-                type="button"
-                onClick={() => setTopic(exampleTopic)}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition"
-              >
-                {exampleTopic}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

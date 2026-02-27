@@ -55,6 +55,88 @@ export const getProjectsByUser = query({
   },
 });
 
+/** Get workflow stats for time tracking (elapsed time + time saved calculation) */
+export const getWorkflowStats = query({
+  args: { workflowId: v.id("workflows") },
+  handler: async (ctx, args) => {
+    const steps = await ctx.db
+      .query("workflowSteps")
+      .withIndex("by_workflowId", (q) => q.eq("workflowId", args.workflowId))
+      .collect();
+
+    // Sort by creation time
+    const sortedSteps = steps.sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    // Calculate agent work time (only count non-review steps)
+    let totalAgentSeconds = 0;
+    const activityLog: Array<{
+      stepNumber: number;
+      name: string;
+      agentRole: string;
+      durationSeconds: number;
+      status: string;
+      completedAt?: string;
+    }> = [];
+
+    for (const step of sortedSteps) {
+      // Skip review gates (agentRole === "none")
+      if (step.agentRole === "none") continue;
+
+      if (step.status === "completed" && step.completedAt) {
+        const createdMs = new Date(step.createdAt).getTime();
+        const completedMs = new Date(step.completedAt).getTime();
+        const durationSeconds = Math.round((completedMs - createdMs) / 1000);
+        
+        totalAgentSeconds += durationSeconds;
+        activityLog.push({
+          stepNumber: step.stepNumber,
+          name: step.name,
+          agentRole: step.agentRole,
+          durationSeconds,
+          status: "completed",
+          completedAt: step.completedAt,
+        });
+      } else if (["pending", "agent_working"].includes(step.status)) {
+        // Active step - show elapsed time so far
+        const createdMs = new Date(step.createdAt).getTime();
+        const nowMs = Date.now();
+        const durationSeconds = Math.round((nowMs - createdMs) / 1000);
+        
+        activityLog.push({
+          stepNumber: step.stepNumber,
+          name: step.name,
+          agentRole: step.agentRole,
+          durationSeconds,
+          status: step.status,
+        });
+      }
+    }
+
+    // Get first step creation time for elapsed time calculation
+    const firstStep = sortedSteps.find(s => s.agentRole !== "none");
+    const projectStartMs = firstStep ? new Date(firstStep.createdAt).getTime() : Date.now();
+    const elapsedMs = Date.now() - projectStartMs;
+    const elapsedSeconds = Math.round(elapsedMs / 1000);
+
+    // Calculate time saved: 1 second of agent work = 5 minutes saved
+    const timeSavedSeconds = totalAgentSeconds * 5 * 60; // Convert to seconds
+    const timeSavedMinutes = Math.round(timeSavedSeconds / 60);
+    const timeSavedHours = Math.floor(timeSavedMinutes / 60);
+    const timeSavedMins = timeSavedMinutes % 60;
+
+    return {
+      elapsedSeconds,
+      totalAgentSeconds,
+      timeSavedHours,
+      timeSavedMinutes: timeSavedMins,
+      timeSavedFormatted: `${timeSavedHours}h ${timeSavedMins}m saved`,
+      activityLog,
+    };
+  },
+});
+
 // ---- Mutations ----
 
 /** Create a new DraftEngine project AND initialize workflow */

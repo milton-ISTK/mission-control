@@ -5,12 +5,18 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+// ---- Helpers ----
+
+/** Exclude DraftEngine agents — Mission Control queries should only return MC agents */
+const excludeDraftEngine = <T extends { teamType?: string }>(agents: T[]): T[] =>
+  agents.filter((a) => a.teamType !== "draftengine");
+
 // ---- Queries ----
 
-/** List all agents */
+/** List all agents (Mission Control only — excludes DraftEngine agents) */
 export const listAgents = query({
   handler: async (ctx) => {
-    return await ctx.db.query("agents").collect();
+    return excludeDraftEngine(await ctx.db.query("agents").collect());
   },
 });
 
@@ -36,40 +42,41 @@ export const getAgentByRole = query({
   },
 });
 
-/** Get active agents */
+/** Get active agents (Mission Control only) */
 export const getActiveAgents = query({
   handler: async (ctx) => {
-    return await ctx.db
+    const agents = await ctx.db
       .query("agents")
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
+    return excludeDraftEngine(agents);
   },
 });
 
-/** Get agents by type (agent or subagent) */
+/** Get agents by type (agent or subagent) — Mission Control only */
 export const getAgentsByType = query({
   args: { agentType: v.string() },
   handler: async (ctx, args) => {
-    const allAgents = await ctx.db.query("agents").collect();
+    const allAgents = excludeDraftEngine(await ctx.db.query("agents").collect());
     return allAgents.filter((a) => (a.agentType ?? "agent") === args.agentType);
   },
 });
 
-/** Get subagents by parent agent */
+/** Get subagents by parent agent (Mission Control only) */
 export const getSubagentsByParent = query({
   args: { parentId: v.id("agents") },
   handler: async (ctx, args) => {
-    const allAgents = await ctx.db.query("agents").collect();
+    const allAgents = excludeDraftEngine(await ctx.db.query("agents").collect());
     return allAgents.filter((a) =>
       (a.parentAgentIds ?? []).some((pId) => pId === args.parentId)
     );
   },
 });
 
-/** Get agent hierarchy (agents with nested subagents) */
+/** Get agent hierarchy (agents with nested subagents) — Mission Control only */
 export const getAgentHierarchy = query({
   handler: async (ctx) => {
-    const allAgents = await ctx.db.query("agents").collect();
+    const allAgents = excludeDraftEngine(await ctx.db.query("agents").collect());
     const agents = allAgents.filter((a) => (a.agentType ?? "agent") === "agent");
     const subagents = allAgents.filter((a) => a.agentType === "subagent");
     return agents.map((agent) => ({
@@ -82,10 +89,10 @@ export const getAgentHierarchy = query({
 });
 
 /** Get agents by department */
-/** Get all agents with their LLM config (for diagnostics) */
+/** Get all agents with their LLM config (for diagnostics) — Mission Control only */
 export const getAllAgentsWithLLMConfig = query({
   handler: async (ctx) => {
-    const agents = await ctx.db.query("agents").collect();
+    const agents = excludeDraftEngine(await ctx.db.query("agents").collect());
     return agents.map((a) => ({
       _id: a._id,
       name: a.name,
@@ -98,10 +105,11 @@ export const getAllAgentsWithLLMConfig = query({
   },
 });
 
+/** Get agents by department (Mission Control only) */
 export const getAgentsByDepartment = query({
   args: { department: v.string() },
   handler: async (ctx, args) => {
-    const allAgents = await ctx.db.query("agents").collect();
+    const allAgents = excludeDraftEngine(await ctx.db.query("agents").collect());
     return allAgents.filter((a) => a.department === args.department);
   },
 });

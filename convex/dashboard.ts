@@ -10,7 +10,8 @@ export const getStats = query({
     const tasks = await ctx.db.query("tasks").collect();
     const events = await ctx.db.query("events").collect();
     const memories = await ctx.db.query("memories").collect();
-    const agents = await ctx.db.query("agents").collect();
+    const allAgents = await ctx.db.query("agents").collect();
+    const agents = allAgents.filter((a) => a.teamType !== "draftengine");
 
     const today = new Date().toISOString().split("T")[0];
     const todayMemories = memories.filter((m) => m.date === today);

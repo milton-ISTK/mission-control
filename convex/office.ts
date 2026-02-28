@@ -5,8 +5,9 @@ import { query } from "./_generated/server";
  * Maps each agent to their current state: "working" | "waiting" | "idle"
  */
 export const getAgentActivity = query(async (ctx) => {
-  // Fetch all agents
-  const agents = await ctx.db.query("agents").collect();
+  // Fetch Mission Control agents only (exclude DraftEngine)
+  const agents = (await ctx.db.query("agents").collect())
+    .filter((a) => a.teamType !== "draftengine");
 
   // Fetch all active workflow steps (pending, agent_working, awaiting_review)
   const allSteps = await ctx.db.query("workflowSteps").collect();
